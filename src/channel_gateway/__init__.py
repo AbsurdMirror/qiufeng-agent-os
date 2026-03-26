@@ -1,6 +1,6 @@
 from .bootstrap import initialize
 from .event_parser import TextEventParserFactory
-from .events import UniversalTextEvent
+from .events import UniversalEvent, UniversalEventContent, UniversalTextEvent
 from .exports import ChannelGatewayExports
 from .feishu_long_connection import (
     FeishuLongConnectionRuntime,

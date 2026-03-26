@@ -1,5 +1,6 @@
 from src.orchestration_engine.agent_registry import AgentRegistry, AgentSpec, InMemoryAgentRegistry
 from src.orchestration_engine.exports import OrchestrationEngineExports
+from src.orchestration_engine.langgraph_runtime import LangGraphRuntime
 
 
 def initialize() -> OrchestrationEngineExports:
@@ -11,10 +12,12 @@ def initialize() -> OrchestrationEngineExports:
     """
     # 实例化基于内存的注册中心
     registry = InMemoryAgentRegistry()
+    langgraph_runtime = LangGraphRuntime()
     return OrchestrationEngineExports(
         layer="orchestration_engine",
         status="initialized",
         agent_registry=registry,
+        langgraph_runtime=langgraph_runtime,
         register_agent=lambda spec: _register_agent(registry=registry, spec=spec),
         query_agent=lambda agent_id, tenant_id, version=None: _query_agent(
             registry=registry,

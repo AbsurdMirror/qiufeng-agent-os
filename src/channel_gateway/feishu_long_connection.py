@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 from src.app.settings_store import FeishuSettings
 from src.channel_gateway.event_parser import TextEventParserFactory
-from src.channel_gateway.events import UniversalTextEvent
+from src.channel_gateway.events import UniversalEvent
 
 
 @dataclass(frozen=True)
@@ -18,14 +18,14 @@ class FeishuLongConnectionRuntime:
     error: str | None
 
 
-def parse_feishu_long_connection_event(payload: Mapping[str, Any]) -> UniversalTextEvent:
+def parse_feishu_long_connection_event(payload: Mapping[str, Any]) -> UniversalEvent:
     parser = TextEventParserFactory.get(channel="feishu", transport="long_connection")
     return parser.parse(payload)
 
 
 def run_feishu_long_connection(
     settings: FeishuSettings,
-    on_text_event: Callable[[UniversalTextEvent], None],
+    on_text_event: Callable[[UniversalEvent], None],
 ) -> None:
     """
     启动并阻塞运行飞书 WebSocket 客户端。
@@ -123,4 +123,3 @@ def _to_plain_dict(data: Any) -> Any:
             if not key.startswith("_")
         }
     return data
-

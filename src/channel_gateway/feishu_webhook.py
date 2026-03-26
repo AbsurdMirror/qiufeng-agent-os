@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from src.channel_gateway.event_parser import TextEventParserFactory
-from src.channel_gateway.events import UniversalTextEvent
+from src.channel_gateway.events import UniversalEvent
 
 
 @dataclass(frozen=True)
@@ -13,7 +13,7 @@ class FeishuWebhookResult:
     """
     is_challenge: bool
     challenge: str | None
-    event: UniversalTextEvent | None
+    event: UniversalEvent | None
 
 
 def receive_feishu_webhook(payload: Mapping[str, Any]) -> FeishuWebhookResult:

@@ -3,16 +3,22 @@ from dataclasses import dataclass
 from src.app.config import AppConfig
 from src.channel_gateway.exports import ChannelGatewayExports
 from src.channel_gateway import initialize as initialize_channel_gateway
+from src.model_provider.exports import ModelProviderExports
+from src.model_provider import initialize as initialize_model_provider
 from src.observability_hub.exports import ObservabilityHubExports
 from src.observability_hub import initialize as initialize_observability_hub
 from src.orchestration_engine.exports import OrchestrationEngineExports
 from src.orchestration_engine import initialize as initialize_orchestration_engine
+from src.storage_memory.exports import StorageMemoryExports
+from src.storage_memory import initialize as initialize_storage_memory
 
 
 @dataclass(frozen=True)
 class AppModules:
     channel_gateway: ChannelGatewayExports
     orchestration_engine: OrchestrationEngineExports
+    model_provider: ModelProviderExports
+    storage_memory: StorageMemoryExports
     observability_hub: ObservabilityHubExports
 
 
@@ -46,6 +52,8 @@ def build_application(config: AppConfig) -> Application:
     modules = AppModules(
         channel_gateway=initialize_channel_gateway(host=config.host, port=config.port),
         orchestration_engine=initialize_orchestration_engine(),
+        model_provider=initialize_model_provider(),
+        storage_memory=initialize_storage_memory(),
         observability_hub=initialize_observability_hub(),
     )
     return Application(config=config, modules=modules)

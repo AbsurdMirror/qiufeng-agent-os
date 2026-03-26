@@ -2,7 +2,7 @@ import asyncio
 import json
 
 from src.app.bootstrap import Application
-from src.channel_gateway.events import UniversalTextEvent
+from src.channel_gateway.events import UniversalEvent
 
 
 def run_feishu_long_connection(app: Application) -> None:
@@ -24,10 +24,10 @@ async def _run_feishu_long_connection_async(app: Application) -> None:
         error = runtime.error or "feishu_long_connection_unavailable"
         raise RuntimeError(error)
 
-    queue: asyncio.Queue[UniversalTextEvent] = asyncio.Queue()
+    queue: asyncio.Queue[UniversalEvent] = asyncio.Queue()
     loop = asyncio.get_running_loop()
 
-    def _on_text_event(event: UniversalTextEvent) -> None:
+    def _on_text_event(event: UniversalEvent) -> None:
         loop.call_soon_threadsafe(queue.put_nowait, event)
 
     async def _consume_event_loop() -> None:
@@ -59,7 +59,11 @@ async def _run_feishu_long_connection_async(app: Application) -> None:
             )
 
     async def _run_long_connection() -> None:
-        await asyncio.to_thread(run_entry, settings=app.config.feishu, on_text_event=_on_text_event)
+        await asyncio.to_thread(
+            run_entry,
+            app.config.feishu,
+            _on_text_event,
+        )
 
     print(f"{app.config.app_name} feishu long connection starting")
     print(f"feishu app_id loaded: {app.config.feishu.app_id}")

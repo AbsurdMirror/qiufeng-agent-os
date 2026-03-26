@@ -2,15 +2,15 @@ from collections.abc import Mapping
 import json
 from typing import Any, Protocol
 
-from src.channel_gateway.events import UniversalTextEvent
+from src.channel_gateway.events import UniversalEvent, UniversalEventContent
 
 
 class TextEventParser(Protocol):
-    def parse(self, payload: Mapping[str, Any]) -> UniversalTextEvent: ...
+    def parse(self, payload: Mapping[str, Any]) -> UniversalEvent: ...
 
 
 class FeishuWebhookTextEventParser:
-    def parse(self, payload: Mapping[str, Any]) -> UniversalTextEvent:
+    def parse(self, payload: Mapping[str, Any]) -> UniversalEvent:
         header = _require_mapping(payload, "header")
         event = _require_mapping(payload, "event")
         message = _require_mapping(event, "message")
@@ -34,7 +34,7 @@ class FeishuWebhookTextEventParser:
         timestamp = _parse_timestamp(_require_str(header, "create_time"))
         user_id = _extract_user_id(sender_id)
         chat_id = _optional_str(message, "chat_id")
-        return UniversalTextEvent(
+        return UniversalEvent(
             event_id=_require_str(header, "event_id"),
             timestamp=timestamp,
             platform_type="feishu",
@@ -42,13 +42,13 @@ class FeishuWebhookTextEventParser:
             group_id=chat_id,
             room_id=chat_id,
             message_id=_require_str(message, "message_id"),
-            text=text,
+            contents=(UniversalEventContent(type="text", data=text),),
             raw_event=dict(payload),
         )
 
 
 class FeishuLongConnectionTextEventParser:
-    def parse(self, payload: Mapping[str, Any]) -> UniversalTextEvent:
+    def parse(self, payload: Mapping[str, Any]) -> UniversalEvent:
         header = _require_mapping(payload, "header")
         event = _require_mapping(payload, "event")
         message = _require_mapping(event, "message")
@@ -72,7 +72,7 @@ class FeishuLongConnectionTextEventParser:
         timestamp = _parse_timestamp(_require_str(header, "create_time"))
         user_id = _extract_user_id(sender_id)
         chat_id = _optional_str(message, "chat_id")
-        return UniversalTextEvent(
+        return UniversalEvent(
             event_id=_require_str(header, "event_id"),
             timestamp=timestamp,
             platform_type="feishu",
@@ -80,7 +80,7 @@ class FeishuLongConnectionTextEventParser:
             group_id=chat_id,
             room_id=chat_id,
             message_id=_require_str(message, "message_id"),
-            text=text,
+            contents=(UniversalEventContent(type="text", data=text),),
             raw_event=dict(payload),
         )
 
