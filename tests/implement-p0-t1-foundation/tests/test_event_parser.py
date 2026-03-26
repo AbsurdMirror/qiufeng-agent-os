@@ -35,6 +35,9 @@ def test_cg_02_webhook_parse_valid_text_event():
     assert isinstance(event, UniversalTextEvent)
     assert event.platform_type == "feishu"
     assert event.text == "hello test"
+    assert len(event.contents) == 1
+    assert event.contents[0].type == "text"
+    assert event.contents[0].data == "hello test"
 
 def test_cg_03_long_connection_parse_valid_text_event():
     """测试项 CG-03: 长连接模式解析合法文本消息"""
@@ -45,6 +48,9 @@ def test_cg_03_long_connection_parse_valid_text_event():
     assert isinstance(event, UniversalTextEvent)
     assert event.platform_type == "feishu"
     assert event.text == "hello test"
+    assert len(event.contents) == 1
+    assert event.contents[0].type == "text"
+    assert event.contents[0].data == "hello test"
 
 def test_cg_04_factory_get_unsupported_parser():
     """测试项 CG-04: 工厂模式获取不支持的解析器"""
