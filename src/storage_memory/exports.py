@@ -11,6 +11,11 @@ from src.storage_memory.contracts import (
 
 @dataclass(frozen=True)
 class StorageMemoryExports:
+    """
+    存储与记忆层的强类型模块导出容器。
+    
+    暴露了面向业务层的读写接口代理函数。
+    """
     layer: str
     status: str
     carrier: HotMemoryCarrier

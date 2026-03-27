@@ -6,11 +6,17 @@ from src.channel_gateway.events import UniversalEvent, UniversalEventContent
 
 
 class TextEventParser(Protocol):
+    """
+    事件解析器接口协议 (Duck Typing)。
+    所有的渠道事件解析器都必须实现 parse 方法，将原始字典载荷转换为 UniversalEvent。
+    """
     def parse(self, payload: Mapping[str, Any]) -> UniversalEvent: ...
 
 
 class FeishuWebhookTextEventParser:
+    """飞书 Webhook 模式的事件解析策略。"""
     def parse(self, payload: Mapping[str, Any]) -> UniversalEvent:
+        # Webhook 模式下，事件被包裹在 header 和 event 中
         header = _require_mapping(payload, "header")
         event = _require_mapping(payload, "event")
         message = _require_mapping(event, "message")
@@ -25,6 +31,7 @@ class FeishuWebhookTextEventParser:
         if event_type is not None and event_type != "im.message.receive_v1":
             raise ValueError("unsupported_event_type")
 
+        # 解析被二次序列化的 content 字符串
         content = _require_str(message, "content")
         content_payload = _load_json_dict(content)
         text = content_payload.get("text")
@@ -34,6 +41,10 @@ class FeishuWebhookTextEventParser:
         timestamp = _parse_timestamp(_require_str(header, "create_time"))
         user_id = _extract_user_id(sender_id)
         chat_id = _optional_str(message, "chat_id")
+        
+        # 将解析出的文本包装进支持多模态的 UniversalEventContent
+        contents = (UniversalEventContent(type="text", data=text),)
+        
         return UniversalEvent(
             event_id=_require_str(header, "event_id"),
             timestamp=timestamp,
@@ -42,13 +53,15 @@ class FeishuWebhookTextEventParser:
             group_id=chat_id,
             room_id=chat_id,
             message_id=_require_str(message, "message_id"),
-            contents=(UniversalEventContent(type="text", data=text),),
+            contents=contents,
             raw_event=dict(payload),
         )
 
 
 class FeishuLongConnectionTextEventParser:
+    """飞书 WebSocket 长连接模式的事件解析策略。"""
     def parse(self, payload: Mapping[str, Any]) -> UniversalEvent:
+        # 长连接模式下，事件没有外层的 schema 包装，直接暴露 header 和 event
         header = _require_mapping(payload, "header")
         event = _require_mapping(payload, "event")
         message = _require_mapping(event, "message")
@@ -72,6 +85,9 @@ class FeishuLongConnectionTextEventParser:
         timestamp = _parse_timestamp(_require_str(header, "create_time"))
         user_id = _extract_user_id(sender_id)
         chat_id = _optional_str(message, "chat_id")
+        
+        contents = (UniversalEventContent(type="text", data=text),)
+
         return UniversalEvent(
             event_id=_require_str(header, "event_id"),
             timestamp=timestamp,
@@ -80,12 +96,17 @@ class FeishuLongConnectionTextEventParser:
             group_id=chat_id,
             room_id=chat_id,
             message_id=_require_str(message, "message_id"),
-            contents=(UniversalEventContent(type="text", data=text),),
+            contents=contents,
             raw_event=dict(payload),
         )
 
 
 class TextEventParserFactory:
+    """
+    事件解析器工厂。
+    使用策略模式，根据渠道 (channel) 和传输方式 (transport) 返回对应的解析器实例。
+    这种设计对未来扩展钉钉、微信等新渠道完全开放。
+    """
     _registry: dict[tuple[str, str], TextEventParser] = {
         ("feishu", "webhook"): FeishuWebhookTextEventParser(),
         ("feishu", "long_connection"): FeishuLongConnectionTextEventParser(),
@@ -93,6 +114,19 @@ class TextEventParserFactory:
 
     @classmethod
     def get(cls, channel: str, transport: str) -> TextEventParser:
+        """
+        获取指定渠道和传输方式的解析器。
+        
+        Args:
+            channel: 渠道名称，例如 "feishu"
+            transport: 传输模式，例如 "webhook" 或 "long_connection"
+            
+        Returns:
+            TextEventParser: 对应的解析器实例
+            
+        Raises:
+            ValueError: 若请求的解析器未注册，则抛出异常
+        """
         parser = cls._registry.get((channel, transport))
         if parser is None:
             raise ValueError("unsupported_event_parser")

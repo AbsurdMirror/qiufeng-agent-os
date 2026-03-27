@@ -10,6 +10,13 @@ from src.storage_memory.exports import StorageMemoryExports
 
 
 def initialize() -> StorageMemoryExports:
+    """
+    存储与记忆层 (Storage & Memory) 的初始化引导函数。
+    
+    此函数会被 `src.app.bootstrap` 在应用启动时调用。它负责：
+    初始化底层的内存存储引擎，并将常用的记忆读写与状态持久化接口通过高阶函数代理暴露出去，
+    从而将具体的 Store 实例封装在本层内部，不向上层泄漏。
+    """
     store = InMemoryHotMemoryStore()
     return StorageMemoryExports(
         layer="storage_memory",
@@ -50,6 +57,7 @@ def _append_hot_memory(
     item: HotMemoryItem,
     max_rounds: int = 10,
 ) -> tuple[HotMemoryItem, ...]:
+    """代理方法：追加热记忆"""
     return protocol.append_hot_memory(
         logic_id=logic_id,
         session_id=session_id,
@@ -64,6 +72,7 @@ def _read_hot_memory(
     session_id: str,
     limit: int = 10,
 ) -> tuple[HotMemoryItem, ...]:
+    """代理方法：读取热记忆"""
     return protocol.read_hot_memory(logic_id=logic_id, session_id=session_id, limit=limit)
 
 
@@ -73,6 +82,7 @@ def _persist_runtime_state(
     session_id: str,
     state: Mapping[str, Any],
 ) -> dict[str, Any]:
+    """代理方法：持久化状态字典"""
     return protocol.persist_runtime_state(logic_id=logic_id, session_id=session_id, state=state)
 
 
@@ -81,4 +91,5 @@ def _load_runtime_state(
     logic_id: str,
     session_id: str,
 ) -> dict[str, Any]:
+    """代理方法：读取持久化的状态字典"""
     return protocol.load_runtime_state(logic_id=logic_id, session_id=session_id)

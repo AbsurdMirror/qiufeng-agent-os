@@ -8,7 +8,7 @@ def initialize() -> ObservabilityHubExports:
     全栈监控与治理中心 (Observability Hub) 的初始化引导函数。
     
     此函数会被 `src.app.bootstrap` 在应用启动时调用。它负责：
-    将该层暴露的核心能力（如全局 TraceID 生成器、归一化数据采集接口）
+    将该层暴露的核心能力（如全局 TraceID 生成器、归一化数据采集接口、请求染色判定）
     打包并注册到全局的 Application 上下文中。
     
     Returns:
@@ -21,3 +21,4 @@ def initialize() -> ObservabilityHubExports:
         record=record,
         is_request_colored=is_request_colored,
     )
+
