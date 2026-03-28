@@ -50,7 +50,7 @@ def initialize() -> StorageMemoryExports:
     )
 
 
-def _append_hot_memory(
+async def _append_hot_memory(
     protocol: StorageAccessProtocol,
     logic_id: str,
     session_id: str,
@@ -58,7 +58,7 @@ def _append_hot_memory(
     max_rounds: int = 10,
 ) -> tuple[HotMemoryItem, ...]:
     """代理方法：追加热记忆"""
-    return protocol.append_hot_memory(
+    return await protocol.append_hot_memory(
         logic_id=logic_id,
         session_id=session_id,
         item=item,
@@ -66,30 +66,34 @@ def _append_hot_memory(
     )
 
 
-def _read_hot_memory(
+async def _read_hot_memory(
     protocol: StorageAccessProtocol,
     logic_id: str,
     session_id: str,
     limit: int = 10,
 ) -> tuple[HotMemoryItem, ...]:
     """代理方法：读取热记忆"""
-    return protocol.read_hot_memory(logic_id=logic_id, session_id=session_id, limit=limit)
+    return await protocol.read_hot_memory(logic_id=logic_id, session_id=session_id, limit=limit)
 
 
-def _persist_runtime_state(
+async def _persist_runtime_state(
     protocol: StorageAccessProtocol,
     logic_id: str,
     session_id: str,
     state: Mapping[str, Any],
 ) -> dict[str, Any]:
     """代理方法：持久化状态字典"""
-    return protocol.persist_runtime_state(logic_id=logic_id, session_id=session_id, state=state)
+    return await protocol.persist_runtime_state(
+        logic_id=logic_id,
+        session_id=session_id,
+        state=state,
+    )
 
 
-def _load_runtime_state(
+async def _load_runtime_state(
     protocol: StorageAccessProtocol,
     logic_id: str,
     session_id: str,
 ) -> dict[str, Any]:
     """代理方法：读取持久化的状态字典"""
-    return protocol.load_runtime_state(logic_id=logic_id, session_id=session_id)
+    return await protocol.load_runtime_state(logic_id=logic_id, session_id=session_id)
