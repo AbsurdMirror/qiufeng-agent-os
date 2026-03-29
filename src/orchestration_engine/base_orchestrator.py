@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any
 
 from src.channel_gateway.events import UniversalEvent
+from src.orchestration_engine.contracts import CapabilityHub
 from src.orchestration_engine.runtime_context import RuntimeContext
 
 
@@ -18,19 +18,17 @@ class BaseOrchestrator(ABC):
         self,
         event: UniversalEvent,
         ctx: RuntimeContext,
-        capability_hub: Any,
-    ) -> dict[str, Any]:
+        capability_hub: CapabilityHub,
+    ) -> dict[str, object]:
         """
         执行单次智能体编排逻辑。
         
         Args:
             event (UniversalEvent): 经过网关层解析的标准化触发事件（如用户输入）。
             ctx (RuntimeContext): 贯穿本次执行生命周期的上下文状态。
-            capability_hub (Any): 注入的底层能力集合（如模型调用、工具集等）。
-                此处由于 P0 阶段尚未实现完整的 SkillHub，暂用 Any 占位。
+            capability_hub (CapabilityHub): 注入的统一能力访问中心，负责编排层对模型与工具的发现和调用。
                 
         Returns:
-            dict[str, Any]: 编排执行的最终结果或状态增量。
+            dict[str, object]: 编排执行的最终结果或状态增量。
         """
         raise NotImplementedError
-

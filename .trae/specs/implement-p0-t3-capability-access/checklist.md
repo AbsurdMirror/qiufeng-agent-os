@@ -1,0 +1,8 @@
+- [x] 已交付编排层 Capability 契约与统一结果结构
+- [x] 已交付 Skill Hub 模块与最小浏览器工具能力
+- [x] 已交付模型域与工具域的 Capability 转发路由
+- [x] 已交付 LiteLLM 归一化适配与 MiniMax 客户端
+- [x] 无 LiteLLM 或 browser-use 依赖时具备明确降级行为
+- [x] 应用初始化链路已纳入 Skill Hub 与 Capability Hub
+- [x] BaseOrchestrator 已使用明确的 Capability 类型而非 Any
+- [x] 本轮仅完成代码开发与基础自检，未替代测试与审阅职责

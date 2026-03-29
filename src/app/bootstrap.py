@@ -9,6 +9,8 @@ from src.observability_hub.exports import ObservabilityHubExports
 from src.observability_hub import initialize as initialize_observability_hub
 from src.orchestration_engine.exports import OrchestrationEngineExports
 from src.orchestration_engine import initialize as initialize_orchestration_engine
+from src.skill_hub.exports import SkillHubExports
+from src.skill_hub import initialize as initialize_skill_hub
 from src.storage_memory.exports import StorageMemoryExports
 from src.storage_memory import initialize as initialize_storage_memory
 
@@ -18,6 +20,7 @@ class AppModules:
     channel_gateway: ChannelGatewayExports
     orchestration_engine: OrchestrationEngineExports
     model_provider: ModelProviderExports
+    skill_hub: SkillHubExports
     storage_memory: StorageMemoryExports
     observability_hub: ObservabilityHubExports
 
@@ -49,10 +52,17 @@ def build_application(config: AppConfig) -> Application:
     Returns:
         Application: 组装完成的应用上下文
     """
+    channel_gateway = initialize_channel_gateway(host=config.host, port=config.port)
+    model_provider = initialize_model_provider()
+    skill_hub = initialize_skill_hub(model_client=model_provider.client)
+    orchestration_engine = initialize_orchestration_engine(
+        capability_hub=skill_hub.capability_hub,
+    )
     modules = AppModules(
-        channel_gateway=initialize_channel_gateway(host=config.host, port=config.port),
-        orchestration_engine=initialize_orchestration_engine(),
-        model_provider=initialize_model_provider(),
+        channel_gateway=channel_gateway,
+        orchestration_engine=orchestration_engine,
+        model_provider=model_provider,
+        skill_hub=skill_hub,
         storage_memory=initialize_storage_memory(),
         observability_hub=initialize_observability_hub(),
     )

@@ -8,6 +8,13 @@ from .agent_registry import (
     AgentSpec,
     InMemoryAgentRegistry,
 )
+from .contracts import (
+    CapabilityDescription,
+    CapabilityHub,
+    CapabilityRequest,
+    CapabilityResult,
+    NullCapabilityHub,
+)
 from .exports import OrchestrationEngineExports
 from .runtime_context import RuntimeContext
 from .langgraph_runtime import LangGraphRuntime, LangGraphExecutable
@@ -20,6 +27,11 @@ __all__ = [
     "AgentSpec",
     "InMemoryAgentRegistry",
     "BaseOrchestrator",
+    "CapabilityDescription",
+    "CapabilityHub",
+    "CapabilityRequest",
+    "CapabilityResult",
+    "NullCapabilityHub",
     "RuntimeContext",
     "LangGraphRuntime",
     "LangGraphExecutable",

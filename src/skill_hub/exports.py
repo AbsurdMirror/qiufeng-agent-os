@@ -1,25 +1,24 @@
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from src.orchestration_engine.agent_registry import AgentRegistry, AgentSpec
 from src.orchestration_engine.contracts import (
     CapabilityDescription,
     CapabilityHub,
     CapabilityRequest,
     CapabilityResult,
 )
-from src.orchestration_engine.langgraph_runtime import LangGraphRuntime
+from src.skill_hub.browser_use import BrowserUsePyTool
+from src.skill_hub.contracts import BrowserUseRuntimeState
 
 
 @dataclass(frozen=True)
-class OrchestrationEngineExports:
+class SkillHubExports:
     layer: str
     status: str
-    agent_registry: AgentRegistry
-    langgraph_runtime: LangGraphRuntime
+    browser_pytool: BrowserUsePyTool
     capability_hub: CapabilityHub
-    register_agent: Callable[[AgentSpec], AgentSpec]
-    query_agent: Callable[[str, str, str | None], AgentSpec | None]
     list_capabilities: Callable[[], tuple[CapabilityDescription, ...]]
     get_capability: Callable[[str], CapabilityDescription | None]
+    probe_browser_runtime: Callable[[], BrowserUseRuntimeState]
+    invoke_browser: Callable[[CapabilityRequest], Awaitable[CapabilityResult]]
     invoke_capability: Callable[[CapabilityRequest], Awaitable[CapabilityResult]]
