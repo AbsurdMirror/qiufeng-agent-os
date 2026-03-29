@@ -35,6 +35,14 @@ def _invoke_sync(client: ModelProviderClient, request: ModelRequest) -> ModelRes
 
 
 class RoutedModelProviderClient:
+    """
+    模型请求的路由分发器。
+
+    设计意图：
+    将所有的模型客户端（目前有内存模拟和 MiniMax）组合在一起，
+    像一个“接线员”一样，根据请求中的元数据特征，将请求智能路由给对应的真实客户端去处理。
+    这使得上层（编排层）只需要面对这一个路由客户端，而不需要知道底层到底有多少种模型供应商。
+    """
     def __init__(
         self,
         *,
@@ -45,6 +53,8 @@ class RoutedModelProviderClient:
         self._minimax_client = minimax_client
 
     def invoke(self, request: ModelRequest) -> ModelResponse:
+        # 如果请求被识别为发给 MiniMax 的，则转发给 minimax_client 处理
         if is_minimax_request(request):
             return self._minimax_client.invoke(request)
+        # 否则兜底使用默认的客户端（目前是内存模拟器）处理
         return self._default_client.invoke(request)

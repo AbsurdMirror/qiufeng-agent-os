@@ -13,6 +13,15 @@ from src.skill_hub.contracts import BrowserUseRuntimeState
 def probe_browser_use_runtime() -> BrowserUseRuntimeState:
     """
     探测 browser-use 与 Playwright 的最小运行时可用性。
+    
+    设计意图：
+    在实际启动笨重的无头浏览器之前，先快速检查当前 Python 环境里有没有安装必要的依赖包。
+    这能避免在核心流程中突然抛出 `ModuleNotFoundError` 导致程序崩溃。
+    
+    缺点与漏洞风险 (已记录至草稿)：
+    这种探测过于浅显。它只检查了 Python 包是否 `pip install` 了，
+    但没有检查 Playwright 是否实际下载了浏览器二进制文件（例如是否执行过 `playwright install`）。
+    这可能导致探测返回 `available=True`，但在真实调用时依然崩溃。
     """
     browser_use_installed = _has_dependency("browser_use")
     playwright_installed = _has_dependency("playwright")
@@ -50,6 +59,10 @@ def probe_browser_use_runtime() -> BrowserUseRuntimeState:
 class BrowserUsePyTool:
     """
     最小可用的 browser-use 浏览器 PyTools 骨架。
+    
+    设计意图：
+    将底层的 browser-use 库包装成我们系统内部统一的 `Capability` 契约格式。
+    目前 T3 阶段仅提供了骨架和探测能力（dry_run），不真正启动浏览器，为后续 T4/T5 阶段留出接口。
     """
     def __init__(self) -> None:
         self.capability = CapabilityDescription(
@@ -79,9 +92,18 @@ class BrowserUsePyTool:
         )
 
     def probe_runtime(self) -> BrowserUseRuntimeState:
+        """代理方法，调用包级别的探测函数"""
         return probe_browser_use_runtime()
 
     async def invoke(self, request: CapabilityRequest) -> CapabilityResult:
+        """
+        执行工具调用。
+        
+        初学者提示：
+        注意这里的容错处理：即使运行时不可用，或者参数不合法（如缺 URL），
+        它都不会 `raise Exception`，而是返回一个 `success=False` 的 `CapabilityResult`，
+        这保证了上层调度器的稳定性。
+        """
         runtime_state = self.probe_runtime()
         payload = dict(request.payload)
         url = _normalize_url(payload.get("url"))

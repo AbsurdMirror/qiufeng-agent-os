@@ -21,6 +21,14 @@ CapabilityHandler = Callable[[CapabilityRequest], Awaitable[CapabilityResult]]
 
 
 class RegisteredCapabilityHub:
+    """
+    编排层可见的统一能力注册中心。
+    
+    设计意图：
+    实现 `CapabilityHub` 协议，提供能力的注册、发现和调用。
+    所有的工具（PyTool）和模型路由都会注册到这里，编排层只需要通过唯一的 `invoke` 方法
+    和能力 ID，就能调用底层的任何功能。
+    """
     def __init__(self) -> None:
         self._capabilities: dict[str, CapabilityDescription] = {}
         self._handlers: dict[str, CapabilityHandler] = {}
@@ -30,6 +38,7 @@ class RegisteredCapabilityHub:
         capability: CapabilityDescription,
         handler: CapabilityHandler,
     ) -> CapabilityDescription:
+        """注册一个能力及其对应的异步处理函数"""
         self._capabilities[capability.capability_id] = capability
         self._handlers[capability.capability_id] = handler
         return capability
@@ -41,6 +50,14 @@ class RegisteredCapabilityHub:
         return self._capabilities.get(capability_id)
 
     async def invoke(self, request: CapabilityRequest) -> CapabilityResult:
+        """
+        统一的调用入口。
+        
+        漏洞风险 (P0级):
+        此处缺少 `try...except` 包裹。如果 `handler(request)` 内部抛出未捕获的异常
+        （如 JSON 解析失败、网络超时断开），将直接导致整个调用链崩溃，
+        破坏编排层的并发稳定性。
+        """
         capability = self.get_capability(request.capability_id)
         if capability is None:
             return CapabilityResult(
@@ -51,7 +68,10 @@ class RegisteredCapabilityHub:
                 error_message=f"capability '{request.capability_id}' is not registered",
             )
         handler = self._handlers[request.capability_id]
+        
+        # TODO(风险): 需补充全局异常捕获兜底
         result = await handler(request)
+        
         metadata = dict(result.metadata)
         metadata.setdefault("domain", capability.domain)
         return CapabilityResult(
@@ -65,6 +85,17 @@ class RegisteredCapabilityHub:
 
 
 class ModelCapabilityRouter:
+    """
+    模型能力路由，将底层的 `ModelProviderClient` 包装为标准的 `Capability`。
+    
+    设计意图：
+    将模型推理能力也视作一种普通的工具能力注册到 Hub 中，
+    实现 "一切皆能力" 的统一调用模型。
+    
+    缺点：
+    它在注册时使用了反向注入（传入 hub 并调用 `register_into`）。
+    这种耦合设计在扩展更多工具或能力域时，会导致注册代码变得冗长。
+    """
     def __init__(self, model_client: ModelProviderClient) -> None:
         self._model_client = model_client
         self._default_capability = CapabilityDescription(

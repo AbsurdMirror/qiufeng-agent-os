@@ -38,6 +38,14 @@ class MiniMaxRuntimeState:
 
 
 class MiniMaxModelProviderClient:
+    """
+    MiniMax 模型供应商的具体客户端实现。
+    
+    设计意图：
+    负责封装与 MiniMax 大模型 API 通信的具体细节。
+    它依赖 LiteLLM 库来进行实际的网络请求，但在调用前会先进行“运行时探测”，
+    以实现环境隔离与优雅降级（缺少依赖时不会崩溃，而是返回包含错误信息的标准化结果）。
+    """
     def __init__(
         self,
         *,
@@ -54,6 +62,7 @@ class MiniMaxModelProviderClient:
         self._completion_callable = completion_callable
 
     def probe_runtime(self) -> MiniMaxRuntimeState:
+        """探测当前运行环境是否满足调用 MiniMax 的条件（例如是否配置了 API Key）"""
         return probe_minimax_runtime(
             api_key=self._api_key,
             model_name=self._model_name,
@@ -61,8 +70,11 @@ class MiniMaxModelProviderClient:
         )
 
     def invoke(self, request: ModelRequest) -> ModelResponse:
+        """执行模型推理请求"""
         runtime_state = self.probe_runtime()
         target_model_name = _resolve_minimax_target_model_name(request, self._model_name)
+        
+        # 优点：优雅降级。如果缺少依赖或 Key，不抛异常，而是返回结构化的错误响应
         if not runtime_state.available:
             return _build_degraded_response(
                 request=request,
@@ -178,12 +190,29 @@ def probe_minimax_runtime(
 
 
 def is_minimax_request(request: ModelRequest) -> bool:
+    """
+    通过启发式规则判断当前请求是否旨在调用 MiniMax 模型。
+    
+    设计意图：
+    由于请求的 `ModelRequest` 可能来自各种渠道（有些传 provider，有些传模型全称，有些传自定义 tag），
+    我们需要一个集中的地方来猜测请求的意图。这是一种典型的“基于规则的路由判定”策略。
+    
+    判断优先级：
+    1. 显式指定了 metadata 中的 provider 为 "minimax"。
+    2. model_tag 包含 "minimax" 相关标识。
+    3. model_name 以 "minimax" 或 "abab"（MiniMax 模型的特有前缀）开头。
+    """
+    # 提取 provider，去除两端空格并转小写以实现宽容匹配
     provider_name = str(request.metadata.get("provider", "")).strip().lower()
     if provider_name == "minimax":
         return True
+    
+    # 提取 model_tag 进行宽容匹配
     model_tag = (request.model_tag or "").strip().lower()
     if model_tag in {"minimax", "provider.minimax", "model.minimax.chat"}:
         return True
+    
+    # 提取 model_name 检查特征前缀
     model_name = (request.model_name or "").strip().lower()
     return (
         model_name.startswith("minimax/")
@@ -196,10 +225,26 @@ def _resolve_minimax_target_model_name(
     request: ModelRequest,
     default_model_name: str | None,
 ) -> str:
+    """
+    解析最终要请求的 MiniMax 模型名称。
+    
+    设计意图：
+    请求中可能传入了带有厂商前缀的模型名（例如 "minimax/abab6.5s-chat"），
+    但在真正通过 LiteLLM 调用 MiniMax API 时，我们只需要纯粹的模型名称（"abab6.5s-chat"）。
+    这个函数负责提取干净的模型名，并在未提供时给出默认兜底。
+    
+    缺点与风险 (P0 级)：
+    硬编码回退到了 "abab6.5s-chat" 模型。如果未来该模型下线或调整计费，
+    修改代码的成本较高，这种全局兜底应当通过统一的环境变量或系统配置文件进行动态管理。
+    """
+    # 优先级：请求的模型名 > 实例化时传入的默认名 > 请求的 tag > 最后的硬编码兜底
     raw_model_name = request.model_name or default_model_name or request.model_tag or "abab6.5s-chat"
     normalized = raw_model_name.strip()
+    
+    # 如果模型名是以 "minimax/" 开头，使用 split 切割并只保留后面的实际模型名
     if normalized.lower().startswith("minimax/"):
         return normalized.split("/", maxsplit=1)[1]
+    
     return normalized
 
 
@@ -209,6 +254,14 @@ def _build_degraded_response(
     runtime_state: MiniMaxRuntimeState,
     target_model_name: str,
 ) -> ModelResponse:
+    """
+    构造一个降级（失败）的标准化响应。
+    
+    设计意图：
+    当环境探测发现缺少依赖包或缺少 API Key 时，与其抛出致命异常（Exception）让程序崩溃，
+    不如返回一个符合 `ModelResponse` 契约的对象，并将其 `finish_reason` 标记为 "error"。
+    这样编排层能够捕获并处理这个错误，进而给用户返回友好的提示。
+    """
     return ModelResponse(
         model_name=f"minimax/{target_model_name}",
         content="",
