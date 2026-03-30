@@ -31,6 +31,7 @@ from .minimax import (
     is_minimax_request,
     probe_minimax_runtime,
 )
+from .router import ModelRouter
 
 __all__ = [
     "InMemoryModelProviderClient",
@@ -49,4 +50,5 @@ __all__ = [
     "normalize_litellm_response",
     "probe_litellm_runtime",
     "probe_minimax_runtime",
+    "ModelRouter",
 ]

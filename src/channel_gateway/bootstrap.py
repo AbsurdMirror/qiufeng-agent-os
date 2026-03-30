@@ -8,7 +8,7 @@ from src.channel_gateway.feishu_long_connection import (
 )
 from src.channel_gateway.feishu_webhook import FeishuWebhookResult, receive_feishu_webhook
 from src.channel_gateway.nonebot_runtime import initialize_nonebot2
-
+from src.channel_gateway.session_context import session_context_controller
 
 def initialize(host: str, port: int) -> ChannelGatewayExports:
     """
@@ -35,6 +35,7 @@ def initialize(host: str, port: int) -> ChannelGatewayExports:
         feishu_long_connection_parser=parse_feishu_long_connection_event,
         run_feishu_long_connection=run_feishu_long_connection,
         feishu_webhook_entry=_webhook_entry,
+        session_context=session_context_controller,
     )
 
 

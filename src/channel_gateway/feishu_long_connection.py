@@ -50,7 +50,13 @@ def run_feishu_long_connection(
         然后使用解析工厂统一解析，并触发上层回调。
         """
         payload = _to_mapping(data)
-        event = parse_feishu_long_connection_event(payload)
+        try:
+            event = parse_feishu_long_connection_event(payload)
+        except ValueError as e:
+            if str(e) == "duplicate_message":
+                # 优雅处理长连接中的去重消息
+                return
+            raise
         on_text_event(event)
 
     # 构建飞书事件调度器，注册 V1 版本的消息接收事件

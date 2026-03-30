@@ -38,5 +38,13 @@ def receive_feishu_webhook(payload: Mapping[str, Any]) -> FeishuWebhookResult:
 
     # 通过策略工厂获取飞书 Webhook 的专用解析器，并将复杂解析委托给它
     parser = TextEventParserFactory.get(channel="feishu", transport="webhook")
-    event = parser.parse(payload)
+
+    try:
+        event = parser.parse(payload)
+    except ValueError as e:
+        if str(e) == "duplicate_message":
+            # 优雅处理去重消息，避免飞书开放平台不断重试
+            return FeishuWebhookResult(is_challenge=False, challenge=None, event=None)
+        raise
+
     return FeishuWebhookResult(is_challenge=False, challenge=None, event=event)

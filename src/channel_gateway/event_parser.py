@@ -45,6 +45,13 @@ class FeishuWebhookTextEventParser:
         # 将解析出的文本包装进支持多模态的 UniversalEventContent
         contents = (UniversalEventContent(type="text", data=text),)
         
+        from src.channel_gateway.session_context import session_context_controller
+        message_id = _require_str(message, "message_id")
+
+        # 消息去重
+        if session_context_controller.is_duplicate(message_id):
+            raise ValueError("duplicate_message")
+
         return UniversalEvent(
             event_id=_require_str(header, "event_id"),
             timestamp=timestamp,
@@ -52,9 +59,10 @@ class FeishuWebhookTextEventParser:
             user_id=user_id,
             group_id=chat_id,
             room_id=chat_id,
-            message_id=_require_str(message, "message_id"),
+            message_id=message_id,
             contents=contents,
             raw_event=dict(payload),
+            logical_uid=session_context_controller.get_logical_uuid(user_id)
         )
 
 
@@ -88,6 +96,13 @@ class FeishuLongConnectionTextEventParser:
         
         contents = (UniversalEventContent(type="text", data=text),)
 
+        from src.channel_gateway.session_context import session_context_controller
+        message_id = _require_str(message, "message_id")
+
+        # 消息去重
+        if session_context_controller.is_duplicate(message_id):
+            raise ValueError("duplicate_message")
+
         return UniversalEvent(
             event_id=_require_str(header, "event_id"),
             timestamp=timestamp,
@@ -95,9 +110,10 @@ class FeishuLongConnectionTextEventParser:
             user_id=user_id,
             group_id=chat_id,
             room_id=chat_id,
-            message_id=_require_str(message, "message_id"),
+            message_id=message_id,
             contents=contents,
             raw_event=dict(payload),
+            logical_uid=session_context_controller.get_logical_uuid(user_id)
         )
 
 

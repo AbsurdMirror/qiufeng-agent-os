@@ -8,18 +8,21 @@ from src.model_provider.exports import ModelProviderExports
 from src.model_provider.minimax import MiniMaxModelProviderClient, is_minimax_request
 
 
+from src.model_provider.router import ModelRouter
+
 def initialize() -> ModelProviderExports:
     """
     模型抽象层 (Model Provider) 的初始化引导函数。
     
     此函数会被 `src.app.bootstrap` 在应用启动时调用。它负责：
     初始化底层的模型客户端，并暴露代理方法供编排引擎调用。
-    当前提供最小可用的路由客户端：默认走内存模拟客户端，
-    当请求显式指定 MiniMax 模型或路由标识时切换到 MiniMax 适配器。
     """
-    client = RoutedModelProviderClient(
-        default_client=InMemoryModelProviderClient(),
-        minimax_client=MiniMaxModelProviderClient(),
+    # T4: MP-P0-01, MP-P0-02
+    client = ModelRouter(
+        clients={
+            "default": InMemoryModelProviderClient(),
+            "minimax": MiniMaxModelProviderClient()
+        }
     )
     return ModelProviderExports(
         layer="model_provider",

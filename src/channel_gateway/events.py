@@ -49,6 +49,7 @@ class UniversalEvent:
     message_id: str
     contents: tuple[UniversalEventContent, ...]
     raw_event: dict[str, Any]
+    logical_uid: str | None = None # 添加用于T4阶段身份映射的字段
 
     @property
     def text(self) -> str:

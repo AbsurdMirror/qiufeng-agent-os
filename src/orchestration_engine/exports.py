@@ -1,5 +1,6 @@
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import Any
 
 from src.orchestration_engine.agent_registry import AgentRegistry, AgentSpec
 from src.orchestration_engine.contracts import (
@@ -52,3 +53,6 @@ class OrchestrationEngineExports:
     get_capability: Callable[[str], CapabilityDescription | None]
     # 异步执行某个能力（如调用模型或工具）
     invoke_capability: Callable[[CapabilityRequest], Awaitable[CapabilityResult]]
+
+    # 上下文管理器，负责状态读取与持久化
+    context_manager: Any
