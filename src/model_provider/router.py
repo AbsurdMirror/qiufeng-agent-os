@@ -1,7 +1,12 @@
 from typing import Any
 from src.model_provider.contracts import ModelRequest, ModelResponse, ModelProviderClient, ModelMessage
 
+import os
+
 try:
+    # Set TIKTOKEN_CACHE_DIR to prevent synchronous network downloads if local cache is available
+    if not os.environ.get("TIKTOKEN_CACHE_DIR"):
+        os.environ["TIKTOKEN_CACHE_DIR"] = "/tmp/tiktoken_cache"
     import tiktoken
     HAS_TIKTOKEN = True
 except ImportError:
@@ -62,13 +67,13 @@ class ModelRouter(ModelProviderClient):
         for msg in reversed(other_messages):
             msg_tokens = estimate_tokens(msg.content)
             if available_tokens - msg_tokens > 0:
-                trimmed_messages.insert(0, msg)
+                trimmed_messages.append(msg)
                 available_tokens -= msg_tokens
             else:
                 break
 
         # 组合 system messages 和裁剪后的其他消息
-        return tuple(system_messages + trimmed_messages)
+        return tuple(system_messages + trimmed_messages[::-1])
 
     def invoke(self, request: ModelRequest) -> ModelResponse:
         """

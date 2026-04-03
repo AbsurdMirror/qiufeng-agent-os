@@ -1,71 +1,56 @@
 import inspect
-import re
-from typing import Any, Callable
+from typing import Any, Callable, Annotated, get_origin, get_args
+
+from pydantic import create_model, Field
 
 def parse_doxygen_to_json_schema(func: Callable) -> dict[str, Any]:
     """
     SH-P0-02: 工具规范解析
-    这个函数就像是个“跨国翻译官”。
-    大模型（LLM）是不认识 Python 的，它只看得懂官方约定的 JSON Schema 格式。
-    这个函数负责强行把咱们中国开发者写的 `@param` 中文注释，加上 Python 的内置种类（像 int / dict），
-    一起杂交提纯，最终打包吐出一个闪亮的字典（LLM Tool Spec）。
+    全面拥抱 Pydantic V2，利用原生函数签名与 Annotated 元数据，
+    零冗余生成极其标准、类型安全的 JSON Schema 供大模型调用。
     """
-    docstring = inspect.getdoc(func) or ""
-
-    # 提取函数描述
-    # 暴力法：看到 @param 或者 @return 就当做前奏结束，前面的都是总起描述！
-    # （这里存在遇到自然句柄中含有此关键词导致被腰斩的漏洞）
-    description_match = re.split(r'@param|@return', docstring)
-    description = description_match[0].strip() if description_match else ""
-
-    # 提取参数描述
-    # 匹配 @param <type> <name> <description> 或 @param <name> <description>
-    param_pattern = re.compile(r'@param\s+(?:(\w+)\s+)?(\w+)\s+(.+)')
-    params = param_pattern.findall(docstring)
-
-    properties = {}
-    required = []
-
-    # 获取函数签名以检查类型注解和默认值
     sig = inspect.signature(func)
-
-    for type_hint, name, param_desc in params:
-        param_desc = param_desc.strip()
-
-        # 确定参数类型 (如果有实打实的 Python 类型提示就优先用它，否则看注释有没有写，最后走投无路统统当成 string)
-        param_type = "string"
-        if name in sig.parameters:
-            annot = sig.parameters[name].annotation
-            if annot == int:
-                param_type = "integer"
-            elif annot == float:
-                param_type = "number"
-            elif annot == bool:
-                param_type = "boolean"
-            elif annot == list:
-                param_type = "array"
-            elif annot == dict:
-                param_type = "object"
-
-        if type_hint and type_hint.lower() in ["int", "integer"]:
-            param_type = "integer"
-        elif type_hint and type_hint.lower() in ["float", "number"]:
-            param_type = "number"
-        elif type_hint and type_hint.lower() in ["bool", "boolean"]:
-            param_type = "boolean"
-
-        properties[name] = {
-            "type": param_type,
-            "description": param_desc
-        }
+    fields = {}
 
     for name, param in sig.parameters.items():
-        if param.default == inspect.Parameter.empty:
-            if name in properties: # Only require it if it is documented
-                required.append(name)
+        # 如果没有注解，默认 Any
+        annotation = param.annotation if param.annotation != inspect.Parameter.empty else Any
 
-    return {
-        "type": "object",
-        "properties": properties,
-        "required": required
-    }
+        # 解析 Annotated 中的 Field description（如果有）
+        description = None
+        if get_origin(annotation) is Annotated:
+            args = get_args(annotation)
+            annotation = args[0]  # 提取基础类型
+            for arg in args[1:]:
+                if isinstance(arg, Field().__class__):
+                    description = arg.description
+                    break
+                elif isinstance(arg, str): # 允许简单的 string 作为 description
+                    description = arg
+                    break
+
+        # 处理默认值
+        default_val = param.default if param.default != inspect.Parameter.empty else ...
+
+        # 组装 Pydantic Field
+        if description:
+            fields[name] = (annotation, Field(default=default_val, description=description))
+        else:
+            fields[name] = (annotation, default_val)
+
+    # 动态创建 Pydantic 模型
+    model_name = func.__name__.capitalize() + "Params"
+    dynamic_model = create_model(model_name, **fields)
+
+    # 获取 JSON schema
+    schema = dynamic_model.model_json_schema()
+
+    # 按照 LLM Function Calling 的要求精简清理
+    if "title" in schema:
+        del schema["title"]
+
+    # Pydantic 在没有参数时可能会缺少 properties 字段
+    if "properties" not in schema:
+        schema["properties"] = {}
+
+    return schema

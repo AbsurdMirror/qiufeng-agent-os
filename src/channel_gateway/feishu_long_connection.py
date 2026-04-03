@@ -50,16 +50,24 @@ def run_feishu_long_connection(
         然后使用解析工厂统一解析，并触发上层回调。
         """
         payload = _to_mapping(data)
+        import dataclasses
+        from src.channel_gateway.session_context import session_context_controller
+
         try:
             # 去解析所收到的原始字典数据
             event = parse_feishu_long_connection_event(payload)
-        except ValueError as e:
-            if str(e) == "duplicate_message":
-                # 优雅处理长连接中的去重消息
-                # 意思是：如果这是一封已经收过的信，咱们就不再往下跑，直接原地闭麦（return）
-                return
-            # 要是碰上其他的如格式崩坏等真命题错误，那就不盖了，立刻向上拉响警报（抛出）
+        except Exception:
             raise
+
+        from src.channel_gateway.events import DuplicateMessageError
+        try:
+            if session_context_controller.is_duplicate(event.message_id):
+                raise DuplicateMessageError("duplicate_message")
+        except DuplicateMessageError:
+            return
+
+        event = dataclasses.replace(event, logical_uid=session_context_controller.get_logical_uuid(event.user_id))
+
         on_text_event(event)
 
     # 构建飞书事件调度器，注册 V1 版本的消息接收事件

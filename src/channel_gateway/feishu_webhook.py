@@ -39,15 +39,24 @@ def receive_feishu_webhook(payload: Mapping[str, Any]) -> FeishuWebhookResult:
     # 通过策略工厂获取飞书 Webhook 的专用解析器，并将复杂解析委托给它
     parser = TextEventParserFactory.get(channel="feishu", transport="webhook")
 
+    from src.channel_gateway.session_context import session_context_controller
+    from src.channel_gateway.events import DuplicateMessageError
+    import dataclasses
+
     try:
-        # 在解析过程中如果触发去重，解析器会抛出 duplicate_message 错误
         event = parser.parse(payload)
-    except ValueError as e:
-        if str(e) == "duplicate_message":
-            # 优雅处理去重消息，避免飞书开放平台不断重试
-            # 直接返回一个空的事件包裹，相当于告诉飞书“我收到了，不用重发了”
-            return FeishuWebhookResult(is_challenge=False, challenge=None, event=None)
-        # 如果是其他错误（比如格式不对），应该继续抛出让上层去管
+    except Exception:
         raise
+
+    # 提取完成后触发去重网关拦截
+    try:
+        if session_context_controller.is_duplicate(event.message_id):
+            raise DuplicateMessageError("duplicate_message")
+    except DuplicateMessageError:
+        # 优雅处理去重消息，避免飞书开放平台不断重试
+        return FeishuWebhookResult(is_challenge=False, challenge=None, event=None)
+
+    # 填充 logical_uid
+    event = dataclasses.replace(event, logical_uid=session_context_controller.get_logical_uuid(event.user_id))
 
     return FeishuWebhookResult(is_challenge=False, challenge=None, event=event)

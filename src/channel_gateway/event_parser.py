@@ -49,13 +49,7 @@ class FeishuWebhookTextEventParser:
         # 将解析出的文本包装进支持多模态的 UniversalEventContent
         contents = (UniversalEventContent(type="text", data=text),)
         
-        # 延迟局部导入以打破循环依赖，并在提取解析完成前触发去重网关拦截
-        from src.channel_gateway.session_context import session_context_controller
         message_id = _require_str(message, "message_id")
-
-        # GW-P0-06 消息去重：若为同一消息重试，则直接抛出指定错误让上层静默消化
-        if session_context_controller.is_duplicate(message_id):
-            raise ValueError("duplicate_message")
 
         return UniversalEvent(
             event_id=_require_str(header, "event_id"),
@@ -67,7 +61,7 @@ class FeishuWebhookTextEventParser:
             message_id=message_id,
             contents=contents,
             raw_event=dict(payload),
-            logical_uid=session_context_controller.get_logical_uuid(user_id)
+            logical_uid=None  # 将由上层网关填充
         )
 
 
@@ -104,13 +98,7 @@ class FeishuLongConnectionTextEventParser:
         
         contents = (UniversalEventContent(type="text", data=text),)
 
-        # 局部依赖引入：获取去重器单例进行防重注入
-        from src.channel_gateway.session_context import session_context_controller
         message_id = _require_str(message, "message_id")
-
-        # 同样执行 GW-P0-06 重复校验
-        if session_context_controller.is_duplicate(message_id):
-            raise ValueError("duplicate_message")
 
         return UniversalEvent(
             event_id=_require_str(header, "event_id"),
@@ -122,7 +110,7 @@ class FeishuLongConnectionTextEventParser:
             message_id=message_id,
             contents=contents,
             raw_event=dict(payload),
-            logical_uid=session_context_controller.get_logical_uuid(user_id)
+            logical_uid=None  # 将由上层网关填充
         )
 
 
