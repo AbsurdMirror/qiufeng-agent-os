@@ -35,6 +35,8 @@ def initialize(host: str, port: int) -> ChannelGatewayExports:
         feishu_long_connection_parser=parse_feishu_long_connection_event,
         run_feishu_long_connection=run_feishu_long_connection,
         feishu_webhook_entry=_webhook_entry,
+        # T4 新增：利用导出口（Exports）统一对外暴露出刚才实例化的全局单例 session_context_controller
+        # 这就相当于给外面的老总们（编排引擎等模块）配了直接查户口的接口，免得乱 import
         session_context=session_context_controller,
     )
 

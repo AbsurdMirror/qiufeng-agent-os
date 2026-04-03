@@ -14,7 +14,11 @@ class TextEventParser(Protocol):
 
 
 class FeishuWebhookTextEventParser:
-    """飞书 Webhook 模式的事件解析策略。"""
+    """
+    飞书 Webhook 模式的事件解析策略。
+    负责将 Webhook POST 推送过来的 JSON payload 层层解包并构建出标准的 UniversalEvent。
+    此解析器包含副作用：会在执行解析期间依赖 session_context_controller 完成消息去重校验。
+    """
     def parse(self, payload: Mapping[str, Any]) -> UniversalEvent:
         # Webhook 模式下，事件被包裹在 header 和 event 中
         header = _require_mapping(payload, "header")
@@ -45,10 +49,11 @@ class FeishuWebhookTextEventParser:
         # 将解析出的文本包装进支持多模态的 UniversalEventContent
         contents = (UniversalEventContent(type="text", data=text),)
         
+        # 延迟局部导入以打破循环依赖，并在提取解析完成前触发去重网关拦截
         from src.channel_gateway.session_context import session_context_controller
         message_id = _require_str(message, "message_id")
 
-        # 消息去重
+        # GW-P0-06 消息去重：若为同一消息重试，则直接抛出指定错误让上层静默消化
         if session_context_controller.is_duplicate(message_id):
             raise ValueError("duplicate_message")
 
@@ -67,7 +72,10 @@ class FeishuWebhookTextEventParser:
 
 
 class FeishuLongConnectionTextEventParser:
-    """飞书 WebSocket 长连接模式的事件解析策略。"""
+    """
+    飞书 WebSocket 长连接模式的事件解析策略。
+    负责将长连接下发的不带有外层 wrapper 的 JSON payload 直接解析并构建出标准的 UniversalEvent。
+    """
     def parse(self, payload: Mapping[str, Any]) -> UniversalEvent:
         # 长连接模式下，事件没有外层的 schema 包装，直接暴露 header 和 event
         header = _require_mapping(payload, "header")
@@ -96,10 +104,11 @@ class FeishuLongConnectionTextEventParser:
         
         contents = (UniversalEventContent(type="text", data=text),)
 
+        # 局部依赖引入：获取去重器单例进行防重注入
         from src.channel_gateway.session_context import session_context_controller
         message_id = _require_str(message, "message_id")
 
-        # 消息去重
+        # 同样执行 GW-P0-06 重复校验
         if session_context_controller.is_duplicate(message_id):
             raise ValueError("duplicate_message")
 

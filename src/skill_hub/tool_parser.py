@@ -5,12 +5,16 @@ from typing import Any, Callable
 def parse_doxygen_to_json_schema(func: Callable) -> dict[str, Any]:
     """
     SH-P0-02: 工具规范解析
-    解析 Python 函数的 Doxygen 风格注释，将其转换为符合 LLM 规范的 Tool Spec (JSON Schema)。
+    这个函数就像是个“跨国翻译官”。
+    大模型（LLM）是不认识 Python 的，它只看得懂官方约定的 JSON Schema 格式。
+    这个函数负责强行把咱们中国开发者写的 `@param` 中文注释，加上 Python 的内置种类（像 int / dict），
+    一起杂交提纯，最终打包吐出一个闪亮的字典（LLM Tool Spec）。
     """
     docstring = inspect.getdoc(func) or ""
 
     # 提取函数描述
-    # 假设描述是 @param 之前的所有文本
+    # 暴力法：看到 @param 或者 @return 就当做前奏结束，前面的都是总起描述！
+    # （这里存在遇到自然句柄中含有此关键词导致被腰斩的漏洞）
     description_match = re.split(r'@param|@return', docstring)
     description = description_match[0].strip() if description_match else ""
 
@@ -28,7 +32,7 @@ def parse_doxygen_to_json_schema(func: Callable) -> dict[str, Any]:
     for type_hint, name, param_desc in params:
         param_desc = param_desc.strip()
 
-        # 确定参数类型 (如果有显式类型提示则优先，否则退化为从 doxygen 提取，否则 string)
+        # 确定参数类型 (如果有实打实的 Python 类型提示就优先用它，否则看注释有没有写，最后走投无路统统当成 string)
         param_type = "string"
         if name in sig.parameters:
             annot = sig.parameters[name].annotation

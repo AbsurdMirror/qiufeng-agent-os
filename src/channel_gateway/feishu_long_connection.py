@@ -51,11 +51,14 @@ def run_feishu_long_connection(
         """
         payload = _to_mapping(data)
         try:
+            # 去解析所收到的原始字典数据
             event = parse_feishu_long_connection_event(payload)
         except ValueError as e:
             if str(e) == "duplicate_message":
                 # 优雅处理长连接中的去重消息
+                # 意思是：如果这是一封已经收过的信，咱们就不再往下跑，直接原地闭麦（return）
                 return
+            # 要是碰上其他的如格式崩坏等真命题错误，那就不盖了，立刻向上拉响警报（抛出）
             raise
         on_text_event(event)
 

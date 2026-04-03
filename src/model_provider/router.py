@@ -9,8 +9,9 @@ except ImportError:
 
 class ModelRouter(ModelProviderClient):
     """
-    模型路由 (Model Routing)
+    模型路由分发器 (Model Routing)
     实现 T4 阶段的 MP-P0-01 (名称匹配) 和 MP-P0-02 (自动裁剪)
+    它就像个智能电话分机：接到请求后，先拿着“剪刀”把超长对话剪短，再根据名字呼叫确切的大模型实例。
     """
     def __init__(self, clients: dict[str, ModelProviderClient]):
         """
@@ -28,7 +29,8 @@ class ModelRouter(ModelProviderClient):
     def _trim_messages(self, messages: tuple[ModelMessage, ...], model_name: str) -> tuple[ModelMessage, ...]:
         """
         MP-P0-02: 自动裁剪 (Auto Trimming)
-        基于目标模型的上下文窗口对输入消息进行裁剪，保留最新的对话内容。
+        基于目标模型的上下文窗口对输入消息进行裁剪，由于上下文可能突破界限，
+        这里采用强制保留 System 提示词，并从最新的（尾部）对话开始倒推凑配额。
         """
         max_tokens = self._context_windows.get(model_name, self._context_windows["default"])
 
@@ -40,7 +42,7 @@ class ModelRouter(ModelProviderClient):
                     encoding = tiktoken.get_encoding("cl100k_base")
                 return len(encoding.encode(text))
             else:
-                # Fallback token estimation if tiktoken is not installed (approx 4 chars per token)
+                # 粗暴但稳妥的降级：如果没有 tiktoken 包，干脆按英文字符长度除以 4 凑合算一下
                 return len(text) // 4
 
         total_tokens = 0

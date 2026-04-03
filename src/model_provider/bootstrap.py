@@ -39,12 +39,13 @@ def _invoke_sync(client: ModelProviderClient, request: ModelRequest) -> ModelRes
 
 class RoutedModelProviderClient:
     """
-    模型请求的路由分发器。
-
-    设计意图：
-    将所有的模型客户端（目前有内存模拟和 MiniMax）组合在一起，
-    像一个“接线员”一样，根据请求中的元数据特征，将请求智能路由给对应的真实客户端去处理。
-    这使得上层（编排层）只需要面对这一个路由客户端，而不需要知道底层到底有多少种模型供应商。
+    [DEAD CODE WARNING - 遗留的已作废死亡代码]
+    
+    老的模型请求路由分发器。
+    
+    该类使用 if-else 与旧版 `is_minimax_request` 探测函数生造对接的方法，
+    已经在本次 T4 阶段大重构时，全面由字典驱动的更高阶形态： `ModelRouter` 将其顶替与淘汰！
+    请开发人员勿再调用此类，并在合适时机将这块“死亡尸斑代码”物理铲除。
     """
     def __init__(
         self,

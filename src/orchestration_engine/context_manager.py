@@ -13,7 +13,9 @@ class StateContextManager:
     async def initialize_context(self, trace_id: str, logic_id: str, session_id: str) -> RuntimeContext:
         """
         OE-P0-04: 记忆读取 (Memory Loading)
-        在 Agent 启动时，同步从“存储与记忆层”拉取历史状态及记忆。
+        在 Agent 启动处理某条消息前，先去数据库（存储层）走一遭。
+        就好比医生给病人看病前，提前把病人的“基础病历（历史状态）”和“近期对话（热记忆）”统统拉出来，
+        封装进一个大夹子（RuntimeContext）里交给工作流去把玩。
         """
         # 加载持久化状态
         persisted_state = await self._storage_memory.load_runtime_state(logic_id, session_id)
@@ -50,7 +52,9 @@ class StateContextManager:
     async def persist_context(self, ctx: RuntimeContext) -> None:
         """
         OE-P0-06: 状态持久化 (State Persistence)
-        实现执行上下文向存储与记忆层的异步持久化。
+        一轮会话处理完毕，准备下班时调用。
+        就如同文员下班前，把今天桌面上所有被修改过的数据夹（RuntimeContext Snapshot）
+        原封不动地交还给档案室（存储与记忆层）进行落盘保存。
         """
         snapshot = ctx.snapshot()
         state_to_persist = snapshot["state"]

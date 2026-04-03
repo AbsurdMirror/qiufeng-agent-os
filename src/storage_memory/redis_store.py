@@ -22,7 +22,9 @@ from src.storage_memory.contracts import (
 class RedisHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
     """
     基于 Redis 的热记忆与状态存储实现
-    T4: SM-P0-02 (热记忆策略), SM-P0-03 (持久化存储), SM-P0-04 (上下文注入)
+    大白话解释：以前这个系统重启就必定失忆。
+    现在这个类是一个专业的“外脑”，它通过 Redis 强行把咱们跟机器人的近场对话和参数状态钉死在内存数据库里。
+    哪怕你重启了 Agent-OS 服务进程，用户连回来照样能接着上一句聊，完美实现了 T4 阶段的状态无损挂载。
     """
     def __init__(self, redis_client: Any) -> None:
         self._redis = redis_client
