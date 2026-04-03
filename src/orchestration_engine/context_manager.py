@@ -1,4 +1,5 @@
 from typing import Any, Mapping
+import copy
 from src.orchestration_engine.runtime_context import RuntimeContext
 from src.storage_memory.exports import StorageMemoryExports
 
@@ -57,11 +58,16 @@ class StateContextManager:
         原封不动地交还给档案室（存储与记忆层）进行落盘保存。
         """
         snapshot = ctx.snapshot()
-        state_to_persist = snapshot["state"]
+        state_to_persist = copy.deepcopy(snapshot["state"])
+
+        import logging
 
         # 调用存储层的持久化接口
-        await self._storage_memory.persist_runtime_state(
-            ctx.logic_id,
-            ctx.session_id,
-            state_to_persist
-        )
+        try:
+            await self._storage_memory.persist_runtime_state(
+                ctx.logic_id,
+                ctx.session_id,
+                state_to_persist
+            )
+        except Exception as e:
+            logging.error(f"Failed to persist runtime state for session {ctx.session_id}: {e}")

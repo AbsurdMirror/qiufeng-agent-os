@@ -29,6 +29,10 @@ class RedisHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
     def __init__(self, redis_client: Any) -> None:
         self._redis = redis_client
 
+    async def rpush(self, key: str, value: Mapping[str, Any]) -> int:
+        payload = json.dumps(dict(value))
+        return await self._redis.rpush(key, payload)
+
     async def lpush(self, key: str, value: Mapping[str, Any]) -> int:
         payload = json.dumps(dict(value))
         return await self._redis.lpush(key, payload)
@@ -49,8 +53,8 @@ class RedisHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
     ) -> tuple[HotMemoryItem, ...]:
         """SM-P0-02: 热记忆策略 - LIFO 最近 N 轮对话缓存"""
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
-        await self.lpush(hot_key, _dump_hot_memory_item(item))
-        await self.ltrim(hot_key, 0, max_rounds - 1)
+        await self.rpush(hot_key, _dump_hot_memory_item(item))
+        await self.ltrim(hot_key, -max_rounds, -1)
         return await self.read_hot_memory(logic_id=logic_id, session_id=session_id, limit=max_rounds)
 
     async def read_hot_memory(
@@ -61,7 +65,7 @@ class RedisHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
     ) -> tuple[HotMemoryItem, ...]:
         """SM-P0-04: 上下文注入 (通过被动提供读取接口供编排引擎拉取)"""
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
-        raw_items = await self.lrange(hot_key, 0, limit - 1)
+        raw_items = await self.lrange(hot_key, -limit, -1)
         return tuple(_load_hot_memory_item(raw_item) for raw_item in raw_items)
 
     async def persist_runtime_state(
@@ -83,8 +87,8 @@ class RedisHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
             return json.loads(raw_state)
         return {}
 
-async def create_store() -> HotMemoryCarrier | StorageAccessProtocol:
-    """探测环境，尝试连接 Redis，否则降级到内存存储"""
+def create_store() -> HotMemoryCarrier | StorageAccessProtocol:
+    """探测环境，使用同步方式尝试连接 Redis，否则降级到内存存储"""
     if not HAS_REDIS:
         print("Redis module not installed. Falling back to InMemoryHotMemoryStore.")
         from src.storage_memory.contracts import InMemoryHotMemoryStore
@@ -92,11 +96,18 @@ async def create_store() -> HotMemoryCarrier | StorageAccessProtocol:
 
     redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379")
     try:
+        import redis as sync_redis
+        # 使用同步探测
+        sync_client = sync_redis.Redis.from_url(redis_url, decode_responses=True)
+        sync_client.ping()
+        sync_client.close()
+
+        # 探测成功，挂载异步版
         client = redis.from_url(redis_url, decode_responses=True)
-        await client.ping()
         print("Connected to Redis. Using RedisHotMemoryStore.")
         return RedisHotMemoryStore(client)
     except Exception as e:
-        print(f"Redis not available ({e}). Falling back to InMemoryHotMemoryStore.")
+        import logging
+        logging.warning(f"Redis not available ({e}). Falling back to InMemoryHotMemoryStore.")
         from src.storage_memory.contracts import InMemoryHotMemoryStore
         return InMemoryHotMemoryStore()

@@ -21,20 +21,7 @@ def initialize() -> StorageMemoryExports:
     从而将具体的 Store 实例封装在本层内部，不向上层泄漏。
     """
 
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # In a running loop, we can't cleanly run_until_complete inline
-            # without nested loops, so we fallback to the memory store for now
-            # or we could make initialize() async. Since initialize() is sync,
-            # we just instantiate the memory store or fire and forget a task.
-            # We'll use InMemoryHotMemoryStore directly if we can't block here.
-            from src.storage_memory.contracts import InMemoryHotMemoryStore
-            store = InMemoryHotMemoryStore()
-        else:
-            store = loop.run_until_complete(create_store())
-    except RuntimeError:
-        store = asyncio.run(create_store())
+    store = create_store()
 
     return StorageMemoryExports(
         layer="storage_memory",
