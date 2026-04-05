@@ -15,6 +15,7 @@ from src.orchestration_engine.contracts import (
     CapabilityResult,
 )
 from src.skill_hub.contracts import PyTool
+from src.skill_hub.security import with_security_policy, default_security_policy
 
 
 CapabilityHandler = Callable[[CapabilityRequest], Awaitable[CapabilityResult]]
@@ -40,7 +41,9 @@ class RegisteredCapabilityHub:
     ) -> CapabilityDescription:
         """注册一个能力及其对应的异步处理函数"""
         self._capabilities[capability.capability_id] = capability
-        self._handlers[capability.capability_id] = handler
+        # 使用安全原语包装 handler，防范越权或不安全的工具调用
+        safe_handler = with_security_policy(default_security_policy)(handler)
+        self._handlers[capability.capability_id] = safe_handler
         return capability
 
     def list_capabilities(self) -> tuple[CapabilityDescription, ...]:
@@ -69,8 +72,17 @@ class RegisteredCapabilityHub:
             )
         handler = self._handlers[request.capability_id]
         
-        # TODO(风险): 需补充全局异常捕获兜底
-        result = await handler(request)
+        try:
+            result = await handler(request)
+        except Exception as e:
+            return CapabilityResult(
+                capability_id=request.capability_id,
+                success=False,
+                output={},
+                error_code="capability_execution_failed",
+                error_message=str(e),
+                metadata={"domain": capability.domain}
+            )
         
         metadata = dict(result.metadata)
         metadata.setdefault("domain", capability.domain)

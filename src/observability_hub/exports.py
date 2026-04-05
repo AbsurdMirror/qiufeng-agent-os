@@ -4,6 +4,8 @@ from typing import Any
 
 from src.observability_hub.recording import LogLevel, NormalizedRecord
 from src.observability_hub.request_coloring import RequestColoringContext, RequestColoringState
+from src.observability_hub.jsonl_storage import JSONLStorageEngine
+from src.observability_hub.cli_logger import CLILogTailer
 
 
 @dataclass(frozen=True)
@@ -18,3 +20,5 @@ class ObservabilityHubExports:
     trace_id_generator: Callable[[], str]
     record: Callable[[str, Mapping[str, Any] | str | Any, LogLevel | str], NormalizedRecord]
     is_request_colored: Callable[[RequestColoringContext, RequestColoringState | None], bool]
+    jsonl_storage: JSONLStorageEngine | None = None
+    cli_logger: CLILogTailer | None = None
