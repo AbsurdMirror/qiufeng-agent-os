@@ -43,17 +43,10 @@ def receive_feishu_webhook(payload: Mapping[str, Any]) -> FeishuWebhookResult:
     from src.channel_gateway.events import DuplicateMessageError
     import dataclasses
 
-    try:
-        event = parser.parse(payload)
-    except Exception:
-        raise
+    event = parser.parse(payload)
 
     # 提取完成后触发去重网关拦截
-    try:
-        if session_context_controller.is_duplicate(event.message_id):
-            raise DuplicateMessageError("duplicate_message")
-    except DuplicateMessageError:
-        # 优雅处理去重消息，避免飞书开放平台不断重试
+    if session_context_controller.is_duplicate(event.message_id):
         return FeishuWebhookResult(is_challenge=False, challenge=None, event=None)
 
     # 填充 logical_uid
