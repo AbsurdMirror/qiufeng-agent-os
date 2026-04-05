@@ -29,6 +29,10 @@ class HotMemoryCarrier(Protocol):
     底层热记忆存储介质协议 (Duck Typing Interface)。
     抽象了类似于 Redis 的核心列表操作语义，允许后续无缝替换为真实的 Redis 客户端。
     """
+    async def rpush(self, key: str, value: Mapping[str, Any]) -> int:
+        """向列表右侧（尾部）推入一条数据，返回推入后列表的长度"""
+        raise NotImplementedError
+
     async def lpush(self, key: str, value: Mapping[str, Any]) -> int:
         """向列表左侧（头部）推入一条数据，返回推入后列表的长度"""
         raise NotImplementedError
@@ -89,6 +93,11 @@ class InMemoryHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         self._hot_memory: dict[str, list[dict[str, Any]]] = {}
         self._runtime_states: dict[str, dict[str, Any]] = {}
 
+    async def rpush(self, key: str, value: Mapping[str, Any]) -> int:
+        queue = self._hot_memory.setdefault(key, [])
+        queue.append(dict(value))
+        return len(queue)
+
     async def lpush(self, key: str, value: Mapping[str, Any]) -> int:
         queue = self._hot_memory.setdefault(key, [])
         queue.insert(0, dict(value))
@@ -119,8 +128,8 @@ class InMemoryHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         max_rounds: int = 10,
     ) -> tuple[HotMemoryItem, ...]:
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
-        await self.lpush(hot_key, _dump_hot_memory_item(item))
-        await self.ltrim(hot_key, 0, max_rounds - 1)
+        await self.rpush(hot_key, _dump_hot_memory_item(item))
+        await self.ltrim(hot_key, -max_rounds, -1)
         return await self.read_hot_memory(logic_id=logic_id, session_id=session_id, limit=max_rounds)
 
     async def read_hot_memory(
@@ -130,7 +139,7 @@ class InMemoryHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         limit: int = 10,
     ) -> tuple[HotMemoryItem, ...]:
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
-        raw_items = await self.lrange(hot_key, 0, limit - 1)
+        raw_items = await self.lrange(hot_key, -limit, -1)
         return tuple(_load_hot_memory_item(raw_item) for raw_item in raw_items)
 
     async def persist_runtime_state(

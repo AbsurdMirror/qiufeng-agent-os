@@ -55,15 +55,17 @@ def build_application(config: AppConfig) -> Application:
     channel_gateway = initialize_channel_gateway(host=config.host, port=config.port)
     model_provider = initialize_model_provider()
     skill_hub = initialize_skill_hub(model_client=model_provider.client)
+    storage_memory = initialize_storage_memory()
     orchestration_engine = initialize_orchestration_engine(
         capability_hub=skill_hub.capability_hub,
+        storage_memory=storage_memory,
     )
     modules = AppModules(
         channel_gateway=channel_gateway,
         orchestration_engine=orchestration_engine,
         model_provider=model_provider,
         skill_hub=skill_hub,
-        storage_memory=initialize_storage_memory(),
+        storage_memory=storage_memory,
         observability_hub=initialize_observability_hub(),
     )
     return Application(config=config, modules=modules)

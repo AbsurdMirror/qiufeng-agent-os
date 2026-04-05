@@ -38,5 +38,18 @@ def receive_feishu_webhook(payload: Mapping[str, Any]) -> FeishuWebhookResult:
 
     # 通过策略工厂获取飞书 Webhook 的专用解析器，并将复杂解析委托给它
     parser = TextEventParserFactory.get(channel="feishu", transport="webhook")
+
+    from src.channel_gateway.session_context import session_context_controller
+    from src.channel_gateway.events import DuplicateMessageError
+    import dataclasses
+
     event = parser.parse(payload)
+
+    # 提取完成后触发去重网关拦截
+    if session_context_controller.is_duplicate(event.message_id):
+        return FeishuWebhookResult(is_challenge=False, challenge=None, event=None)
+
+    # 填充 logical_uid
+    event = dataclasses.replace(event, logical_uid=session_context_controller.get_logical_uuid(event.user_id))
+
     return FeishuWebhookResult(is_challenge=False, challenge=None, event=event)

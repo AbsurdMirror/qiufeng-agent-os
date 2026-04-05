@@ -50,7 +50,19 @@ def run_feishu_long_connection(
         然后使用解析工厂统一解析，并触发上层回调。
         """
         payload = _to_mapping(data)
+
+        from src.channel_gateway.session_context import session_context_controller
+        from src.channel_gateway.events import DuplicateMessageError
+        import dataclasses
+
+        # 去解析所收到的原始字典数据
         event = parse_feishu_long_connection_event(payload)
+
+        if session_context_controller.is_duplicate(event.message_id):
+            return
+
+        event = dataclasses.replace(event, logical_uid=session_context_controller.get_logical_uuid(event.user_id))
+
         on_text_event(event)
 
     # 构建飞书事件调度器，注册 V1 版本的消息接收事件

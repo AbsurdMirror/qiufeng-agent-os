@@ -14,7 +14,11 @@ class TextEventParser(Protocol):
 
 
 class FeishuWebhookTextEventParser:
-    """飞书 Webhook 模式的事件解析策略。"""
+    """
+    飞书 Webhook 模式的事件解析策略。
+    负责将 Webhook POST 推送过来的 JSON payload 层层解包并构建出标准的 UniversalEvent。
+    此解析器包含副作用：会在执行解析期间依赖 session_context_controller 完成消息去重校验。
+    """
     def parse(self, payload: Mapping[str, Any]) -> UniversalEvent:
         # Webhook 模式下，事件被包裹在 header 和 event 中
         header = _require_mapping(payload, "header")
@@ -45,6 +49,8 @@ class FeishuWebhookTextEventParser:
         # 将解析出的文本包装进支持多模态的 UniversalEventContent
         contents = (UniversalEventContent(type="text", data=text),)
         
+        message_id = _require_str(message, "message_id")
+
         return UniversalEvent(
             event_id=_require_str(header, "event_id"),
             timestamp=timestamp,
@@ -52,14 +58,18 @@ class FeishuWebhookTextEventParser:
             user_id=user_id,
             group_id=chat_id,
             room_id=chat_id,
-            message_id=_require_str(message, "message_id"),
+            message_id=message_id,
             contents=contents,
             raw_event=dict(payload),
+            logical_uid=None  # 将由上层网关填充
         )
 
 
 class FeishuLongConnectionTextEventParser:
-    """飞书 WebSocket 长连接模式的事件解析策略。"""
+    """
+    飞书 WebSocket 长连接模式的事件解析策略。
+    负责将长连接下发的不带有外层 wrapper 的 JSON payload 直接解析并构建出标准的 UniversalEvent。
+    """
     def parse(self, payload: Mapping[str, Any]) -> UniversalEvent:
         # 长连接模式下，事件没有外层的 schema 包装，直接暴露 header 和 event
         header = _require_mapping(payload, "header")
@@ -88,6 +98,8 @@ class FeishuLongConnectionTextEventParser:
         
         contents = (UniversalEventContent(type="text", data=text),)
 
+        message_id = _require_str(message, "message_id")
+
         return UniversalEvent(
             event_id=_require_str(header, "event_id"),
             timestamp=timestamp,
@@ -95,9 +107,10 @@ class FeishuLongConnectionTextEventParser:
             user_id=user_id,
             group_id=chat_id,
             room_id=chat_id,
-            message_id=_require_str(message, "message_id"),
+            message_id=message_id,
             contents=contents,
             raw_event=dict(payload),
+            logical_uid=None  # 将由上层网关填充
         )
 
 

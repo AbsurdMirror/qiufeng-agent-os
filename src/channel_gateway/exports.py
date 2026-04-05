@@ -7,7 +7,7 @@ from src.channel_gateway.events import UniversalEvent
 from src.channel_gateway.feishu_long_connection import FeishuLongConnectionRuntime
 from src.channel_gateway.feishu_webhook import FeishuWebhookResult
 from src.channel_gateway.nonebot_runtime import NoneBotRuntime
-
+from src.channel_gateway.session_context import SessionContextController
 
 @dataclass(frozen=True)
 class ChannelGatewayExports:
@@ -21,3 +21,4 @@ class ChannelGatewayExports:
         None,
     ]
     feishu_webhook_entry: Callable[[dict[str, Any]], FeishuWebhookResult]
+    session_context: SessionContextController

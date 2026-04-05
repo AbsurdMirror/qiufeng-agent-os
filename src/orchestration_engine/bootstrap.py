@@ -8,10 +8,12 @@ from src.orchestration_engine.contracts import (
 )
 from src.orchestration_engine.exports import OrchestrationEngineExports
 from src.orchestration_engine.langgraph_runtime import LangGraphRuntime
-
+from src.storage_memory.exports import StorageMemoryExports
+from src.orchestration_engine.context_manager import StateContextManager
 
 def initialize(
     capability_hub: CapabilityHub | None = None,
+    storage_memory: StorageMemoryExports | None = None,
 ) -> OrchestrationEngineExports:
     """
     编排引擎层 (Orchestration Engine) 的初始化引导函数。
@@ -23,6 +25,8 @@ def initialize(
     registry = InMemoryAgentRegistry()
     langgraph_runtime = LangGraphRuntime()
     resolved_capability_hub = capability_hub or NullCapabilityHub()
+    context_manager = StateContextManager(storage_memory) if storage_memory else None
+
     return OrchestrationEngineExports(
         layer="orchestration_engine",
         status="initialized",
@@ -45,6 +49,7 @@ def initialize(
             capability_hub=resolved_capability_hub,
             request=request,
         ),
+        context_manager=context_manager,
     )
 
 

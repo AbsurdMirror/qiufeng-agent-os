@@ -15,6 +15,7 @@ from .browser_use import BrowserUsePyTool, probe_browser_use_runtime
 from .capability_hub import ModelCapabilityRouter, RegisteredCapabilityHub, register_pytools
 from .contracts import BrowserUseRuntimeState, PyTool, PyToolDefinition
 from .exports import SkillHubExports
+from .tool_parser import parse_doxygen_to_json_schema
 
 __all__ = [
     "BrowserUsePyTool",

@@ -30,6 +30,7 @@ from .contracts import (
 )
 from .exports import OrchestrationEngineExports
 from .runtime_context import RuntimeContext
+from .context_manager import StateContextManager
 from .langgraph_runtime import LangGraphRuntime, LangGraphExecutable
 
 __all__ = [
