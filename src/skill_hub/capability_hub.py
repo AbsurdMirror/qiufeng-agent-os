@@ -17,6 +17,17 @@ from src.orchestration_engine.contracts import (
 from src.skill_hub.contracts import PyTool
 from src.skill_hub.security import with_security_policy, default_security_policy
 
+# ============================================================
+# 能力中心 —— 注册中心与调度总线 (Capability Hub)
+#
+# 本模块是整个 Agent-OS 的"总机"。所有供大模型使用的工具、甚至模型自身发起的
+# 对话请求，都被抽象为统一的「能力 (Capability)」，并注册到 RegisteredCapabilityHub。
+#
+# T5 架构升级 (SH-P0-01)：
+#   在 `register_capability` 时，统一注入了安全管控拦截器 `with_security_policy`。
+#   这保证了所有的调用（无论是内置工具还是外部扩展）都会强制经过安全原语的审计。
+# ============================================================
+
 
 CapabilityHandler = Callable[[CapabilityRequest], Awaitable[CapabilityResult]]
 
@@ -28,7 +39,7 @@ class RegisteredCapabilityHub:
     设计意图：
     实现 `CapabilityHub` 协议，提供能力的注册、发现和调用。
     所有的工具（PyTool）和模型路由都会注册到这里，编排层只需要通过唯一的 `invoke` 方法
-    和能力 ID，就能调用底层的任何功能。
+    和能力 ID，就能调用底层的任何功能。这也为拦截器（审计、日志、安全验证）提供了单一挂载点。
     """
     def __init__(self) -> None:
         self._capabilities: dict[str, CapabilityDescription] = {}
@@ -39,7 +50,12 @@ class RegisteredCapabilityHub:
         capability: CapabilityDescription,
         handler: CapabilityHandler,
     ) -> CapabilityDescription:
-        """注册一个能力及其对应的异步处理函数"""
+        """
+        注册一个能力及其对应的异步处理函数。
+        
+        T5 新增：所有注册的处理函数都会自动被 default_security_policy 包装，
+        拦截非法的或标记为 unsafe 的请求。
+        """
         self._capabilities[capability.capability_id] = capability
         # 使用安全原语包装 handler，防范越权或不安全的工具调用
         safe_handler = with_security_policy(default_security_policy)(handler)
@@ -55,11 +71,7 @@ class RegisteredCapabilityHub:
     async def invoke(self, request: CapabilityRequest) -> CapabilityResult:
         """
         统一的调用入口。
-        
-        漏洞风险 (P0级):
-        此处缺少 `try...except` 包裹。如果 `handler(request)` 内部抛出未捕获的异常
-        （如 JSON 解析失败、网络超时断开），将直接导致整个调用链崩溃，
-        破坏编排层的并发稳定性。
+        所有编排层的能力调用都将通过此方法分发。
         """
         capability = self.get_capability(request.capability_id)
         if capability is None:
@@ -72,6 +84,8 @@ class RegisteredCapabilityHub:
             )
         handler = self._handlers[request.capability_id]
         
+        # 异常隔离兜底：如果 handler 内部由于（如模型超时、JSON 解析失败等）抛出未捕获异常，
+        # 在此处被捕获并转化为 CapabilityResult(success=False)，防止整个编排主协程崩溃。
         try:
             result = await handler(request)
         except Exception as e:
