@@ -2,6 +2,7 @@ from typing import Any, Callable, TypeVar, Type
 from pydantic import BaseModel, ValidationError
 import logging
 import json
+import re
 
 # ============================================================
 # 模型抽象层 —— Schema 强校验与自愈引擎 (Schema Validator & Auto-Healer)
@@ -77,7 +78,7 @@ def validate_and_heal(
             接收两个参数：(当前错误输入, 错误信息字符串)，返回修复后的新字符串。
             通常的实现是：把错误信息连同原始输入重新发给 LLM，让它重新生成。
             若为 None，则一旦校验失败立即抛出异常，不进行任何重试。
-        max_retries (int): 最大尝试总次数（含第一次）。默认为 3。
+        max_retries (int): 最大额外重试次数。默认为 3（即总共尝试 4 次）。
             注意：每次调用 healing_func 会消耗一次 LLM Token，成本需控制。
 
     Returns:
@@ -95,18 +96,14 @@ def validate_and_heal(
     # 每次自愈后，healing_func 的返回值会替换它，进入下一轮尝试
     current_input = json_string
     attempts = 0  # 已尝试次数计数器
+    max_total_attempts = max_retries + 1  # 额外重试次数 + 1 次初始尝试
 
-    while attempts < max_retries:
+    while attempts < max_total_attempts:
         try:
             # --- 步骤 1: 预处理 —— 剥离 LLM 常见的 markdown 代码块包裹 ---
             # 问题背景：部分 LLM 会把 JSON 包在 ```json ... ``` 里，导致 json.loads 失败
-            # 警告：strip("`") 按字符剥离而非按前缀剥离，存在边界情况 bug（见审阅报告）
-            if current_input.startswith("```json"):
-                # 先去掉首尾所有反引号，再去掉开头的 "json" 标记，最后去除空白
-                current_input = current_input.strip("`").removeprefix("json").strip()
-            elif current_input.startswith("```"):
-                # 处理没有语言标记的普通代码块（``` ... ```）
-                current_input = current_input.strip("`").strip()
+            current_input = re.sub(r'^```(?:json)?\s*\n?', '', current_input, flags=re.IGNORECASE)
+            current_input = re.sub(r'\n?```\s*$', '', current_input).strip()
 
             # --- 步骤 2: JSON 解析 —— 将字符串转为 Python dict ---
             parsed_dict = json.loads(current_input)
@@ -121,14 +118,19 @@ def validate_and_heal(
             logger.warning(f"Schema validation failed on attempt {attempts}: {e}")
 
             # 已达到最大尝试次数，放弃并上报
-            if attempts >= max_retries:
-                raise AutoHealingMaxRetriesExceeded(f"Failed to validate schema after {max_retries} attempts.") from e
+            if attempts >= max_total_attempts:
+                raise AutoHealingMaxRetriesExceeded(f"Failed to validate schema after {max_retries} retries.") from e
 
             if healing_func:
                 # 有自愈函数：把当前错误输入和错误信息交给自愈函数，获取修复后的新字符串
                 # 典型实现：healing_func 会把错误信息拼进提示词，重新请求 LLM 生成
                 logger.info("Attempting auto-healing via healing_func...")
-                current_input = healing_func(current_input, str(e))
+                try:
+                    current_input = healing_func(current_input, str(e))
+                except Exception as heal_err:
+                    raise AutoHealingMaxRetriesExceeded(
+                        f"Healing function raised an exception after {attempts} attempts."
+                    ) from heal_err
             else:
                 # 无自愈函数：无法重试，直接抛出告知调用方，由上层决定如何降级处理
                 # 如果没有提供 healing_func，简单的自愈只能是尝试截取有效部分，这里暂时抛出异常或仅依赖 Pydantic 宽容度

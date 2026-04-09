@@ -1,111 +1,359 @@
-from collections.abc import Callable, Awaitable
-from typing import Any
 import functools
+import inspect
+import re
+import subprocess
+import uuid
+from collections.abc import Callable, Awaitable
+from enum import Enum
+from pathlib import Path
+from typing import Any
+
+import bashlex
+
 from src.orchestration_engine.contracts import CapabilityRequest, CapabilityResult
 
 # ============================================================
 # 能力中心 —— 安全原语 (Security Primitive)
 #
 # 本模块实现了规格 SH-P0-01（PyTools 安全原语实现）。
-#
-# 设计意图：
-#   在大模型调用本地工具链（尤其是文件读写、沙盒执行等）时，需要提供安全管控能力。
-#   本模块提供：
-#   1. ToolSecurityPrimitive: 安全策略引擎（当前为防御示例架构）
-#   2. with_security_policy: 用于拦截非法调用的函数装饰器
-#
-# 使用方式：
-#   在注册工具时，使用装饰器包装实际处理函数：
-#   @with_security_policy(default_security_policy)
-#   async def my_tool_handler(req: CapabilityRequest) -> CapabilityResult:
-#       ...
+# 支持用户输入的黑白名单，省缺则全为灰名单（需要用户凭证授权）。
+# 命令行执行引入了 bashlex 进行复合命令提取。
 # ============================================================
-
 
 class SecurityError(Exception):
     """
-    安全策略拦截异常。
-    当请求未能通过 ToolSecurityPrimitive 的校验时抛出。
+    黑名单拦截抛出的异常。
+    当请求未能通过校验或命中黑名单策略时抛出。
     """
     pass
 
+class SecurityApprovalRequiredError(Exception):
+    """
+    灰名单拦截抛出的异常。
+    当操作需要用户授权时抛出，包含生成的 ticket_id。
+    """
+    def __init__(self, ticket_id: str, message: str):
+        super().__init__(message)
+        self.ticket_id = ticket_id
+
+class TicketStore:
+    """简单的内存 Ticket 存储，用于暂存生成的授权凭证"""
+    def __init__(self):
+        self._tickets: set[str] = set()
+
+    def generate(self) -> str:
+        ticket_id = str(uuid.uuid4())
+        self._tickets.add(ticket_id)
+        return ticket_id
+
+    def is_valid(self, ticket_id: str) -> bool:
+        """检查凭证是否有效（不直接核销，以便单次请求多次命中灰名单）"""
+        return ticket_id in self._tickets
+
+    def consume(self, ticket_id: str) -> None:
+        """核销凭证"""
+        self._tickets.discard(ticket_id)
+
+# 全局 Ticket Store（P0 阶段使用内存存储）
+_global_ticket_store = TicketStore()
+
+class PolicyDecision(Enum):
+    ALLOW = "allow"
+    DENY = "deny"
+    REQUIRE_TICKET = "require_ticket"
+
+def _normalize_policy_result(result: Any) -> tuple[PolicyDecision, str | None]:
+    if isinstance(result, tuple) and len(result) == 2:
+        decision, message = result
+        return decision, message
+    return result, None
+
+def create_secure_action(
+    action_func: Callable[..., Any],
+    policy_func: Callable[..., Any],
+    *,
+    ticket_store: TicketStore = _global_ticket_store,
+) -> Callable[..., Any]:
+    action_sig = inspect.signature(action_func)
+
+    action_is_async = inspect.iscoroutinefunction(action_func)
+    policy_is_async = inspect.iscoroutinefunction(policy_func)
+
+    if action_is_async or policy_is_async:
+        async def _call_maybe_async(func: Callable[..., Any], **kwargs: Any) -> Any:
+            value = func(**kwargs)
+            if inspect.isawaitable(value):
+                return await value
+            return value
+
+        @functools.wraps(action_func)
+        async def wrapper(*args: Any, approved_ticket_id: str | None = None, **kwargs: Any) -> Any:
+            bound = action_sig.bind(*args, **kwargs)
+            bound.apply_defaults()
+            normalized_kwargs = dict(bound.arguments)
+
+            decision_raw = await _call_maybe_async(policy_func, **normalized_kwargs)
+            decision, message = _normalize_policy_result(decision_raw)
+
+            if decision == PolicyDecision.ALLOW:
+                return await _call_maybe_async(action_func, **normalized_kwargs)
+
+            if decision == PolicyDecision.DENY:
+                raise SecurityError(message or "Action denied by policy.")
+
+            if decision == PolicyDecision.REQUIRE_TICKET:
+                if approved_ticket_id and ticket_store.is_valid(approved_ticket_id):
+                    return await _call_maybe_async(action_func, **normalized_kwargs)
+                ticket_id = ticket_store.generate()
+                raise SecurityApprovalRequiredError(ticket_id, message or "Action requires user approval.")
+
+            raise SecurityError("Invalid policy decision.")
+    else:
+        @functools.wraps(action_func)
+        def wrapper(*args: Any, approved_ticket_id: str | None = None, **kwargs: Any) -> Any:
+            bound = action_sig.bind(*args, **kwargs)
+            bound.apply_defaults()
+            normalized_kwargs = dict(bound.arguments)
+
+            decision_raw = policy_func(**normalized_kwargs)
+            if inspect.isawaitable(decision_raw):
+                raise SecurityError("Policy function returned awaitable, but action wrapper is synchronous.")
+            decision, message = _normalize_policy_result(decision_raw)
+
+            if decision == PolicyDecision.ALLOW:
+                value = action_func(**normalized_kwargs)
+                if inspect.isawaitable(value):
+                    raise SecurityError("Action function returned awaitable, but action wrapper is synchronous.")
+                return value
+
+            if decision == PolicyDecision.DENY:
+                raise SecurityError(message or "Action denied by policy.")
+
+            if decision == PolicyDecision.REQUIRE_TICKET:
+                if approved_ticket_id and ticket_store.is_valid(approved_ticket_id):
+                    value = action_func(**normalized_kwargs)
+                    if inspect.isawaitable(value):
+                        raise SecurityError("Action function returned awaitable, but action wrapper is synchronous.")
+                    return value
+                ticket_id = ticket_store.generate()
+                raise SecurityApprovalRequiredError(ticket_id, message or "Action requires user approval.")
+
+            raise SecurityError("Invalid policy decision.")
+
+    sig_params = list(action_sig.parameters.values()) + [
+        inspect.Parameter(
+            "approved_ticket_id",
+            kind=inspect.Parameter.KEYWORD_ONLY,
+            default=None,
+            annotation=str | None,
+        )
+    ]
+    setattr(wrapper, "__signature__", inspect.Signature(parameters=sig_params, return_annotation=action_sig.return_annotation))
+
+    return wrapper
+
+class SecureFileSystem:
+    """
+    基于受限环境的底层文件 SDK。
+    限制文件读写操作必须在指定的 working_dir 内，防止路径穿越攻击（Path Traversal）。
+    黑白名单由外部传入，不命中白名单则进入灰名单。
+    """
+    def __init__(
+        self, 
+        working_dir: str | Path,
+        blacklist_patterns: list[str | re.Pattern] | None = None,
+        whitelist_patterns: list[str | re.Pattern] | None = None
+    ):
+        self.working_dir = Path(working_dir).resolve()
+        
+        self.blacklist_patterns = []
+        if blacklist_patterns:
+            for p in blacklist_patterns:
+                self.blacklist_patterns.append(re.compile(p) if isinstance(p, str) else p)
+                
+        self.whitelist_patterns = []
+        if whitelist_patterns:
+            for p in whitelist_patterns:
+                self.whitelist_patterns.append(re.compile(p) if isinstance(p, str) else p)
+
+        self.read_text = create_secure_action(
+            self._read_text_action,
+            self._read_text_policy,
+        )
+        self.write_text = create_secure_action(
+            self._write_text_action,
+            self._write_text_policy,
+        )
+
+    def _resolve(self, path: str | Path) -> Path:
+        try:
+            return (self.working_dir / path).resolve()
+        except Exception as e:
+            raise SecurityError(f"Invalid path: {e}")
+
+    def _decide(self, target: Path, mode: str) -> tuple[PolicyDecision, str]:
+        target_str = str(target)
+        for pattern in self.blacklist_patterns:
+            if pattern.match(target_str):
+                return PolicyDecision.DENY, f"Access denied to sensitive path: {target_str}"
+        for pattern in self.whitelist_patterns:
+            if pattern.match(target_str):
+                return PolicyDecision.ALLOW, "Allowed by whitelist."
+        return PolicyDecision.REQUIRE_TICKET, f"Access to path '{target_str}' (mode: {mode}) requires user approval."
+
+    def _read_text_policy(self, path: str | Path) -> tuple[PolicyDecision, str]:
+        target = self._resolve(path)
+        return self._decide(target, "r")
+
+    def _read_text_action(self, path: str | Path) -> str:
+        target = self._resolve(path)
+        return target.read_text(encoding="utf-8")
+
+    def _write_text_policy(self, path: str | Path, content: str) -> tuple[PolicyDecision, str]:
+        target = self._resolve(path)
+        return self._decide(target, "w")
+
+    def _write_text_action(self, path: str | Path, content: str) -> None:
+        target = self._resolve(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+
+class SecureShell:
+    """
+    受限命令行执行 SDK。
+    使用 bashlex 提取复杂命令的 base commands。
+    黑白名单由外部传入，不命中白名单则进入灰名单。
+    """
+    def __init__(
+        self, 
+        working_dir: str | Path,
+        blacklist_cmds: set[str] | list[str] | None = None,
+        whitelist_cmds: set[str] | list[str] | None = None
+    ):
+        self.working_dir = Path(working_dir).resolve()
+        self.blacklist_cmds = set(blacklist_cmds) if blacklist_cmds else set()
+        self.whitelist_cmds = set(whitelist_cmds) if whitelist_cmds else set()
+        self.execute = create_secure_action(
+            self._execute_action,
+            self._execute_policy,
+        )
+
+    def _extract_commands(self, command: str) -> list[str] | None:
+        try:
+            parts = bashlex.parse(command)
+        except bashlex.errors.ParsingError:
+            # 解析失败（存在语法错误或不支持的语法），直接返回 None，后续交由灰名单处理
+            return None
+            
+        cmds = []
+        class CommandVisitor(bashlex.ast.nodevisitor):
+            def visitcommand(self, n, parts):
+                for p in n.parts:
+                    if p.kind == 'word':
+                        cmds.append(p.word)
+                        break
+        visitor = CommandVisitor()
+        for part in parts:
+            visitor.visit(part)
+            
+        return cmds
+
+    def _execute_policy(self, command: str) -> tuple[PolicyDecision, str]:
+        if not command.strip():
+            return PolicyDecision.DENY, "Empty command"
+
+        base_cmds = self._extract_commands(command)
+        if base_cmds is None:
+            return PolicyDecision.REQUIRE_TICKET, f"Command '{command}' requires user approval to execute."
+
+        for cmd in base_cmds:
+            if cmd in self.blacklist_cmds:
+                return PolicyDecision.DENY, f"Command '{cmd}' is blacklisted and strictly prohibited."
+
+        if base_cmds and all(cmd in self.whitelist_cmds for cmd in base_cmds):
+            return PolicyDecision.ALLOW, "Allowed by whitelist."
+
+        return PolicyDecision.REQUIRE_TICKET, f"Command '{command}' requires user approval to execute."
+
+    def _execute_action(self, command: str) -> str:
+        try:
+            result = subprocess.run(
+                command,
+                cwd=self.working_dir,
+                capture_output=True,
+                text=True,
+                check=False,
+                shell=True
+            )
+            if result.returncode != 0:
+                return f"Error ({result.returncode}): {result.stderr}"
+            return result.stdout
+        except Exception as e:
+            return f"Execution failed: {e}"
 
 class ToolSecurityPrimitive:
     """
     (SH-P0-01) PyTools 安全原语实现。
-
-    当前实现是一个基础的架构桩（Stub），主要用于验证安全拦截器的工作流。
-    可以在此基础上扩展出真正的资源控制逻辑（如网络白名单、文件系统 Jail 等）。
-
-    Attributes:
-        allowed_domains (set[str]): 允许访问的网络域名集合（示例字段，当前未应用）。
+    
+    提供受控 SDK 供工具函数内部使用。
     """
-    def __init__(self, allowed_domains: set[str] | None = None):
-        # 允许访问的域名白名单。
-        # 注意：P0 阶段该字段虽已定义但未在 enforce_policy 中生效。
-        self.allowed_domains = allowed_domains or set()
-
-    def enforce_policy(self, request: CapabilityRequest) -> None:
-        """
-        检查能力请求是否符合安全策略，不符合则抛出 SecurityError。
-
-        执行流程：
-            1. 检查请求的 metadata 中是否显式包含了 'unsafe': True 的标志。
-            2. 如果是，立刻拒绝并抛出异常。
-            3. 如果通过检查，函数正常返回 None。
-
-        Args:
-            request (CapabilityRequest): 待验证的工具调用请求。
-
-        风险提示：
-            当前策略仅依赖请求中调用方主动设置的 metadata（形式安全）。
-            对于恶意的工具调用，无法起到真正的防御作用（参见审阅报告）。
-        """
-        # P0阶段简单的策略：检查请求中如果包含危险 metadata 标志则拒绝
-        if request.metadata.get("unsafe") is True:
-            raise SecurityError(f"Capability '{request.capability_id}' execution denied due to 'unsafe' metadata flag.")
-
-        # TODO: 可进一步检查特定工具ID或文件路径权限
-        # 例如：针对 "http_request" 工具检查 request.args["url"] 是否属于 self.allowed_domains
-
+    def __init__(
+        self, 
+        working_dir: str | Path | None = None,
+        fs_blacklist: list[str | re.Pattern] | None = None,
+        fs_whitelist: list[str | re.Pattern] | None = None,
+        shell_blacklist: set[str] | list[str] | None = None,
+        shell_whitelist: set[str] | list[str] | None = None,
+    ):
+        self.working_dir = Path(working_dir).resolve() if working_dir else Path.cwd()
+        
+        self.secure_fs = SecureFileSystem(self.working_dir, fs_blacklist, fs_whitelist)
+        self.secure_shell = SecureShell(self.working_dir, shell_blacklist, shell_whitelist)
 
 def with_security_policy(policy: ToolSecurityPrimitive) -> Callable:
     """
     安全策略拦截器（装饰器）。
-
-    设计意图：
-        包裹基础的 Capability handler。在正式执行 handler 逻辑前，
-        调用 policy 引擎进行安全校验。如果校验失败，将 SecurityError 转化为一个
-        标准化、表达失败的 CapabilityResult 返回，避免让调用方崩溃。
-
-    Args:
-        policy (ToolSecurityPrimitive): 要挂载的安全策略实例。
+    包裹基础的 Capability handler。拦截并处理 SecurityError 和 SecurityApprovalRequiredError，
+    实现平滑降级，并在成功执行后核销 ticket。
     """
     def decorator(handler: Callable[[CapabilityRequest], Awaitable[CapabilityResult]]) -> Callable[[CapabilityRequest], Awaitable[CapabilityResult]]:
         @functools.wraps(handler)
         async def wrapper(request: CapabilityRequest) -> CapabilityResult:
             try:
-                # 首先执行安全校验
-                policy.enforce_policy(request)
+                # 1. 执行工具逻辑（工具内部应使用 SDK）
+                result = await handler(request)
+                
+                # 3. 如果请求成功执行且携带有 ticket，则核销该 ticket
+                payload = request.payload or {}
+                approved_ticket_id = payload.get("approved_ticket_id")
+                if approved_ticket_id and getattr(result, "success", False) is True:
+                    _global_ticket_store.consume(approved_ticket_id)
+                    
+                return result
+                
             except SecurityError as e:
-                # 校验失败时：触发平滑降级
-                # 不抛出异常，而是构造并返回一个包含明确错误码的 CapabilityResult，
-                # 这样编排引擎就能正常收到结果（虽然是失败的结果），并让 LLM 知道调用被拦截了
+                # 命中黑名单，直接阻断
                 return CapabilityResult(
                     capability_id=request.capability_id,
                     success=False,
                     output={},
                     error_code="security_policy_violation",
                     error_message=str(e),
-                    metadata={"security_blocked": True}  # 注入安全拦截标记
+                    metadata={"security_blocked": True}
                 )
-            
-            # 安全检查通过后，调用原函数执行具体业务逻辑
-            return await handler(request)
+            except SecurityApprovalRequiredError as e:
+                # 命中灰名单，生成凭证并要求授权
+                return CapabilityResult(
+                    capability_id=request.capability_id,
+                    success=False,
+                    output={},
+                    error_code="requires_user_approval",
+                    error_message=str(e),
+                    metadata={"ticket_id": e.ticket_id}
+                )
+            # 未捕获的异常（如工具内部崩溃）交由外层统一处理
         return wrapper
     return decorator
 
-
-# 提供一个全局默认策略实例，供简单的全局调用或默认配置使用
-default_security_policy = ToolSecurityPrimitive()
-
+# 提供一个全局默认策略实例（全灰名单）
+default_security_policy = ToolSecurityPrimitive(working_dir=Path.cwd())

@@ -53,12 +53,15 @@ class RegisteredCapabilityHub:
         """
         注册一个能力及其对应的异步处理函数。
         
-        T5 新增：所有注册的处理函数都会自动被 default_security_policy 包装，
-        拦截非法的或标记为 unsafe 的请求。
+        T5 新增：针对工具类型的能力，自动使用 default_security_policy 包装，
+        拦截越权或非法的资源访问。模型能力不应用该沙盒以避免网络误伤。
         """
         self._capabilities[capability.capability_id] = capability
-        # 使用安全原语包装 handler，防范越权或不安全的工具调用
-        safe_handler = with_security_policy(default_security_policy)(handler)
+        # 仅针对 tool 域（即 PyTools）应用安全原语拦截，不对 model 等路由施加沙盒
+        if capability.domain == "tool":
+            safe_handler = with_security_policy(default_security_policy)(handler)
+        else:
+            safe_handler = handler
         self._handlers[capability.capability_id] = safe_handler
         return capability
 

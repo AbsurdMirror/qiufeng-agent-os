@@ -1,7 +1,8 @@
 from src.observability_hub.exports import ObservabilityHubExports
 from src.observability_hub.recording import generate_trace_id, record
 from src.observability_hub.request_coloring import is_request_colored
-
+from src.observability_hub.jsonl_storage import JSONLStorageEngine
+from src.observability_hub.cli_logger import CLILogTailer
 
 def initialize() -> ObservabilityHubExports:
     """
@@ -14,11 +15,16 @@ def initialize() -> ObservabilityHubExports:
     Returns:
         ObservabilityHubExports: 包含该层所有关键实例和方法引用的强类型数据类
     """
+    jsonl_storage = JSONLStorageEngine()
+    cli_logger = CLILogTailer()
+
     return ObservabilityHubExports(
         layer="observability_hub",
         status="initialized",
         trace_id_generator=generate_trace_id,
         record=record,
         is_request_colored=is_request_colored,
+        jsonl_storage=jsonl_storage,
+        cli_logger=cli_logger,
     )
 

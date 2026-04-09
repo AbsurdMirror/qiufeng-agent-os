@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Protocol, runtime_checkable
 
 # ============================================================
 # 渠道适配层 —— 响应原语 (Channel Gateway Response Primitives)
@@ -12,6 +13,16 @@ from dataclasses import dataclass
 # 扩展 ReplyCard / ReplyImage 等更复杂的原语类型。
 # ============================================================
 
+@runtime_checkable
+class ReplyPrimitive(Protocol):
+    """
+    响应原语协议基类 (Reply Primitive Protocol Base Class)。
+    
+    设计意图 (GW-P0-07)：
+        为响应原语提供统一的类型约束。未来新增 ReplyCard、ReplyImage 
+        等原语类型时，发送器可以用统一类型提示接收任意一种响应原语。
+    """
+    pass
 
 @dataclass(frozen=True)
 class ReplyText:
@@ -30,8 +41,6 @@ class ReplyText:
 
     Attributes:
         content (str): 要发送的纯文本内容字符串。
-                       注意：当前没有长度或内容校验，调用方有责任
-                       确保内容非空且符合目标渠道的文本长度限制。
 
     使用示例：
         >>> reply = ReplyText(content="任务已完成，结果如下：\\n...")
@@ -39,3 +48,10 @@ class ReplyText:
     """
     # 要回复的纯文本内容。调用方应确保该字段非空，且不超过目标渠道的字符数限制。
     content: str
+
+    def __post_init__(self):
+        if not self.content:
+            raise ValueError("ReplyText content cannot be empty.")
+        if len(self.content) > 4000:
+            raise ValueError(f"ReplyText content exceeds max length 4000 (actual: {len(self.content)}).")
+

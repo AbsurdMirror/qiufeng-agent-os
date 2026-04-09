@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import time
+import threading
 from pathlib import Path
 from src.observability_hub.recording import NormalizedRecord
 
@@ -55,6 +56,7 @@ class JSONLStorageEngine:
         self.log_file = self.log_dir / "debug_trace.jsonl"
         self.max_bytes = max_bytes       # 单文件大小上限（字节），超出触发轮转
         self.backup_count = backup_count # 保留历史备份文件的最大数量
+        self._lock = threading.Lock()    # 用于保护文件轮转与写入的并发锁
 
     def write_record(self, record: NormalizedRecord) -> None:
         """
@@ -73,23 +75,24 @@ class JSONLStorageEngine:
             而抛出 TypeError，当前的 except Exception 会捕获并静默记录，
             但调用方无法感知该条日志实际上没有写入。
         """
-        # 写入前先检查是否需要轮转（如果文件已超过 max_bytes，先轮转再写）
-        self._rotate_if_needed()
         try:
-            # 以追加模式（"a"）打开文件，每次调用只添加一行，不覆盖已有内容
-            with open(self.log_file, "a", encoding="utf-8") as f:
-                # 将 NormalizedRecord 的核心字段序列化为字典
-                record_dict = {
-                    "trace_id": record.trace_id,           # 请求链路唯一标识
-                    "level": record.level.value,           # 日志级别（枚举值转字符串）
-                    "payload": record.payload,             # 原始载荷（可能是 dict/str/任意对象）
-                    "payload_type": record.payload_type,   # 载荷类型描述字符串
-                    "timestamp_ms": record.timestamp_ms    # 毫秒级时间戳
-                }
-                # ensure_ascii=False 保证中文等非 ASCII 字符直接输出，不转义为 \uXXXX
-                f.write(json.dumps(record_dict, ensure_ascii=False) + "\n")
+            with self._lock:
+                # 写入前先检查是否需要轮转（如果文件已超过 max_bytes，先轮转再写）
+                self._rotate_if_needed()
+                # 以追加模式（"a"）打开文件，每次调用只添加一行，不覆盖已有内容
+                with open(self.log_file, "a", encoding="utf-8") as f:
+                    # 将 NormalizedRecord 的核心字段序列化为字典
+                    record_dict = {
+                        "trace_id": record.trace_id,           # 请求链路唯一标识
+                        "level": record.level.value,           # 日志级别（枚举值转字符串）
+                        "payload": record.payload,             # 原始载荷（可能是 dict/str/任意对象）
+                        "payload_type": record.payload_type,   # 载荷类型描述字符串
+                        "timestamp_ms": record.timestamp_ms    # 毫秒级时间戳
+                    }
+                    # ensure_ascii=False 保证中文等非 ASCII 字符直接输出，不转义为 \uXXXX
+                    f.write(json.dumps(record_dict, ensure_ascii=False) + "\n")
         except Exception as e:
-            # 写入失败时降级处理：只记录错误日志，不抛异常，避免影响主业务流程
+            # 写入或轮转失败时降级处理：只记录错误日志，不抛异常，避免影响主业务流程
             # 注意：调用方无法感知本次写入失败，日志可能丢失
             logger.error(f"Failed to write JSONL log: {e}")
 
