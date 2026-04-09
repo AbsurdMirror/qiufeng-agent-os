@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Protocol
 
 # ============================================================
 # 渠道适配层 —— 响应原语 (Channel Gateway Response Primitives)
@@ -13,8 +14,18 @@ from dataclasses import dataclass
 # ============================================================
 
 
+
+
+class ReplyPrimitive(Protocol):
+    """
+    响应原语的基础协议约束 (GW-P0-07-CON-002)。
+
+    用于统一所有响应类型的签名类型提示。
+    """
+    content: str
+
 @dataclass(frozen=True)
-class ReplyText:
+class ReplyText(ReplyPrimitive):
     """
     纯文本响应原语 (Plain Text Reply Primitive)。
 
@@ -39,3 +50,15 @@ class ReplyText:
     """
     # 要回复的纯文本内容。调用方应确保该字段非空，且不超过目标渠道的字符数限制。
     content: str
+
+    def __post_init__(self):
+        import logging
+        logger = logging.getLogger(__name__)
+
+        if not self.content:
+            raise ValueError("ReplyText content cannot be empty.")
+
+        if len(self.content) > 4000:
+            logger.warning("ReplyText content exceeds 4000 characters. It will be truncated.")
+            # Because it's a frozen dataclass, we must use object.__setattr__
+            object.__setattr__(self, 'content', self.content[:4000])
