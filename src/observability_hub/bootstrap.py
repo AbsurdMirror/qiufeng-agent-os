@@ -1,6 +1,8 @@
 from src.observability_hub.exports import ObservabilityHubExports
 from src.observability_hub.recording import generate_trace_id, record
 from src.observability_hub.request_coloring import is_request_colored
+from src.observability_hub.jsonl_storage import JSONLStorageEngine
+from src.observability_hub.cli_logger import CLILogTailer
 
 
 def initialize() -> ObservabilityHubExports:
@@ -20,5 +22,7 @@ def initialize() -> ObservabilityHubExports:
         trace_id_generator=generate_trace_id,
         record=record,
         is_request_colored=is_request_colored,
+        jsonl_storage=JSONLStorageEngine(),
+        cli_logger=CLILogTailer(),
     )
 
