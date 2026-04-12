@@ -36,27 +36,42 @@ class SecurityApprovalRequiredError(Exception):
         super().__init__(message)
         self.ticket_id = ticket_id
 
+import time
+
 class TicketStore:
     """
     (SH-P0-01) 内存 Ticket 存储凭证系统。
     用于暂存大模型执行灰名单（危险但不被完全禁止）动作时生成的临时授权凭证。
     当请求被拦截时生成 Ticket，用户在外部前端授权后，凭此 Ticket 再次调用即可放行。
     """
-    def __init__(self):
-        self._tickets: set[str] = set()
+    def __init__(self, ttl_seconds: int = 3600):
+        self._tickets: dict[str, float] = {}
+        self.ttl_seconds = ttl_seconds
+
+    def _gc(self) -> None:
+        """垃圾回收：清理过期的 ticket 以防止内存泄漏"""
+        now = time.time()
+        expired = [tid for tid, expiry in self._tickets.items() if now > expiry]
+        for tid in expired:
+            del self._tickets[tid]
 
     def generate(self) -> str:
+        self._gc()
         ticket_id = str(uuid.uuid4())
-        self._tickets.add(ticket_id)
+        self._tickets[ticket_id] = time.time() + self.ttl_seconds
         return ticket_id
 
     def is_valid(self, ticket_id: str) -> bool:
         """检查凭证是否有效（不直接核销，以便单次请求多次命中灰名单）"""
-        return ticket_id in self._tickets
+        self._gc()
+        expiry = self._tickets.get(ticket_id)
+        if expiry and time.time() <= expiry:
+            return True
+        return False
 
     def consume(self, ticket_id: str) -> None:
         """核销凭证，防止一个凭证被重复利用（重放攻击）"""
-        self._tickets.discard(ticket_id)
+        self._tickets.pop(ticket_id, None)
 
 # 全局 Ticket Store（P0 阶段使用内存存储，未来应接入 Redis 支持多实例和持久化）
 _global_ticket_store = TicketStore()

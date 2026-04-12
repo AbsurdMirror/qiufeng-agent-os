@@ -18,10 +18,6 @@ from pathlib import Path
 #      python -m src.observability_hub.cli_logger --trace-id <trace_id>
 #   2. 实时观察 Agent 的每一步决策、工具调用和模型输出。
 #
-# 局限性（P0 阶段）：
-#   - tail() 是一个永久阻塞循环，没有退出信号处理，只能 Ctrl+C 退出。
-#   - JSON 解析失败的行会被静默丢弃（pass），不会告警。
-#   - 详见审阅报告 [REV-OB06-BUG-001] 和 [REV-OB06-CON-001]。
 # ============================================================
 
 
@@ -47,7 +43,7 @@ class CLILogTailer:
         实时追踪并输出日志，支持按 trace_id 过滤。
 
         执行流程：
-            1. 检查日志文件是否存在，不存在则直接返回。
+            1. 检查日志文件是否存在，不存在则等待其创建。
             2. 打开文件并将读取指针移到末尾（只看后续新增内容，不回放历史）。
             3. 循环读取新行：
                - 有新行 → 解析 JSON → 按 trace_id 过滤 → 打印
@@ -61,9 +57,11 @@ class CLILogTailer:
                 如果提供了该事件对象，当其被 set() 时，循环安全退出。
         """
         if not self.log_file.exists():
-            # 日志文件尚未创建（可能系统还未产生任何日志），直接退出
-            print(f"Log file {self.log_file} does not exist yet.")
-            return
+            print(f"Waiting for log file {self.log_file} to be created...")
+            while not self.log_file.exists():
+                if stop_event is not None and stop_event.is_set():
+                    return
+                time.sleep(0.5)
 
         with open(self.log_file, "r", encoding="utf-8") as f:
             f.seek(0, 2)  # 将指针移到文件末尾（seek 末尾偏移 0），跳过历史日志
@@ -88,6 +86,9 @@ class CLILogTailer:
                     # 这彻底打碎了“遇到读不出的残缺日志行就直接 pass 当作无事发生”的静默丢弃潜规则，
                     # 避免并发错乱导致的问题被无形掩盖。
                     print(f"WARNING: JSON decode error on line: {line.strip()} - {e}", file=sys.stderr)
+                except Exception as e:
+                    # 即使发生格式化或输出错误，也不能让后台追踪线程崩溃退出
+                    print(f"CLI Logger internal error: {e}", file=sys.stderr)
 
     def _print_record(self, record: dict) -> None:
         """

@@ -136,6 +136,20 @@ def validate_and_heal(
                 try:
                     current_input = healing_func(current_input, str(e))
                 except Exception as heal_err:
+                    import traceback
+                    error_details = traceback.format_exc()
+                    logger.warning(
+                        f"[Schema Validator] Healing attempt {attempts} failed due to unhandled exception: {heal_err}\n"
+                        f"Traceback:\n{error_details}"
+                    )
+                    
+                    # 快速失败机制 (T5 审阅 P0)
+                    # 如果遇到认证失败、配置错误等致命异常，继续重试毫无意义，直接向上抛出
+                    err_str = str(heal_err).lower()
+                    if any(keyword in err_str for keyword in ["authentication", "auth", "api key", "quota", "billing", "unauthorized"]):
+                        logger.error("[Schema Validator] Fatal error detected (auth/billing). Aborting auto-healing.")
+                        raise heal_err
+                        
                     raise AutoHealingMaxRetriesExceeded(
                         f"Healing function raised an exception after {attempts} attempts."
                     ) from heal_err

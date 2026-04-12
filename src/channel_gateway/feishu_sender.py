@@ -105,45 +105,62 @@ class FeishuAsyncSender:
             receive_id_type = "open_id"  # 飞书 API 规定的个人身份标识
 
         # 2. 构造消息载荷
-        # 注意：飞书 API 规范要求，当 msg_type 为 text 时，content 必须是被转义的 JSON 字符串
-        content_str = json.dumps({"text": reply.content}, ensure_ascii=False)
+        # 飞书文本消息有长度限制（单次最多约 4000 字符）。
+        # 如果超出限制，我们需要分片发送以防止直接抛错 (T5 审阅 P1)
+        full_content = reply.content
+        max_chunk_size = 4000
         
-        payload = {
-            "receive_id": receive_id,
-            "msg_type": "text",
-            "content": content_str,
-            "reply_to": target_event.message_id
-        }
-
-        if self.mock_mode:
-            logger.info(f"[MOCK FEISHU SEND] type={receive_id_type} Payload: {payload}")
-            return {"status": "success", "mock": True, "payload": payload}
-
-        # 3. 真实发送模式
-        try:
-            token = await self._get_tenant_access_token()
-            headers = {
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json; charset=utf-8"
+        # 将内容切分为大小不超过 max_chunk_size 的多个块
+        chunks = [full_content[i:i+max_chunk_size] for i in range(0, len(full_content), max_chunk_size)]
+        
+        last_result = None
+        for i, chunk in enumerate(chunks):
+            # 只有第一个 chunk 保留 reply_to 关系，后续的 chunk 直接发
+            current_reply_to = target_event.message_id if i == 0 else None
+            
+            content_str = json.dumps({"text": chunk}, ensure_ascii=False)
+            
+            payload = {
+                "receive_id": receive_id,
+                "msg_type": "text",
+                "content": content_str,
             }
-            url = f"https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type={receive_id_type}"
-            
-            response = await self._client.post(url, headers=headers, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            
-            if data.get("code") != 0:
-                logger.error(f"Feishu Send Message API returned error: {data}")
-                return {"status": "failed", "error": data}
+            if current_reply_to:
+                payload["reply_to"] = current_reply_to
+    
+            if self.mock_mode:
+                logger.info(f"[MOCK FEISHU SEND] type={receive_id_type} Chunk {i+1}/{len(chunks)} Payload: {payload}")
+                last_result = {"status": "success", "mock": True, "payload": payload}
+                continue
+    
+            # 3. 真实发送模式
+            try:
+                token = await self._get_tenant_access_token()
+                headers = {
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json; charset=utf-8"
+                }
+                url = f"https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type={receive_id_type}"
                 
-            return {"status": "success", "data": data.get("data")}
-            
-        except httpx.RequestError as e:
-            logger.error(f"Network error while sending message to Feishu: {e}")
-            return {"status": "failed", "error": str(e)}
-        except Exception as e:
-            logger.error(f"Failed to send message to Feishu: {e}")
-            return {"status": "failed", "error": str(e)}
+                response = await self._client.post(url, headers=headers, json=payload)
+                response.raise_for_status()
+                data = response.json()
+                
+                if data.get("code") != 0:
+                    logger.error(f"Feishu Send Message API returned error on chunk {i+1}: {data}")
+                    # 如果某一块发送失败，直接中断并返回错误
+                    return {"status": "failed", "error": data, "chunk_index": i}
+                    
+                last_result = {"status": "success", "data": data.get("data")}
+                
+            except httpx.RequestError as e:
+                logger.error(f"Network error while sending message chunk {i+1} to Feishu: {e}")
+                return {"status": "failed", "error": str(e), "chunk_index": i}
+            except Exception as e:
+                logger.error(f"Failed to send message chunk {i+1} to Feishu: {e}")
+                return {"status": "failed", "error": str(e), "chunk_index": i}
+                
+        return last_result or {"status": "failed", "error": "Empty message chunks"}
 
     async def send_card_reply(self, reply: ReplyPrimitive, target_event: UniversalEvent) -> dict[str, Any]:
         """

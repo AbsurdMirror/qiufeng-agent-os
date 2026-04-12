@@ -81,21 +81,23 @@ class JSONLStorageEngine:
         # 第二层防护（try）：如果轮转时硬盘满了或者写入没有权限遭遇异常，这些观测域监控性质的意外绝不会
         # 反抛回给主业务程序去背黑锅，造成主系统的挂机（平滑丢弃或报警）。
         try:
+            # 将 NormalizedRecord 的核心字段序列化为字典
+            record_dict = {
+                "trace_id": record.trace_id,           # 请求链路唯一标识
+                "level": record.level.value,           # 日志级别（枚举值转字符串）
+                "payload": record.payload,             # 原始载荷（可能是 dict/str/任意对象）
+                "payload_type": record.payload_type,   # 载荷类型描述字符串
+                "timestamp_ms": record.timestamp_ms    # 毫秒级时间戳
+            }
+            # ensure_ascii=False 保证中文等非 ASCII 字符直接输出，不转义为 \uXXXX
+            line = json.dumps(record_dict, ensure_ascii=False) + "\n"
+
             with self._lock:
                 # 写入前先检查是否需要轮转（如果文件已超过 max_bytes，先轮转再写）
                 self._rotate_if_needed()
                 # 以追加模式（"a"）打开文件，每次调用只添加一行，不覆盖已有内容
                 with open(self.log_file, "a", encoding="utf-8") as f:
-                    # 将 NormalizedRecord 的核心字段序列化为字典
-                    record_dict = {
-                        "trace_id": record.trace_id,           # 请求链路唯一标识
-                        "level": record.level.value,           # 日志级别（枚举值转字符串）
-                        "payload": record.payload,             # 原始载荷（可能是 dict/str/任意对象）
-                        "payload_type": record.payload_type,   # 载荷类型描述字符串
-                        "timestamp_ms": record.timestamp_ms    # 毫秒级时间戳
-                    }
-                    # ensure_ascii=False 保证中文等非 ASCII 字符直接输出，不转义为 \uXXXX
-                    f.write(json.dumps(record_dict, ensure_ascii=False) + "\n")
+                    f.write(line)
         except Exception as e:
             # 写入或轮转失败时降级处理：只记录错误日志，不抛异常，避免影响主业务流程
             # 注意：调用方无法感知本次写入失败，日志可能丢失
@@ -116,22 +118,26 @@ class JSONLStorageEngine:
         风险：本方法在多线程并发调用时存在 TOCTOU 竞态条件。
               详见审阅报告 [REV-OB0405-BUG-001]。
         """
-        # 主文件不存在时无需轮转（首次运行或刚刚完成上一次轮转后）
-        if not self.log_file.exists():
-            return
-        # 文件大小未超过上限，无需轮转
-        if self.log_file.stat().st_size < self.max_bytes:
-            return
+        try:
+            # 主文件不存在时无需轮转（首次运行或刚刚完成上一次轮转后）
+            if not self.log_file.exists():
+                return
+            # 文件大小未超过上限，无需轮转
+            if self.log_file.stat().st_size < self.max_bytes:
+                return
 
-        # 执行文件轮转（倒序重命名，从最大序号往小遍历，避免先改小号导致大号被覆盖）
-        # 例如：backup_count=5，range(4, 0, -1) = [4, 3, 2, 1]
-        for i in range(self.backup_count - 1, 0, -1):
-            src = self.log_dir / f"debug_trace.jsonl.{i}"
-            dst = self.log_dir / f"debug_trace.jsonl.{i + 1}"
-            if src.exists():
-                # os.replace 是原子操作，等价于 mv，避免 rename 时中途崩溃留下残缺文件
-                os.replace(src, dst)
-        # 将当前主文件重命名为 .1，完成归档（旧的 .1 已在上面的循环中移到 .2）
-        os.replace(self.log_file, self.log_dir / "debug_trace.jsonl.1")
-        # 轮转完成后主文件 debug_trace.jsonl 不存在，下次 write_record 会自动创建
+            # 执行文件轮转（倒序重命名，从最大序号往小遍历，避免先改小号导致大号被覆盖）
+            # 例如：backup_count=5，range(4, 0, -1) = [4, 3, 2, 1]
+            for i in range(self.backup_count - 1, 0, -1):
+                src = self.log_dir / f"debug_trace.jsonl.{i}"
+                dst = self.log_dir / f"debug_trace.jsonl.{i + 1}"
+                if src.exists():
+                    # os.replace 是原子操作，等价于 mv，避免 rename 时中途崩溃留下残缺文件
+                    os.replace(src, dst)
+            # 将当前主文件重命名为 .1，完成归档（旧的 .1 已在上面的循环中移到 .2）
+            os.replace(self.log_file, self.log_dir / "debug_trace.jsonl.1")
+            # 轮转完成后主文件 debug_trace.jsonl 不存在，下次 write_record 会自动创建
+        except Exception as e:
+            # 即使轮转失败，也不能抛出异常阻断正常写入 (T5 审阅)
+            logger.warning(f"Failed to rotate JSONL file {self.log_file}: {e}")
 
