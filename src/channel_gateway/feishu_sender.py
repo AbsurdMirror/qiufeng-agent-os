@@ -92,6 +92,12 @@ class FeishuAsyncSender:
     async def send_text_reply(self, reply: ReplyText, target_event: UniversalEvent) -> dict[str, Any]:
         """
         向飞书投递纯文本回复消息（异步）。
+        
+        处理逻辑：
+        1. 路由解析：根据 `target_event` 判断是群聊 (`chat_id`) 还是单聊 (`open_id`)。
+        2. 文本分片：为应对飞书单条文本长度限制（约 4000 字符），对超长文本进行等长切片。
+        3. 顺序发送：逐块发送分片内容。为保持会话连贯性，仅对首个分片保留 `reply_to` 引用（回复原消息），后续分片作为普通消息追加。
+        4. 异常处理：若任一分片发送失败，直接中断后续发送并返回错误状态及失败的分片索引。
         """
         # 1. 构造路由 ID 和类型
         # 对应 [REV-GW0809-CON-002+BUG-001]
@@ -111,11 +117,13 @@ class FeishuAsyncSender:
         max_chunk_size = 4000
         
         # 将内容切分为大小不超过 max_chunk_size 的多个块
+        # 风险：粗暴按字符切片可能导致 Markdown 语法或双字节字符截断，建议后续优化切片策略。
         chunks = [full_content[i:i+max_chunk_size] for i in range(0, len(full_content), max_chunk_size)]
         
         last_result = None
         for i, chunk in enumerate(chunks):
             # 只有第一个 chunk 保留 reply_to 关系，后续的 chunk 直接发
+            # 这样保证第一条消息回复原消息，后续消息作为跟帖
             current_reply_to = target_event.message_id if i == 0 else None
             
             content_str = json.dumps({"text": chunk}, ensure_ascii=False)
