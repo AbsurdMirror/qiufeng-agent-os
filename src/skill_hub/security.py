@@ -37,7 +37,11 @@ class SecurityApprovalRequiredError(Exception):
         self.ticket_id = ticket_id
 
 class TicketStore:
-    """简单的内存 Ticket 存储，用于暂存生成的授权凭证"""
+    """
+    (SH-P0-01) 内存 Ticket 存储凭证系统。
+    用于暂存大模型执行灰名单（危险但不被完全禁止）动作时生成的临时授权凭证。
+    当请求被拦截时生成 Ticket，用户在外部前端授权后，凭此 Ticket 再次调用即可放行。
+    """
     def __init__(self):
         self._tickets: set[str] = set()
 
@@ -51,16 +55,16 @@ class TicketStore:
         return ticket_id in self._tickets
 
     def consume(self, ticket_id: str) -> None:
-        """核销凭证"""
+        """核销凭证，防止一个凭证被重复利用（重放攻击）"""
         self._tickets.discard(ticket_id)
 
-# 全局 Ticket Store（P0 阶段使用内存存储）
+# 全局 Ticket Store（P0 阶段使用内存存储，未来应接入 Redis 支持多实例和持久化）
 _global_ticket_store = TicketStore()
 
 class PolicyDecision(Enum):
-    ALLOW = "allow"
-    DENY = "deny"
-    REQUIRE_TICKET = "require_ticket"
+    ALLOW = "allow"             # 白名单：直接放行
+    DENY = "deny"               # 黑名单：立刻抛出异常拒绝
+    REQUIRE_TICKET = "require_ticket"  # 灰名单：挂起并要求业务线人类审批
 
 def _normalize_policy_result(result: Any) -> tuple[PolicyDecision, str | None]:
     if isinstance(result, tuple) and len(result) == 2:

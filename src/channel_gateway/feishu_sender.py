@@ -94,12 +94,15 @@ class FeishuAsyncSender:
         向飞书投递纯文本回复消息（异步）。
         """
         # 1. 构造路由 ID 和类型
+        # 对应 [REV-GW0809-CON-002+BUG-001]
+        # 根据事件来源动态决定发给群聊还是单聊。如果不做动态切换，群聊里艾特机器人的消息
+        # 机器人会以"私聊"形式回复那个人，导致群里其他人看不到。
         if target_event.group_id:
             receive_id = target_event.group_id
-            receive_id_type = "chat_id"
+            receive_id_type = "chat_id"  # 飞书 API 规定的群聊身份标识
         else:
             receive_id = target_event.user_id
-            receive_id_type = "open_id"
+            receive_id_type = "open_id"  # 飞书 API 规定的个人身份标识
 
         # 2. 构造消息载荷
         # 注意：飞书 API 规范要求，当 msg_type 为 text 时，content 必须是被转义的 JSON 字符串

@@ -50,8 +50,12 @@ class ReplyText:
     content: str
 
     def __post_init__(self):
+        # 拦截空白内容，防止向渠道下发空载荷引发目标平台 API 报错
         if not self.content:
             raise ValueError("ReplyText content cannot be empty.")
+        
+        # 硬性防线：拦截超过平台上限（如飞书限制单条最多4000字符）的长文本，
+        # 防止大模型输出过长时消息被平台静默丢弃
         if len(self.content) > 4000:
             raise ValueError(f"ReplyText content exceeds max length 4000 (actual: {len(self.content)}).")
 

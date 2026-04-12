@@ -96,12 +96,17 @@ def validate_and_heal(
     # 每次自愈后，healing_func 的返回值会替换它，进入下一轮尝试
     current_input = json_string
     attempts = 0  # 已尝试次数计数器
-    max_total_attempts = max_retries + 1  # 额外重试次数 + 1 次初始尝试
+    # [修复 REV-MP050607-CON-001]
+    # 使用 max_total_attempts = max_retries(额外重试次数) + 1(首次执行)
+    # 消除调用方对 max_retries 参数传入数值的歧义，符合人类直觉。
+    max_total_attempts = max_retries + 1  
 
     while attempts < max_total_attempts:
         try:
             # --- 步骤 1: 预处理 —— 剥离 LLM 常见的 markdown 代码块包裹 ---
             # 问题背景：部分 LLM 会把 JSON 包在 ```json ... ``` 里，导致 json.loads 失败
+            # [修复 REV-MP050607-BUG-001]
+            # 弃用 str.strip('`')，改为正则表达式精确匹配前后缀，保护了 JSON 数据体内合法自带的反引号。
             current_input = re.sub(r'^```(?:json)?\s*\n?', '', current_input, flags=re.IGNORECASE)
             current_input = re.sub(r'\n?```\s*$', '', current_input).strip()
 
@@ -125,6 +130,9 @@ def validate_and_heal(
                 # 有自愈函数：把当前错误输入和错误信息交给自愈函数，获取修复后的新字符串
                 # 典型实现：healing_func 会把错误信息拼进提示词，重新请求 LLM 生成
                 logger.info("Attempting auto-healing via healing_func...")
+                # [修复 REV-MP050607-BUG-002]
+                # 建立防护隔舱：使用 try-except 包裹第三方自愈请求（常为网络请求），
+                # 防止由于自愈引擎本身崩溃抛出乱七八糟的异常给外层，破坏大逻辑兜底。
                 try:
                     current_input = healing_func(current_input, str(e))
                 except Exception as heal_err:

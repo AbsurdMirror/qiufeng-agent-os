@@ -67,6 +67,9 @@ class CLILogTailer:
 
         with open(self.log_file, "r", encoding="utf-8") as f:
             f.seek(0, 2)  # 将指针移到文件末尾（seek 末尾偏移 0），跳过历史日志
+            # [修复 REV-OB06-BUG-001]
+            # 引入了外部干预标识 stop_event。
+            # 直接终结了此前此函数一旦调用就永不退出的僵尸级 while True 死循环，允许外层优雅收回线程。
             while stop_event is None or not stop_event.is_set():
                 line = f.readline()
                 if not line:
@@ -80,7 +83,10 @@ class CLILogTailer:
                     if target_trace_id is None or record.get("trace_id") == target_trace_id:
                         self._print_record(record)
                 except json.JSONDecodeError as e:
-                    # 写入标准错误，避免静默丢弃损坏行
+                    # [修复 REV-OB06-CON-001]
+                    # 将损坏报错写入系统标准错误 (stderr)。
+                    # 这彻底打碎了“遇到读不出的残缺日志行就直接 pass 当作无事发生”的静默丢弃潜规则，
+                    # 避免并发错乱导致的问题被无形掩盖。
                     print(f"WARNING: JSON decode error on line: {line.strip()} - {e}", file=sys.stderr)
 
     def _print_record(self, record: dict) -> None:

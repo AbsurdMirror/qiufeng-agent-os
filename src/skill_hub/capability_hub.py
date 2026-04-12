@@ -58,6 +58,10 @@ class RegisteredCapabilityHub:
         """
         self._capabilities[capability.capability_id] = capability
         # 仅针对 tool 域（即 PyTools）应用安全原语拦截，不对 model 等路由施加沙盒
+        # [业务设计补充]：
+        # 如果一刀切地把大模型的纯对话网络请求（domain="model"）也框进这个底层安全沙盒，
+        # 因为沙盒默认拦截未知路径，会导致大模型彻底变成“聋子和哑巴”（甚至无法请求 OpenAI/MiniMax 接口）。
+        # 因此必须进行域隔离，特权网络请求放行，只约束落地执行阶段的危险动作。
         if capability.domain == "tool":
             safe_handler = with_security_policy(default_security_policy)(handler)
         else:

@@ -15,6 +15,10 @@ def initialize() -> ObservabilityHubExports:
     Returns:
         ObservabilityHubExports: 包含该层所有关键实例和方法引用的强类型数据类
     """
+    # [修复 REV-OBEXPORTS-CON-001]
+    # 在模块点火阶段实例化最新的 JSONL 和 CLI 日志记录引擎。
+    # 这填补了此前观测总线（exports.py）暴露出去的接口仅为 None 占位符，
+    # 导致周边依赖组件一旦调用就会遭遇 AttributeError 崩溃的全局真空隐患。
     jsonl_storage = JSONLStorageEngine()
     cli_logger = CLILogTailer()
 
