@@ -46,11 +46,13 @@ class ReplyText:
         >>> reply = ReplyText(content="任务已完成，结果如下：\\n...")
         >>> await feishu_sender.send_text_reply(reply, target_event)
     """
-    # 要回复的纯文本内容。调用方应确保该字段非空，且不超过目标渠道的字符数限制。
+    # 要回复的纯文本内容。调用方应确保该字段非空。
+    # 注：此处不限制字符上限，具体渠道（如飞书4000字限制）的分片或截断由 Sender 实现。
     content: str
 
     def __post_init__(self):
         # 拦截空白内容，防止向渠道下发空载荷引发目标平台 API 报错
         if not self.content:
             raise ValueError("ReplyText content cannot be empty.")
+
 

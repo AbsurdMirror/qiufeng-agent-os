@@ -16,26 +16,24 @@
 - [x] `src/observability_hub/jsonl_storage.py` — OB-P0-04/05 JSONL 存储引擎
 - [x] `src/observability_hub/exports.py` — OB 导出扩展（修改）
 
-### 第二次审阅 (Commit `1ecfdcc18b5be5ff36689939c61878887c1508b2`)
+### 第三次审阅 (Commit `7e2ce7ff5ddab7936950b82baffdec5a95dae8ec`)
 
 - [x] `src/channel_gateway/responses.py`
 - [x] `src/channel_gateway/feishu_sender.py`
 - [x] `src/model_provider/schema_validator.py`
-- [x] `src/skill_hub/security.py`
-- [x] `src/skill_hub/capability_hub.py`
-- [x] `src/observability_hub/jsonl_storage.py`
 - [x] `src/observability_hub/cli_logger.py`
-- [x] `src/observability_hub/bootstrap.py`
+- [x] `src/observability_hub/jsonl_storage.py`
+- [x] `src/skill_hub/security.py`
 
 ---
 
 ## P0 级建议与结论（核心阻断/架构级调整）
 
-- [ ] **[REV-VAL-CON-001]（二次审阅新增）** `schema_validator.py` 第 129 行：`AutoHealingMaxRetriesExceeded` 直接包裹了底层 `heal_err` 但缺乏错误详情的现场捕捉。若遭遇高频异常限流等情况在日志层面发生“内层追踪黑洞”，建议在异常上抛前补充 `logger.error` 配合 `exc_info=True` 留存现场痕迹。
+- [x] **[REV-VAL-CON-001]（二次审阅新增）** `schema_validator.py` 第 129 行：`AutoHealingMaxRetriesExceeded` 直接包裹了底层 `heal_err` 但缺乏错误详情的现场捕捉。若遭遇高频异常限流等情况在日志层面发生“内层追踪黑洞”，建议在异常上抛前补充 `logger.error` 配合 `exc_info=True` 留存现场痕迹。
 
-- [ ] **[REV-VAL-RISK-001]（二次审阅新增）** `schema_validator.py` 第 100-135 行（整个自愈大循环）：对于因大模型账号欠费缺额度（Rates Limit/401）或网络完全失效诱发的报错，当前结构缺乏**致命错误甄别器 (Fail-fast Checker)**。遇到这些绝对不可自愈的拦路虎时依然会闭着眼睛盲目循环填满 `max_retries`。建议在 `except Exception as heal_err:` 内部加装对异常特征判定，提供直接 `break` 或抛出中止的止损能力。
+- [x] **[REV-VAL-RISK-001]（二次审阅新增）** `schema_validator.py` 第 100-135 行（整个自愈大循环）：对于因大模型账号欠费缺额度（Rates Limit/401）或网络完全失效诱发的报错，当前结构缺乏**致命错误甄别器 (Fail-fast Checker)**。遇到这些绝对不可自愈的拦路虎时依然会闭着眼睛盲目循环填满 `max_retries`。建议在 `except Exception as heal_err:` 内部加装对异常特征判定，提供直接 `break` 或抛出中止的止损能力。
 
-- [ ] **[REV-SEC-CON-001]（二次审阅新增）** `security.py` 第 42 行：基于内存 `set` 的 `TicketStore` 缺乏过期回收与垃圾清理机制。一旦长时间运行积攒了大量发往前端但被用户忽略（未消费结单）的授权凭单，会导致服务发生内存泄露（OOM）。建议：修改 `TicketStore` 的构造函数使其支持传递 `timeout`（超时时间）参数，对于非 `None` 的配置项基于时间戳或后台清理任务剔除过期失效。
+- [x] **[REV-SEC-CON-001]（二次审阅新增）** `security.py` 第 42 行：基于内存 `set` 的 `TicketStore` 缺乏过期回收与垃圾清理机制。一旦长时间运行积攒了大量发往前端但被用户忽略（未消费结单）的授权凭单，会导致服务发生内存泄露（OOM）。建议：修改 `TicketStore` 的构造函数使其支持传递 `timeout`（超时时间）参数，对于非 `None` 的配置项基于时间戳或后台清理任务剔除过期失效。
 
 - [x] **[REV-GW07-CON-001]** `responses.py`：`ReplyText.content` 字段没有非空校验，`ReplyText(content="")` 合法，会向用户发出空白消息。应在 `__post_init__` 中添加非空检查，拒绝构造空内容的响应原语。
 
@@ -76,15 +74,15 @@
 
 ## P1 级建议与结论（重要功能/体验优化）
 
-- [ ] **[REV-GW07-BUG-002]（二次审阅新增）** `responses.py` & `feishu_sender.py`：`ReplyText(content)` 的长度拦截目前硬编码在原语模型结构内部，不仅破坏了与具体通信平台解耦的设计，且超出限制时会粗暴地直接抛出异常，导致本该发给用户的超大段文本发生“静默烂尾”。**修复建议：** 移除 `responses.py` 中的字数校验兜底；将长度拦截移动到具体的 `feishu_sender.py` 内部发送前，并采用**切片分段发送**的思路（将超过 4000 字符的字符串切出多条连续的 payload 分别发往飞书），以彻底保障大文本输出的健壮性。
+- [x] **[REV-GW07-BUG-002]（二次审阅新增）** `responses.py` & `feishu_sender.py`：`ReplyText(content)` 的长度拦截目前硬编码在原语模型结构内部，不仅破坏了与具体通信平台解耦的设计，且超出限制时会粗暴地直接抛出异常，导致本该发给用户的超大段文本发生“静默烂尾”。**修复建议：** 移除 `responses.py` 中的字数校验兜底；将长度拦截移动到具体的 `feishu_sender.py` 内部发送前，并采用**切片分段发送**的思路（将超过 4000 字符的字符串切出多条连续的 payload 分别发往飞书），以彻底保障大文本输出的健壮性。
 
 - [x] **[REV-GW07-CON-002]** `responses.py`：响应原语模块缺少统一的抽象基类或 `Protocol` 约束，未来新增 `ReplyCard`、`ReplyImage` 等原语类型时，发送器无法用统一类型提示接收"任意一种响应原语"，会造成方法签名上的类型扩散。建议新增 `ReplyPrimitive` 协议基类。
 
 - [x] **[REV-GW0809-CON-001]** `feishu_sender.py`：当前仅支持 `ReplyText`（纯文本），但 T5 阶段的架构目标是"Agent 在浏览器抓取期间不断向飞书回传进度"，实际场景中进度消息通常使用飞书**消息卡片**。应规划 `send_card_reply` 接口的占位，保持扩展路径清晰。
 
-- [ ] **[REV-OB06-BUG-001]** `cli_logger.py` 第 26 行：`tail()` 方法使用永久阻塞的 `while True` 循环，缺乏外部停止信号（Stop Event）或超时机制。这导致测试代码无法正常覆盖该方法（进程会挂死），且未来若作为后台异步任务运行时无法优雅关闭。
+- [x] **[REV-OB06-BUG-001]** `cli_logger.py` 第 26 行：`tail()` 方法使用永久阻塞的 `while True` 循环，缺乏外部停止信号（Stop Event）或超时机制。这导致测试代码无法正常覆盖该方法（进程会挂死），且未来若作为后台异步任务运行时无法优雅关闭。
 
-- [ ] **[REV-OB0405-BUG-001]** `jsonl_storage.py`：文件轮转逻辑存在 TOCTOU（检查时与使用时不一致）竞态风险。先 `stat()` 检查大小再 `replace()` 重命名，在多线程并发写入时可能导致多个线程同时触发轮转，造成 `FileNotFoundError` 或备份文件覆盖。在 T5 后的高并发场景需引入 `threading.Lock`。
+- [x] **[REV-OB0405-BUG-001]** `jsonl_storage.py`：文件轮转逻辑存在 TOCTOU（检查时与使用时不一致）竞态风险。先 `stat()` 检查大小再 `replace()` 重命名，在多线程并发写入时可能导致多个线程同时触发轮转，造成 `FileNotFoundError` 或备份文件覆盖。在 T5 后的高并发场景需引入 `threading.Lock`。
 
 ---
 

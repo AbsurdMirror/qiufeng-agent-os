@@ -87,10 +87,6 @@ def validate_and_heal(
     Raises:
         SchemaValidationError: 校验失败且 healing_func=None 时抛出。
         AutoHealingMaxRetriesExceeded: 有自愈函数但重试耗尽时抛出。
-
-    风险提示：
-        markdown 剥离逻辑使用 str.strip("`") 按字符剥离，
-        存在边界 bug（详见审阅报告 [REV-MP050607-BUG-001]）。
     """
     # current_input 是当前正在处理的字符串，初始为 LLM 的原始输出
     # 每次自愈后，healing_func 的返回值会替换它，进入下一轮尝试

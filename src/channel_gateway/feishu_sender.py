@@ -111,11 +111,14 @@ class FeishuAsyncSender:
         max_chunk_size = 4000
         
         # 将内容切分为大小不超过 max_chunk_size 的多个块
+        # 这里的切片方案保证了大模型在输出超长推理过程或巨型代码块时，
+        # 用户依然能像看连载小说一样完整接收所有信息，而不是静默丢失。
         chunks = [full_content[i:i+max_chunk_size] for i in range(0, len(full_content), max_chunk_size)]
         
         last_result = None
         for i, chunk in enumerate(chunks):
             # 只有第一个 chunk 保留 reply_to 关系，后续的 chunk 直接发
+            # 保证群聊回复时，只有第一段会显示“回复某某的某条消息”，后续段落作为普通新消息追加
             current_reply_to = target_event.message_id if i == 0 else None
             
             content_str = json.dumps({"text": chunk}, ensure_ascii=False)

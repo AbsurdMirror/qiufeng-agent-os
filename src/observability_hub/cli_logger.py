@@ -2,6 +2,7 @@ import json
 import time
 import sys
 import threading
+import os
 from pathlib import Path
 
 # ============================================================
@@ -56,39 +57,56 @@ class CLILogTailer:
             stop_event (threading.Event | None): 外部传入的停止信号。
                 如果提供了该事件对象，当其被 set() 时，循环安全退出。
         """
-        if not self.log_file.exists():
-            print(f"Waiting for log file {self.log_file} to be created...")
-            while not self.log_file.exists():
-                if stop_event is not None and stop_event.is_set():
-                    return
-                time.sleep(0.5)
+        while True:
+            if not self.log_file.exists():
+                print(f"Waiting for log file {self.log_file} to be created...")
+                while not self.log_file.exists():
+                    if stop_event is not None and stop_event.is_set():
+                        return
+                    time.sleep(0.5)
 
-        with open(self.log_file, "r", encoding="utf-8") as f:
-            f.seek(0, 2)  # 将指针移到文件末尾（seek 末尾偏移 0），跳过历史日志
-            # [修复 REV-OB06-BUG-001]
-            # 引入了外部干预标识 stop_event。
-            # 直接终结了此前此函数一旦调用就永不退出的僵尸级 while True 死循环，允许外层优雅收回线程。
-            while stop_event is None or not stop_event.is_set():
-                line = f.readline()
-                if not line:
-                    # 暂无新内容，等待 0.1 秒后继续轮询（避免 CPU 空转）
-                    time.sleep(0.1)
-                    continue
+            # 获取当前文件的 inode，用于判断是否发生了文件轮转
+            current_ino = os.stat(self.log_file).st_ino
 
-                try:
-                    record = json.loads(line)
-                    # 过滤逻辑：target_trace_id 为 None 时全部输出，否则仅匹配指定 TraceID
-                    if target_trace_id is None or record.get("trace_id") == target_trace_id:
-                        self._print_record(record)
-                except json.JSONDecodeError as e:
-                    # [修复 REV-OB06-CON-001]
-                    # 将损坏报错写入系统标准错误 (stderr)。
-                    # 这彻底打碎了“遇到读不出的残缺日志行就直接 pass 当作无事发生”的静默丢弃潜规则，
-                    # 避免并发错乱导致的问题被无形掩盖。
-                    print(f"WARNING: JSON decode error on line: {line.strip()} - {e}", file=sys.stderr)
-                except Exception as e:
-                    # 即使发生格式化或输出错误，也不能让后台追踪线程崩溃退出
-                    print(f"CLI Logger internal error: {e}", file=sys.stderr)
+            with open(self.log_file, "r", encoding="utf-8") as f:
+                f.seek(0, 2)  # 将指针移到文件末尾（seek 末尾偏移 0），跳过历史日志
+                # [修复 REV-OB06-BUG-001]
+                # 引入了外部干预标识 stop_event。
+                # 直接终结了此前此函数一旦调用就永不退出的僵尸级 while True 死循环，允许外层优雅收回线程。
+                while stop_event is None or not stop_event.is_set():
+                    line = f.readline()
+                    if not line:
+                        # 暂无新内容，检查是否发生了文件轮转
+                        try:
+                            if os.stat(self.log_file).st_ino != current_ino:
+                                print("Log file rotated. Reopening new file...", file=sys.stderr)
+                                break  # 跳出内层读取循环，重新打开新文件
+                        except FileNotFoundError:
+                            # 文件可能在轮转瞬间被移走，短暂不存在
+                            pass
+                        
+                        # 等待 0.1 秒后继续轮询（避免 CPU 空转）
+                        time.sleep(0.1)
+                        continue
+
+                    try:
+                        record = json.loads(line)
+                        # 过滤逻辑：target_trace_id 为 None 时全部输出，否则仅匹配指定 TraceID
+                        if target_trace_id is None or record.get("trace_id") == target_trace_id:
+                            self._print_record(record)
+                    except json.JSONDecodeError as e:
+                        # [修复 REV-OB06-CON-001]
+                        # 将损坏报错写入系统标准错误 (stderr)。
+                        # 这彻底打碎了“遇到读不出的残缺日志行就直接 pass 当作无事发生”的静默丢弃潜规则，
+                        # 避免并发错乱导致的问题被无形掩盖。
+                        print(f"WARNING: JSON decode error on line: {line.strip()} - {e}", file=sys.stderr)
+                    except Exception as e:
+                        # 即使发生格式化或输出错误，也不能让后台追踪线程崩溃退出
+                        print(f"CLI Logger internal error: {e}", file=sys.stderr)
+
+            # 如果外层收到了退出信号，彻底退出大循环
+            if stop_event is not None and stop_event.is_set():
+                break
 
     def _print_record(self, record: dict) -> None:
         """

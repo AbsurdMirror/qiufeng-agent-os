@@ -135,7 +135,15 @@ class JSONLStorageEngine:
                     # os.replace 是原子操作，等价于 mv，避免 rename 时中途崩溃留下残缺文件
                     os.replace(src, dst)
             # 将当前主文件重命名为 .1，完成归档（旧的 .1 已在上面的循环中移到 .2）
-            os.replace(self.log_file, self.log_dir / "debug_trace.jsonl.1")
+            try:
+                os.replace(self.log_file, self.log_dir / "debug_trace.jsonl.1")
+            except PermissionError as pe:
+                # 捕获 Windows 下常见的文件占用问题（如被 cli_logger 打开中）
+                # 增加微小的退避重试，如果依然失败则记录明确的警告，避免静默瘫痪
+                logger.warning(f"File in use, retrying rotation in 100ms... ({pe})")
+                time.sleep(0.1)
+                os.replace(self.log_file, self.log_dir / "debug_trace.jsonl.1")
+                
             # 轮转完成后主文件 debug_trace.jsonl 不存在，下次 write_record 会自动创建
         except Exception as e:
             # 即使轮转失败，也不能抛出异常阻断正常写入 (T5 审阅)

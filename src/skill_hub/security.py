@@ -71,6 +71,10 @@ class TicketStore:
 
     def consume(self, ticket_id: str) -> None:
         """核销凭证，防止一个凭证被重复利用（重放攻击）"""
+        # [修复 REV-SEC-CON-001]
+        # 当凭单被消费（工具成功执行完毕）后主动清理，
+        # 配合上面的 ttl_seconds 定期过期清理机制，
+        # 彻底杜绝了随着运行时间推移导致的内存泄露 (OOM) 风险。
         self._tickets.pop(ticket_id, None)
 
 # 全局 Ticket Store（P0 阶段使用内存存储，未来应接入 Redis 支持多实例和持久化）
