@@ -137,6 +137,9 @@ def validate_and_heal(
                     current_input = healing_func(current_input, str(e))
                 except Exception as heal_err:
                     import traceback
+                    # 注意：这里的异常信息与堆栈可能包含敏感信息（例如配置片段、请求参数等）。
+                    # 当前实现用于调试与定位自愈引擎本身的崩溃原因；如后续接入线上环境，
+                    # 需要结合日志脱敏策略避免泄露 API Key 等凭据。
                     error_details = traceback.format_exc()
                     logger.warning(
                         f"[Schema Validator] Healing attempt {attempts} failed due to unhandled exception: {heal_err}\n"
@@ -146,6 +149,8 @@ def validate_and_heal(
                     # 快速失败机制 (T5 审阅 P0)
                     # 如果遇到认证失败、配置错误等致命异常，继续重试毫无意义，直接向上抛出
                     err_str = str(heal_err).lower()
+                    # 说明：这里使用关键字启发式判定“不可自愈”的错误类型，
+                    # 其优点是实现简单；但也可能存在误判（误伤/漏检）。
                     if any(keyword in err_str for keyword in ["authentication", "auth", "api key", "quota", "billing", "unauthorized"]):
                         logger.error("[Schema Validator] Fatal error detected (auth/billing). Aborting auto-healing.")
                         raise heal_err
@@ -157,4 +162,3 @@ def validate_and_heal(
                 # 无自愈函数：无法重试，直接抛出告知调用方，由上层决定如何降级处理
                 # 如果没有提供 healing_func，简单的自愈只能是尝试截取有效部分，这里暂时抛出异常或仅依赖 Pydantic 宽容度
                 raise SchemaValidationError(f"Validation failed and no healing function provided: {e}")
-
