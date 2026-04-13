@@ -28,6 +28,10 @@ class FeishuAsyncSender:
     设计意图 (GW-P0-08, GW-P0-09)：
         提供原生的异步 HTTP 回传接口，将渠道层的响应原语投递到飞书用户或群聊。
         绝不使用任何阻塞事件循环的同步网络库。
+    
+    生命周期约束：
+        该类内部持有 `httpx.AsyncClient`（连接池）。使用方需要在退出时调用 `aclose()`，
+        否则会产生连接与资源泄露风险（尤其在测试或短生命周期进程中更明显）。
 
     Args:
         app_id (str): 飞书自建应用的 App ID
@@ -57,6 +61,14 @@ class FeishuAsyncSender:
         """
         获取或刷新 tenant_access_token。
         带有内存 TTL 缓存机制，避免频繁拉取。
+        
+        行为约束：
+        - 仅当本地缓存 token 存在且未过期时复用，否则发起一次鉴权 API 请求。
+        - token 过期时间会预留安全窗口（默认提前 5 分钟失效），以减少临界点并发请求时的失败概率。
+        
+        Raises:
+            httpx.RequestError: 网络层请求失败（连接超时、DNS、断网等）。
+            RuntimeError: 飞书鉴权 API 返回 code != 0 的业务错误。
         """
         if self._tenant_access_token and time.time() < self._token_expire_time:
             return self._tenant_access_token
@@ -143,6 +155,8 @@ class FeishuAsyncSender:
     
             # 3. 真实发送模式
             try:
+                # token 拉取位于循环内部，但 `_get_tenant_access_token()` 内部具备缓存机制：
+                # 通常仅第一块触发鉴权请求，后续分片复用缓存 token。
                 token = await self._get_tenant_access_token()
                 headers = {
                     "Authorization": f"Bearer {token}",
