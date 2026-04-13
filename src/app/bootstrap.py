@@ -52,7 +52,11 @@ def build_application(config: AppConfig) -> Application:
     Returns:
         Application: 组装完成的应用上下文
     """
-    channel_gateway = initialize_channel_gateway(host=config.host, port=config.port)
+    channel_gateway = initialize_channel_gateway(
+        host=config.host, 
+        port=config.port, 
+        feishu_settings=config.feishu
+    )
     model_provider = initialize_model_provider()
     skill_hub = initialize_skill_hub(model_client=model_provider.client)
     storage_memory = initialize_storage_memory()

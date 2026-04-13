@@ -1,0 +1,58 @@
+from dataclasses import dataclass
+from typing import Protocol, runtime_checkable
+
+# ============================================================
+# 渠道适配层 —— 响应原语 (Channel Gateway Response Primitives)
+#
+# 本模块定义渠道层向外发送消息时使用的"响应原语"数据结构。
+# 所谓"原语"，就像乐高积木中最小的标准零件——每种原语代表一种
+# 最基础的消息类型（纯文本、卡片、图片等），发送器只需根据原语
+# 类型决定如何投递，不需要关心内容本身的格式细节。
+#
+# 目前 P0 阶段只实现纯文本原语 ReplyText，未来可在此模块中
+# 扩展 ReplyCard / ReplyImage 等更复杂的原语类型。
+# ============================================================
+
+@runtime_checkable
+class ReplyPrimitive(Protocol):
+    """
+    响应原语协议基类 (Reply Primitive Protocol Base Class)。
+    
+    设计意图 (GW-P0-07)：
+        为响应原语提供统一的类型约束。未来新增 ReplyCard、ReplyImage 
+        等原语类型时，发送器可以用统一类型提示接收任意一种响应原语。
+    """
+    pass
+
+@dataclass(frozen=True)
+class ReplyText:
+    """
+    纯文本响应原语 (Plain Text Reply Primitive)。
+
+    设计意图 (GW-P0-07)：
+        为渠道层提供最基础的纯文本回复结构，屏蔽不同渠道（飞书、钉钉、微信等）
+        在下发文本消息时的 API 格式差异。上层编排引擎无论对接哪个渠道，
+        都统一构造 ReplyText，由具体的渠道发送器（如 FeishuAsyncSender）
+        在内部将其转换为各自的平台 API 载荷。
+
+    不变性 (frozen=True)：
+        使用 frozen dataclass，实例创建后不可修改，保证消息内容
+        在传递过程中不会被意外篡改。
+
+    Attributes:
+        content (str): 要发送的纯文本内容字符串。
+
+    使用示例：
+        >>> reply = ReplyText(content="任务已完成，结果如下：\\n...")
+        >>> await feishu_sender.send_text_reply(reply, target_event)
+    """
+    # 要回复的纯文本内容。调用方应确保该字段非空。
+    # 注：此处不限制字符上限，具体渠道（如飞书4000字限制）的分片或截断由 Sender 实现。
+    content: str
+
+    def __post_init__(self):
+        # 拦截空白内容，防止向渠道下发空载荷引发目标平台 API 报错
+        if not self.content:
+            raise ValueError("ReplyText content cannot be empty.")
+
+
