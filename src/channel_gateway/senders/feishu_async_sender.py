@@ -5,8 +5,8 @@ from typing import Any
 
 import httpx
 
-from src.channel_gateway.responses import ReplyText, ReplyPrimitive
-from src.channel_gateway.events import UniversalEvent
+from src.channel_gateway.domain.responses import ReplyText, ReplyPrimitive
+from src.channel_gateway.domain.events import UniversalEvent
 
 # ============================================================
 # 渠道适配层 —— 飞书异步消息发送器 (Feishu Async Message Sender)
@@ -118,7 +118,7 @@ class FeishuAsyncSender:
         last_result = None
         for i, chunk in enumerate(chunks):
             # 只有第一个 chunk 保留 reply_to 关系，后续的 chunk 直接发
-            # 保证群聊回复时，只有第一段会显示“回复某某的某条消息”，后续段落作为普通新消息追加
+            # 保证群聊回复时，只有第一段会显示"回复某某的某条消息"，后续段落作为普通新消息追加
             current_reply_to = target_event.message_id if i == 0 else None
             
             content_str = json.dumps({"text": chunk}, ensure_ascii=False)

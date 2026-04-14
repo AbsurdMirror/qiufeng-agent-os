@@ -19,7 +19,7 @@ if project_root not in sys.path:
 from src.app.bootstrap import build_application
 from src.app.config import load_config
 from src.app.config import AppConfig
-from src.channel_gateway.events import UniversalEvent, UniversalEventContent
+from src.channel_gateway.domain.events import UniversalEvent, UniversalEventContent
 from src.orchestration_engine.contracts import CapabilityRequest
 
 def _extract_text_content(event: UniversalEvent) -> str:

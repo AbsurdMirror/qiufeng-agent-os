@@ -25,7 +25,7 @@ from pydantic import Field
 
 from src.app.bootstrap import Application, build_application
 from src.app.config import load_config
-from src.channel_gateway.events import UniversalEvent
+from src.channel_gateway.domain.events import UniversalEvent
 from src.model_provider.contracts import ModelMessage, ModelRequest
 from src.orchestration_engine.contracts import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.orchestration_engine.context_manager import StateContextManager

@@ -2,15 +2,15 @@ from typing import Any
 
 from src.app.settings_store import FeishuSettings
 from src.channel_gateway.exports import ChannelGatewayExports
-from src.channel_gateway.feishu_long_connection import (
+from src.channel_gateway.transports.feishu.long_connection import (
     initialize_feishu_long_connection,
     parse_feishu_long_connection_event,
     run_feishu_long_connection,
 )
-from src.channel_gateway.feishu_sender import FeishuAsyncSender
-from src.channel_gateway.feishu_webhook import FeishuWebhookResult, receive_feishu_webhook
-from src.channel_gateway.nonebot_runtime import initialize_nonebot2
-from src.channel_gateway.session_context import session_context_controller
+from src.channel_gateway.senders.feishu_async_sender import FeishuAsyncSender
+from src.channel_gateway.transports.feishu.webhook import FeishuWebhookResult, receive_feishu_webhook
+from src.channel_gateway.core.nonebot_runtime import initialize_nonebot2
+from src.channel_gateway.session.context import session_context_controller
 
 def initialize(host: str, port: int, feishu_settings: FeishuSettings | None = None) -> ChannelGatewayExports:
     """
@@ -19,7 +19,7 @@ def initialize(host: str, port: int, feishu_settings: FeishuSettings | None = No
     此函数会被 `src.app.bootstrap` 在应用启动时调用。它负责：
     1. 初始化底层的机器人框架（如 NoneBot2）并绑定网络监听地址。
     2. 探测并初始化特定渠道（如飞书长连接 SDK）的运行环境。
-    3. 收集并暴露所有与渠道事件相关的“入口函数”和“解析器”，
+    3. 收集并暴露所有与渠道事件相关的"入口函数"和"解析器"，
        供上层（如 App 层的长连接 runner 或 webhook server）调用。
        
     Args:

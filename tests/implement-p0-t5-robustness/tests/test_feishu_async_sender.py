@@ -4,9 +4,9 @@ import time
 
 import pytest
 
-from src.channel_gateway.events import UniversalEvent, UniversalEventContent
-from src.channel_gateway.feishu_sender import FeishuAsyncSender
-from src.channel_gateway.responses import ReplyText
+from src.channel_gateway.domain.events import UniversalEvent, UniversalEventContent
+from src.channel_gateway.senders.feishu_async_sender import FeishuAsyncSender
+from src.channel_gateway.domain.responses import ReplyText
 
 
 def _make_event(*, group_id: str | None) -> UniversalEvent:

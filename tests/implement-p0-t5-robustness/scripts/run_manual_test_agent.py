@@ -15,8 +15,8 @@ if project_root not in sys.path:
 
 from src.app.bootstrap import build_application
 from src.app.config import AppConfig, load_config
-from src.channel_gateway.events import UniversalEvent
-from src.channel_gateway.responses import ReplyText
+from src.channel_gateway.domain.events import UniversalEvent
+from src.channel_gateway.domain.responses import ReplyText
 from src.observability_hub.jsonl_storage import JSONLStorageEngine
 from src.observability_hub.recording import LogLevel, generate_trace_id, record
 from src.orchestration_engine.contracts import CapabilityDescription, CapabilityRequest, CapabilityResult
