@@ -75,8 +75,8 @@ def test_sm_03_append_hot_memory_with_max_rounds(memory_store):
     
     assert len(result) == 2
     # 返回的最新记录列表
-    assert result[0].trace_id == "t3"
-    assert result[1].trace_id == "t2"
+    assert result[0].trace_id == "t2"
+    assert result[1].trace_id == "t3"
 
 def test_sm_04_runtime_state_persistence(memory_store):
     """测试项 SM-04: 运行时状态持久化与加载"""

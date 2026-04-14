@@ -180,7 +180,7 @@ def test_mp_08_initialize_routes_minimax_requests_to_specialized_client(monkeypa
     response = exports.invoke_sync(
         ModelRequest(
             messages=(ModelMessage(role="user", content="你好"),),
-            model_name="minimax/abab6.5s-chat",
+            model_name="minimax",
         )
     )
 

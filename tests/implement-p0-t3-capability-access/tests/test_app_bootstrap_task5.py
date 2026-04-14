@@ -18,13 +18,13 @@ def test_app_01_build_application_injects_skill_hub_into_orchestration(monkeypat
         captured["model_client"] = model_client
         return fake_skill_hub
 
-    def fake_initialize_orchestration_engine(*, capability_hub: object) -> object:
+    def fake_initialize_orchestration_engine(*, capability_hub: object, **kwargs) -> object:
         captured["capability_hub"] = capability_hub
         return SimpleNamespace(layer="orchestration_engine", capability_hub=capability_hub)
 
     monkeypatch.setattr(
         "src.app.bootstrap.initialize_channel_gateway",
-        lambda host, port: fake_channel_gateway,
+        lambda host, port, **kwargs: fake_channel_gateway,
     )
     monkeypatch.setattr(
         "src.app.bootstrap.initialize_model_provider",
