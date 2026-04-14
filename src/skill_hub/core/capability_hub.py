@@ -14,8 +14,8 @@ from src.orchestration_engine.contracts import (
     CapabilityRequest,
     CapabilityResult,
 )
-from src.skill_hub.contracts import PyTool
-from src.skill_hub.security import with_security_policy, default_security_policy
+from src.skill_hub.core.contracts import PyTool
+from src.skill_hub.primitives.security import with_security_policy, default_security_policy
 
 # ============================================================
 # 能力中心 —— 注册中心与调度总线 (Capability Hub)

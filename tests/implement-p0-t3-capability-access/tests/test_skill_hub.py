@@ -3,8 +3,8 @@ import asyncio
 from src.model_provider.contracts import ModelRequest, ModelResponse
 from src.orchestration_engine.contracts import CapabilityRequest
 from src.skill_hub import initialize
-from src.skill_hub.browser_use import BrowserUsePyTool, probe_browser_use_runtime
-from src.skill_hub.contracts import BrowserUseRuntimeState
+from src.skill_hub.builtin_tools.browser_use import BrowserUsePyTool, probe_browser_use_runtime
+from src.skill_hub.core.contracts import BrowserUseRuntimeState
 
 
 def test_sh_01_initialize_exposes_browser_pytool_exports():
@@ -30,8 +30,8 @@ def test_sh_01_initialize_exposes_browser_pytool_exports():
 
 def test_sh_02_probe_runtime_degrades_without_browser_use(monkeypatch):
     """测试项 SH-02: 缺失 browser-use 依赖时返回明确降级状态"""
-    monkeypatch.setattr("src.skill_hub.browser_use._has_dependency", lambda name: False)
-    monkeypatch.setattr("src.skill_hub.browser_use._read_dependency_version", lambda name: None)
+    monkeypatch.setattr("src.skill_hub.builtin_tools.browser_use._has_dependency", lambda name: False)
+    monkeypatch.setattr("src.skill_hub.builtin_tools.browser_use._read_dependency_version", lambda name: None)
 
     state = probe_browser_use_runtime()
 
@@ -44,8 +44,8 @@ def test_sh_02_probe_runtime_degrades_without_browser_use(monkeypatch):
 
 def test_sh_03_browser_tool_returns_standard_result_when_runtime_unavailable(monkeypatch):
     """测试项 SH-03: 浏览器 PyTool 在降级态返回统一错误结果"""
-    monkeypatch.setattr("src.skill_hub.browser_use._has_dependency", lambda name: False)
-    monkeypatch.setattr("src.skill_hub.browser_use._read_dependency_version", lambda name: None)
+    monkeypatch.setattr("src.skill_hub.builtin_tools.browser_use._has_dependency", lambda name: False)
+    monkeypatch.setattr("src.skill_hub.builtin_tools.browser_use._read_dependency_version", lambda name: None)
     tool = BrowserUsePyTool()
 
     result = asyncio.run(
@@ -66,8 +66,8 @@ def test_sh_03_browser_tool_returns_standard_result_when_runtime_unavailable(mon
 
 def test_sh_04_capability_hub_routes_tool_capability(monkeypatch):
     """测试项 SH-04: Skill Hub 统一入口可转发工具域能力"""
-    monkeypatch.setattr("src.skill_hub.browser_use._has_dependency", lambda name: False)
-    monkeypatch.setattr("src.skill_hub.browser_use._read_dependency_version", lambda name: None)
+    monkeypatch.setattr("src.skill_hub.builtin_tools.browser_use._has_dependency", lambda name: False)
+    monkeypatch.setattr("src.skill_hub.builtin_tools.browser_use._read_dependency_version", lambda name: None)
     exports = initialize()
 
     result = asyncio.run(

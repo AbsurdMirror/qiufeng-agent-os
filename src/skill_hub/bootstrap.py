@@ -1,13 +1,13 @@
 from src.model_provider import initialize as initialize_model_provider
 from src.model_provider.contracts import ModelProviderClient
 from src.orchestration_engine.contracts import CapabilityRequest, CapabilityResult
-from src.skill_hub.browser_use import BrowserUsePyTool
-from src.skill_hub.capability_hub import (
+from src.skill_hub.builtin_tools.browser_use import BrowserUsePyTool
+from src.skill_hub.core.capability_hub import (
     ModelCapabilityRouter,
     RegisteredCapabilityHub,
     register_pytools,
 )
-from src.skill_hub.exports import SkillHubExports
+from src.skill_hub.core.exports import SkillHubExports
 
 
 def initialize(model_client: ModelProviderClient | None = None) -> SkillHubExports:

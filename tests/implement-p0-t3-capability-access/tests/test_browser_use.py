@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from src.orchestration_engine.contracts import CapabilityRequest
-from src.skill_hub.browser_use import BrowserUsePyTool
+from src.skill_hub.builtin_tools.browser_use import BrowserUsePyTool
 
 
 @pytest.fixture
@@ -15,7 +15,7 @@ def browser_tool():
 def test_sh_br_02_validation_failure(browser_tool: BrowserUsePyTool, monkeypatch):
     """SH-BR-02: 参数校验失败"""
     # 模拟环境就绪
-    monkeypatch.setattr("src.skill_hub.browser_use.probe_browser_use_runtime", lambda: type("MockState", (), {"available": True, "to_dict": lambda self: {}, "status": "ready"})())
+    monkeypatch.setattr("src.skill_hub.builtin_tools.browser_use.probe_browser_use_runtime", lambda: type("MockState", (), {"available": True, "to_dict": lambda self: {}, "status": "ready"})())
     
     # 异步方法的同步测试可以使用 asyncio.run 或 pytest-asyncio，这里由于内部逻辑简单，直接使用 async/await 也可以
     # 不过为了标准，我们用 pytest.mark.anyio
@@ -24,7 +24,7 @@ def test_sh_br_02_validation_failure(browser_tool: BrowserUsePyTool, monkeypatch
 
 @pytest.mark.anyio
 async def test_sh_br_02_validation_failure_async(browser_tool: BrowserUsePyTool, monkeypatch):
-    monkeypatch.setattr("src.skill_hub.browser_use.probe_browser_use_runtime", lambda: type("MockState", (), {"available": True, "to_dict": lambda self: {}, "status": "ready"})())
+    monkeypatch.setattr("src.skill_hub.builtin_tools.browser_use.probe_browser_use_runtime", lambda: type("MockState", (), {"available": True, "to_dict": lambda self: {}, "status": "ready"})())
     
     # 不传 URL
     req = CapabilityRequest(capability_id="tool.browser.open", payload={}, metadata={})
@@ -38,7 +38,7 @@ async def test_sh_br_02_validation_failure_async(browser_tool: BrowserUsePyTool,
 @pytest.mark.anyio
 async def test_sh_br_03_probe_only_mode(browser_tool: BrowserUsePyTool, monkeypatch):
     """SH-BR-03: 仅探测模式"""
-    monkeypatch.setattr("src.skill_hub.browser_use.probe_browser_use_runtime", lambda: type("MockState", (), {"available": True, "to_dict": lambda self: {}, "status": "ready"})())
+    monkeypatch.setattr("src.skill_hub.builtin_tools.browser_use.probe_browser_use_runtime", lambda: type("MockState", (), {"available": True, "to_dict": lambda self: {}, "status": "ready"})())
     
     req = CapabilityRequest(
         capability_id="tool.browser.open",
@@ -60,7 +60,7 @@ async def test_sh_br_03_probe_only_mode(browser_tool: BrowserUsePyTool, monkeypa
 async def test_sh_br_04_runtime_unavailable_returns_standard_error(browser_tool: BrowserUsePyTool, monkeypatch):
     """SH-BR-04: 运行时不可用时返回统一错误结果"""
     monkeypatch.setattr(
-        "src.skill_hub.browser_use.probe_browser_use_runtime",
+        "src.skill_hub.builtin_tools.browser_use.probe_browser_use_runtime",
         lambda: type(
             "MockState",
             (),
@@ -86,7 +86,7 @@ async def test_sh_br_04_runtime_unavailable_returns_standard_error(browser_tool:
 async def test_sh_br_05_actions_mode_returns_text_links_and_captcha_flag(browser_tool: BrowserUsePyTool, monkeypatch, tmp_path: Path):
     """SH-BR-05: actions 模式能返回 page_text/links 并检测 captcha"""
     monkeypatch.setattr(
-        "src.skill_hub.browser_use.probe_browser_use_runtime",
+        "src.skill_hub.builtin_tools.browser_use.probe_browser_use_runtime",
         lambda: type("MockState", (), {"available": True, "to_dict": lambda self: {"available": True}, "status": "ready"})(),
     )
 

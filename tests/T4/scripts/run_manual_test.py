@@ -29,8 +29,8 @@ from src.channel_gateway.domain.events import UniversalEvent
 from src.model_provider.contracts import ModelMessage, ModelRequest
 from src.orchestration_engine.contracts import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.orchestration_engine.context.state_context_manager import StateContextManager
-from src.skill_hub.capability_hub import RegisteredCapabilityHub
-from src.skill_hub.tool_parser import parse_doxygen_to_json_schema
+from src.skill_hub.core.capability_hub import RegisteredCapabilityHub
+from src.skill_hub.core.tool_parser import parse_doxygen_to_json_schema
 from src.storage_memory.contracts import HotMemoryItem
 from src.storage_memory.redis_store import HAS_REDIS
 

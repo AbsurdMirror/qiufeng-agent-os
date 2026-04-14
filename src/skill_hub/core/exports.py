@@ -7,8 +7,8 @@ from src.orchestration_engine.contracts import (
     CapabilityRequest,
     CapabilityResult,
 )
-from src.skill_hub.browser_use import BrowserUsePyTool
-from src.skill_hub.contracts import BrowserUseRuntimeState
+from src.skill_hub.builtin_tools.browser_use import BrowserUsePyTool
+from src.skill_hub.core.contracts import BrowserUseRuntimeState
 
 
 @dataclass(frozen=True)

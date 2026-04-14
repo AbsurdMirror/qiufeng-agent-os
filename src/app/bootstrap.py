@@ -9,7 +9,7 @@ from src.observability_hub.exports import ObservabilityHubExports
 from src.observability_hub import initialize as initialize_observability_hub
 from src.orchestration_engine.api.exports import OrchestrationEngineExports
 from src.orchestration_engine import initialize as initialize_orchestration_engine
-from src.skill_hub.exports import SkillHubExports
+from src.skill_hub.core.exports import SkillHubExports
 from src.skill_hub import initialize as initialize_skill_hub
 from src.storage_memory.exports import StorageMemoryExports
 from src.storage_memory import initialize as initialize_storage_memory

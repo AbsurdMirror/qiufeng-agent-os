@@ -135,7 +135,7 @@ async def _send_reply(
 
 def _register_test_tool_capabilities(*, hub: Any) -> None:
     async def _shell_exec(req: CapabilityRequest) -> CapabilityResult:
-        from src.skill_hub.security import default_security_policy
+        from src.skill_hub.primitives.security import default_security_policy
 
         cmd = str(req.payload.get("command", "") or "")
         approved = req.payload.get("approved_ticket_id")
@@ -143,7 +143,7 @@ def _register_test_tool_capabilities(*, hub: Any) -> None:
         return CapabilityResult(capability_id=req.capability_id, success=True, output={"stdout": stdout})
 
     async def _fs_read(req: CapabilityRequest) -> CapabilityResult:
-        from src.skill_hub.security import default_security_policy
+        from src.skill_hub.primitives.security import default_security_policy
 
         path = str(req.payload.get("path", "") or "")
         approved = req.payload.get("approved_ticket_id")

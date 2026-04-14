@@ -3,7 +3,7 @@ import asyncio
 import pytest
 
 from src.orchestration_engine.contracts import CapabilityRequest, CapabilityResult
-from src.skill_hub.security import (
+from src.skill_hub.primitives.security import (
     SecurityApprovalRequiredError,
     SecurityError,
     PolicyDecision,
@@ -19,7 +19,7 @@ def test_sh_t5_01_ticket_store_generate_and_consume(monkeypatch):
     store = TicketStore(ttl_seconds=10)
 
     now = 1000.0
-    monkeypatch.setattr("src.skill_hub.security.time.time", lambda: now)
+    monkeypatch.setattr("src.skill_hub.primitives.security.time.time", lambda: now)
 
     tid = store.generate()
     assert store.is_valid(tid) is True
@@ -32,7 +32,7 @@ def test_sh_t5_01_ticket_store_expires(monkeypatch):
     store = TicketStore(ttl_seconds=1)
 
     now = 2000.0
-    monkeypatch.setattr("src.skill_hub.security.time.time", lambda: now)
+    monkeypatch.setattr("src.skill_hub.primitives.security.time.time", lambda: now)
 
     tid = store.generate()
     assert store.is_valid(tid) is True
@@ -44,7 +44,7 @@ def test_sh_t5_01_ticket_store_expires(monkeypatch):
 def test_sh_t5_02_create_secure_action_requires_ticket_then_allows_with_ticket(monkeypatch):
     """测试项 SH-T5-02: create_secure_action 灰名单流程"""
     store = TicketStore(ttl_seconds=10)
-    monkeypatch.setattr("src.skill_hub.security.time.time", lambda: 3000.0)
+    monkeypatch.setattr("src.skill_hub.primitives.security.time.time", lambda: 3000.0)
 
     def policy(x: int):
         return PolicyDecision.REQUIRE_TICKET, "need approval"

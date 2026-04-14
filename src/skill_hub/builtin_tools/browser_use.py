@@ -9,7 +9,7 @@ from src.orchestration_engine.contracts import (
     CapabilityRequest,
     CapabilityResult,
 )
-from src.skill_hub.contracts import BrowserUseRuntimeState
+from src.skill_hub.core.contracts import BrowserUseRuntimeState
 
 
 def probe_browser_use_runtime() -> BrowserUseRuntimeState:

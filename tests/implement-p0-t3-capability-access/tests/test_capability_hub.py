@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, Mock
 
 from src.orchestration_engine.contracts import CapabilityDescription, CapabilityRequest, CapabilityResult
-from src.skill_hub.capability_hub import RegisteredCapabilityHub, ModelCapabilityRouter
+from src.skill_hub.core.capability_hub import RegisteredCapabilityHub, ModelCapabilityRouter
 from src.model_provider.contracts import ModelRequest, ModelResponse
 
 
@@ -81,7 +81,7 @@ async def test_ch_03_invoke_success_with_metadata(hub: RegisteredCapabilityHub):
 
 def test_mr_01_02_build_model_request():
     """MR-01 & MR-02: 兼容参数组装与空拦截"""
-    from src.skill_hub.capability_hub import _build_model_request
+    from src.skill_hub.core.capability_hub import _build_model_request
     
     # 测试 prompt 兼容转换
     req1 = CapabilityRequest(
@@ -109,7 +109,7 @@ def test_mr_01_02_build_model_request():
 
 def test_mr_03_build_model_result():
     """MR-03: 响应状态回收"""
-    from src.skill_hub.capability_hub import _build_model_result
+    from src.skill_hub.core.capability_hub import _build_model_result
     
     req = CapabilityRequest(capability_id="model.chat", payload={}, metadata={})
     resp_error = ModelResponse(
