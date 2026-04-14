@@ -1,5 +1,5 @@
 import pytest
-from src.orchestration_engine.agent_registry import (
+from src.orchestration_engine.registry.agent_registry import (
     InMemoryAgentRegistry,
     AgentSpec,
     AgentIdentity,

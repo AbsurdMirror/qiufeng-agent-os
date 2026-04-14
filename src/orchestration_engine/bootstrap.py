@@ -1,4 +1,4 @@
-from src.orchestration_engine.agent_registry import AgentRegistry, AgentSpec, InMemoryAgentRegistry
+from src.orchestration_engine.registry.agent_registry import AgentRegistry, AgentSpec, InMemoryAgentRegistry
 from src.orchestration_engine.contracts import (
     CapabilityDescription,
     CapabilityHub,
@@ -6,10 +6,11 @@ from src.orchestration_engine.contracts import (
     CapabilityResult,
     NullCapabilityHub,
 )
-from src.orchestration_engine.exports import OrchestrationEngineExports
-from src.orchestration_engine.langgraph_runtime import LangGraphRuntime
+from src.orchestration_engine.api.exports import OrchestrationEngineExports
+from src.orchestration_engine.runtime.langgraph_runtime import LangGraphRuntime
 from src.storage_memory.exports import StorageMemoryExports
-from src.orchestration_engine.context_manager import StateContextManager
+from src.orchestration_engine.context.state_context_manager import StateContextManager
+
 
 def initialize(
     capability_hub: CapabilityHub | None = None,
@@ -21,7 +22,6 @@ def initialize(
     此函数会被 `src.app.bootstrap` 在应用启动时调用。它负责：
     初始化单例的内存注册中心，并暴露代理方法供其他模块注册和查询 Agent 规格。
     """
-    # 实例化基于内存的注册中心
     registry = InMemoryAgentRegistry()
     langgraph_runtime = LangGraphRuntime()
     resolved_capability_hub = capability_hub or NullCapabilityHub()

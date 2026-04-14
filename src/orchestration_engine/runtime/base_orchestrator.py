@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from src.channel_gateway.domain.events import UniversalEvent
 from src.orchestration_engine.contracts import CapabilityHub
-from src.orchestration_engine.runtime_context import RuntimeContext
+from src.orchestration_engine.context.runtime_context import RuntimeContext
 
 
 class BaseOrchestrator(ABC):
@@ -15,7 +15,7 @@ class BaseOrchestrator(ABC):
     
     初学者提示：
     继承了 ABC 且带有 @abstractmethod 的类不能被直接实例化。
-    它就像是一个“模板”或“合同”，任何继承它的子类都必须自己写代码实现 `execute` 方法，
+    它就像是一个"模板"或"合同"，任何继承它的子类都必须自己写代码实现 `execute` 方法，
     否则 Python 会在运行时报错。这保证了所有编排器都有统一的入口。
     """
     @abstractmethod

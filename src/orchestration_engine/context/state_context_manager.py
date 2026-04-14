@@ -1,7 +1,10 @@
-from typing import Any, Mapping
 import copy
-from src.orchestration_engine.runtime_context import RuntimeContext
+import logging
+from typing import Any, Mapping
+
+from src.orchestration_engine.context.runtime_context import RuntimeContext
 from src.storage_memory.exports import StorageMemoryExports
+
 
 class StateContextManager:
     """
@@ -15,7 +18,7 @@ class StateContextManager:
         """
         OE-P0-04: 记忆读取 (Memory Loading)
         在 Agent 启动处理某条消息前，先去数据库（存储层）走一遭。
-        就好比医生给病人看病前，提前把病人的“基础病历（历史状态）”和“近期对话（热记忆）”统统拉出来，
+        就好比医生给病人看病前，提前把病人的"基础病历（历史状态）"和"近期对话（热记忆）"统统拉出来，
         封装进一个大夹子（RuntimeContext）里交给工作流去把玩。
         """
         # 加载持久化状态
@@ -60,9 +63,6 @@ class StateContextManager:
         snapshot = ctx.snapshot()
         state_to_persist = copy.deepcopy(snapshot["state"])
 
-        import logging
-
-        # 调用存储层的持久化接口
         try:
             await self._storage_memory.persist_runtime_state(
                 ctx.logic_id,

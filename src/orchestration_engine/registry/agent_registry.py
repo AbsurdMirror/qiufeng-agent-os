@@ -102,7 +102,6 @@ class InMemoryAgentRegistry:
         ]
         if not matches:
             return None
-        # 根据版本号进行字典序降序排列，取第一个即为最新版本
         return sorted(matches, key=lambda item: item.identity.version, reverse=True)[0]
 
     def list_all(self) -> list[AgentSpec]:
@@ -127,4 +126,3 @@ def _validate_agent_spec(spec: AgentSpec) -> None:
         raise ValueError("invalid_engine_type")
     if not spec.orchestrator.entrypoint.strip():
         raise ValueError("invalid_entrypoint")
-

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from src.orchestration_engine.base_orchestrator import BaseOrchestrator
+from src.orchestration_engine.runtime.base_orchestrator import BaseOrchestrator
 
 
 @dataclass(frozen=True)
@@ -40,4 +40,3 @@ class LangGraphRuntime:
         if not entrypoint.strip():
             raise ValueError("invalid_langgraph_entrypoint")
         return LangGraphExecutable(entrypoint=entrypoint, compiled_graph=None)
-

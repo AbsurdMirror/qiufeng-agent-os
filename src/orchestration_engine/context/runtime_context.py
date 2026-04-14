@@ -43,4 +43,3 @@ class RuntimeContext:
             "memory": dict(self.memory),
             "state": dict(self.state),
         }
-

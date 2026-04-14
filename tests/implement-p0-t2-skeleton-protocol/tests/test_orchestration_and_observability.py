@@ -1,5 +1,5 @@
 import pytest
-from src.orchestration_engine.langgraph_runtime import LangGraphRuntime, LangGraphExecutable
+from src.orchestration_engine.runtime.langgraph_runtime import LangGraphRuntime, LangGraphExecutable
 from src.observability_hub.request_coloring import is_request_colored, create_coloring_state
 
 def test_oe_06_compile_valid_entrypoint():
