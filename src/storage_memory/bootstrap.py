@@ -1,16 +1,12 @@
 from collections.abc import Mapping
 from typing import Any
 
-from src.storage_memory.contracts import (
-    HotMemoryItem,
-    InMemoryHotMemoryStore,
-    StorageAccessProtocol,
-)
-from src.storage_memory.exports import StorageMemoryExports
-
+from .contracts.models import HotMemoryItem
+from .contracts.protocols import StorageAccessProtocol
+from .exports import StorageMemoryExports
 
 import asyncio
-from src.storage_memory.redis_store import create_store
+from .factory.create_store import create_store
 
 def initialize() -> StorageMemoryExports:
     """

@@ -2,11 +2,8 @@ from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from src.storage_memory.contracts import (
-    HotMemoryCarrier,
-    HotMemoryItem,
-    StorageAccessProtocol,
-)
+from .contracts.models import HotMemoryItem
+from .contracts.protocols import HotMemoryCarrier, StorageAccessProtocol
 
 
 @dataclass(frozen=True)

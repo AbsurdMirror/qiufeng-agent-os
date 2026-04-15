@@ -1,10 +1,7 @@
 from .bootstrap import initialize
-from .contracts import (
-    HotMemoryCarrier,
-    HotMemoryItem,
-    InMemoryHotMemoryStore,
-    StorageAccessProtocol,
-)
+from .contracts.models import HotMemoryItem
+from .contracts.protocols import HotMemoryCarrier, StorageAccessProtocol
+from .backends.in_memory import InMemoryHotMemoryStore
 from .exports import StorageMemoryExports
 
 __all__ = [

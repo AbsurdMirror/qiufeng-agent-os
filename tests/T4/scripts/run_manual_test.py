@@ -31,8 +31,8 @@ from src.orchestration_engine.contracts import CapabilityDescription, Capability
 from src.orchestration_engine.context.state_context_manager import StateContextManager
 from src.skill_hub.core.capability_hub import RegisteredCapabilityHub
 from src.skill_hub.core.tool_parser import parse_doxygen_to_json_schema
-from src.storage_memory.contracts import HotMemoryItem
-from src.storage_memory.redis_store import HAS_REDIS
+from src.storage_memory.contracts.models import HotMemoryItem
+from src.storage_memory.factory.create_store import HAS_REDIS
 
 
 # ===========================================================

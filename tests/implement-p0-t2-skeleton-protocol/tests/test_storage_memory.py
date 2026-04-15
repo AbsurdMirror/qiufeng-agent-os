@@ -1,7 +1,8 @@
 import asyncio
 
 import pytest
-from src.storage_memory.contracts import InMemoryHotMemoryStore, HotMemoryItem
+from src.storage_memory.backends.in_memory import InMemoryHotMemoryStore
+from src.storage_memory.contracts.models import HotMemoryItem
 
 @pytest.fixture
 def memory_store():
