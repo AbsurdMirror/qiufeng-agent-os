@@ -4,7 +4,7 @@ from .record.recording import LogLevel, NormalizedRecord, record
 from .coloring.request_coloring import RequestColoringContext, RequestColoringState, is_request_colored, create_coloring_state
 from .jsonl.storage import JSONLStorageEngine
 from .cli.tailer import CLILogTailer
-from .exports.container import ObservabilityHubExports
+from .exports import ObservabilityHubExports
 
 __all__ = [
     "initialize",

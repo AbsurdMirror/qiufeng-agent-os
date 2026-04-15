@@ -14,7 +14,7 @@ from src.orchestration_engine.contracts import (
     CapabilityRequest,
     CapabilityResult,
 )
-from src.skill_hub.core.contracts import PyTool
+from src.skill_hub.contracts import PyTool
 from src.skill_hub.primitives.security import with_security_policy, default_security_policy
 
 # ============================================================

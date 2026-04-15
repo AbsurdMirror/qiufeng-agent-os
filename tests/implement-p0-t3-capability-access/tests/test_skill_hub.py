@@ -4,7 +4,7 @@ from src.model_provider.contracts import ModelRequest, ModelResponse
 from src.orchestration_engine.contracts import CapabilityRequest
 from src.skill_hub import initialize
 from src.skill_hub.builtin_tools.browser_use import BrowserUsePyTool, probe_browser_use_runtime
-from src.skill_hub.core.contracts import BrowserUseRuntimeState
+from src.skill_hub.contracts import BrowserUseRuntimeState
 
 
 def test_sh_01_initialize_exposes_browser_pytool_exports():

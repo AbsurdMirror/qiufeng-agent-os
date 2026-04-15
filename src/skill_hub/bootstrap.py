@@ -7,7 +7,7 @@ from src.skill_hub.core.capability_hub import (
     RegisteredCapabilityHub,
     register_pytools,
 )
-from src.skill_hub.core.exports import SkillHubExports
+from src.skill_hub.exports import SkillHubExports
 
 
 def initialize(model_client: ModelProviderClient | None = None) -> SkillHubExports:

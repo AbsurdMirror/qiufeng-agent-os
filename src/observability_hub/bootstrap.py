@@ -1,4 +1,4 @@
-from .exports.container import ObservabilityHubExports
+from .exports import ObservabilityHubExports
 from .trace.id_generator import generate_trace_id
 from .record.recording import record
 from .coloring.request_coloring import is_request_colored
