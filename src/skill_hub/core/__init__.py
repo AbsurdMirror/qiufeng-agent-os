@@ -7,11 +7,10 @@ skill_hub.core —— Skill Hub 核心框架模块。
 上层代码应从 src.skill_hub.exports 导入 SkillHubExports。
 """
 from .capability_hub import ModelCapabilityRouter, RegisteredCapabilityHub
-from ..contracts import BrowserUseRuntimeState, PyTool, PyToolDefinition
+from ..contracts import PyTool, PyToolDefinition
 from .tool_parser import parse_doxygen_to_json_schema
 
 __all__ = [
-    "BrowserUseRuntimeState",
     "ModelCapabilityRouter",
     "PyTool",
     "PyToolDefinition",

@@ -9,10 +9,9 @@ from src.orchestration_engine.contracts import (
     CapabilityRequest,
     CapabilityResult,
 )
-from src.skill_hub.contracts import BrowserUseRuntimeState
 
 
-def probe_browser_use_runtime() -> BrowserUseRuntimeState:
+def _probe_browser_use_runtime() -> tuple[bool, str | None, dict[str, Any]]:
     """
     探测 browser-use 与 Playwright 的最小运行时可用性。
     
@@ -24,28 +23,19 @@ def probe_browser_use_runtime() -> BrowserUseRuntimeState:
     playwright_installed = _has_dependency("playwright")
     browser_use_version = _read_dependency_version("browser-use")
     playwright_version = _read_dependency_version("playwright")
-    
+
+    metadata: dict[str, Any] = {
+        "provider": "playwright",
+        "browser_use_installed": browser_use_installed,
+        "playwright_installed": playwright_installed,
+        "browser_use_version": browser_use_version,
+        "playwright_version": playwright_version,
+    }
+
     if playwright_installed:
-        return BrowserUseRuntimeState(
-            browser_use_installed=browser_use_installed,
-            playwright_installed=True,
-            available=True,
-            status="ready",
-            browser_use_version=browser_use_version,
-            playwright_version=playwright_version,
-            metadata={"provider": "playwright", "browser_use_installed": browser_use_installed, "browser_available": True},
-        )
-    
-    return BrowserUseRuntimeState(
-        browser_use_installed=browser_use_installed,
-        playwright_installed=False,
-        available=False,
-        status="degraded",
-        reason="playwright_dependency_missing",
-        browser_use_version=browser_use_version,
-        playwright_version=playwright_version,
-        metadata={"provider": "playwright", "browser_available": False},
-    )
+        return True, None, metadata
+
+    return False, "playwright_dependency_missing", metadata
 
 
 class BrowserUsePyTool:
@@ -120,10 +110,6 @@ class BrowserUsePyTool:
             metadata={"provider": "playwright", "kind": "pytool"},
         )
 
-    def probe_runtime(self) -> BrowserUseRuntimeState:
-        """代理方法，调用包级别的探测函数"""
-        return probe_browser_use_runtime()
-
     async def invoke(self, request: CapabilityRequest) -> CapabilityResult:
         """
         执行工具调用。
@@ -133,7 +119,7 @@ class BrowserUsePyTool:
         它都不会 `raise Exception`，而是返回一个 `success=False` 的 `CapabilityResult`，
         这保证了上层调度器的稳定性。
         """
-        runtime_state = self.probe_runtime()
+        available, reason, runtime_metadata = _probe_browser_use_runtime()
         payload = dict(request.payload)
         url = _normalize_url(payload.get("url"))
         probe_only = bool(payload.get("probe_only", False))
@@ -168,11 +154,11 @@ class BrowserUsePyTool:
         if probe_only:
             return CapabilityResult(
                 capability_id=self.capability.capability_id,
-                success=runtime_state.available,
+                success=available,
                 output={
-                    "accepted": runtime_state.available,
+                    "accepted": available,
                     "execution_mode": "probe_only",
-                    "runtime": runtime_state.to_dict(),
+                    "runtime": runtime_metadata,
                     "url": url,
                     "url_before": "",
                     "url_after": "",
@@ -185,9 +171,9 @@ class BrowserUsePyTool:
                     "blocked_by_captcha": False,
                     "block_reason": "",
                 },
-                error_code=None if runtime_state.available else "browser_runtime_unavailable",
-                error_message=None if runtime_state.available else runtime_state.reason,
-                metadata={"status": runtime_state.status, "provider": "playwright"},
+                error_code=None if available else "browser_runtime_unavailable",
+                error_message=None if available else reason,
+                metadata={"provider": "playwright", **runtime_metadata},
             )
 
         if not url:
@@ -197,7 +183,7 @@ class BrowserUsePyTool:
                 output={
                     "accepted": False,
                     "execution_mode": "validation",
-                    "runtime": runtime_state.to_dict(),
+                    "runtime": runtime_metadata,
                     "url": "",
                     "url_before": "",
                     "url_after": "",
@@ -212,17 +198,17 @@ class BrowserUsePyTool:
                 },
                 error_code="invalid_browser_request",
                 error_message="missing_browser_url",
-                metadata={"status": runtime_state.status, "provider": "playwright"},
+                metadata={"provider": "playwright", **runtime_metadata},
             )
 
-        if not runtime_state.available:
+        if not available:
             return CapabilityResult(
                 capability_id=self.capability.capability_id,
                 success=False,
                 output={
                     "accepted": False,
                     "execution_mode": "probe_only",
-                    "runtime": runtime_state.to_dict(),
+                    "runtime": runtime_metadata,
                     "url": url,
                     "url_before": "",
                     "url_after": "",
@@ -236,8 +222,8 @@ class BrowserUsePyTool:
                     "block_reason": "",
                 },
                 error_code="browser_runtime_unavailable",
-                error_message=runtime_state.reason,
-                metadata={"status": runtime_state.status, "provider": "playwright"},
+                error_message=reason,
+                metadata={"provider": "playwright", **runtime_metadata},
             )
 
         try:
@@ -249,7 +235,7 @@ class BrowserUsePyTool:
                 output={
                     "accepted": False,
                     "execution_mode": "playwright_import",
-                    "runtime": runtime_state.to_dict(),
+                    "runtime": runtime_metadata,
                     "url": url,
                     "url_before": "",
                     "url_after": "",
@@ -264,7 +250,7 @@ class BrowserUsePyTool:
                 },
                 error_code="browser_runtime_unavailable",
                 error_message=str(error),
-                metadata={"status": runtime_state.status, "provider": "playwright"},
+                metadata={"provider": "playwright", **runtime_metadata},
             )
 
         url_before = url
@@ -329,7 +315,7 @@ class BrowserUsePyTool:
                 output={
                     "accepted": False,
                     "execution_mode": "playwright",
-                    "runtime": runtime_state.to_dict(),
+                    "runtime": runtime_metadata,
                     "url": url,
                     "url_before": url_before,
                     "url_after": url_after,
@@ -344,7 +330,7 @@ class BrowserUsePyTool:
                 },
                 error_code="browser_execution_failed",
                 error_message=str(error),
-                metadata={"status": runtime_state.status, "provider": "playwright"},
+                metadata={"provider": "playwright", **runtime_metadata},
             )
 
         return CapabilityResult(
@@ -353,7 +339,7 @@ class BrowserUsePyTool:
             output={
                 "accepted": True,
                 "execution_mode": "playwright",
-                "runtime": runtime_state.to_dict(),
+                "runtime": runtime_metadata,
                 "url": url,
                 "url_before": url_before,
                 "url_after": url_after,
@@ -371,7 +357,7 @@ class BrowserUsePyTool:
                     "browser_type": browser_type,
                 },
             },
-            metadata={"status": runtime_state.status, "provider": "playwright", "browser_type": browser_type},
+            metadata={"provider": "playwright", "browser_type": browser_type, **runtime_metadata},
         )
 
 

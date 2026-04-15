@@ -1,6 +1,5 @@
 from src.model_provider import initialize as initialize_model_provider
 from src.model_provider.contracts import ModelProviderClient
-from src.orchestration_engine.contracts import CapabilityRequest, CapabilityResult
 from src.skill_hub.builtin_tools.browser_use import BrowserUsePyTool
 from src.skill_hub.core.capability_hub import (
     ModelCapabilityRouter,
@@ -34,23 +33,8 @@ def initialize(model_client: ModelProviderClient | None = None) -> SkillHubExpor
     return SkillHubExports(
         layer="skill_hub",
         status="initialized",
-        browser_pytool=browser_pytool,
         capability_hub=capability_hub,
-        # 提供代理方法，方便外层直接调用能力中心的 API
         list_capabilities=capability_hub.list_capabilities,
         get_capability=capability_hub.get_capability,
-        probe_browser_runtime=browser_pytool.probe_runtime,
-        invoke_browser=lambda request: _invoke_browser(
-            browser_pytool=browser_pytool,
-            request=request,
-        ),
         invoke_capability=capability_hub.invoke,
     )
-
-
-async def _invoke_browser(
-    browser_pytool: BrowserUsePyTool,
-    request: CapabilityRequest,
-) -> CapabilityResult:
-    """代理方法：用于执行浏览器工具的异步调用"""
-    return await browser_pytool.invoke(request)
