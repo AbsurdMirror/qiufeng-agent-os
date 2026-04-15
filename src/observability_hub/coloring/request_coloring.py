@@ -86,4 +86,3 @@ def _is_truthy(value: Any) -> bool:
     if isinstance(value, int):
         return value != 0
     return False
-

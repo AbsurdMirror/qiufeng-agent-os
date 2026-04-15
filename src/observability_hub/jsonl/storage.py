@@ -4,27 +4,12 @@ import os
 import time
 import threading
 from pathlib import Path
-from src.observability_hub.recording import NormalizedRecord
+from ..record.recording import NormalizedRecord
 
 # ============================================================
 # 全栈监控层 —— JSONL 调试存储引擎 (JSONL Debug Storage Engine)
 #
 # 本模块实现了规格 OB-P0-04（调试引擎实现）和 OB-P0-05（滚动清理策略）。
-#
-# 为什么用 JSONL（JSON Lines）格式？
-#   JSONL 是"每行一个 JSON 对象"的格式。相比普通 JSON，它的优势是：
-#   1. 追加写入效率极高（只需 append，不需要读-改-写整个文件）。
-#   2. 可以用 readline() 逐行流式读取，不需要把整个文件加载到内存。
-#   3. 文件损坏时只影响损坏行，其余行仍然可读。
-#
-# 文件轮转策略（OB-P0-05）：
-#   当日志文件超过 max_bytes 时，执行类似 logrotate 的文件重命名轮转：
-#   debug_trace.jsonl → .1 → .2 → ... → .backup_count（最老的被覆盖丢弃）
-#
-# 局限性（P0 阶段）：
-#   - 同步写入（不支持异步/批量写入），高频日志场景可能有 I/O 瓶颈。
-#   - 文件轮转存在多线程竞态风险，详见审阅报告 [REV-OB0405-BUG-001]。
-#   - 本模块未在 bootstrap.py 中实例化，是"已交付但未接入"的状态（REV-T5-CON-003）。
 # ============================================================
 
 logger = logging.getLogger(__name__)
@@ -69,17 +54,7 @@ class JSONLStorageEngine:
 
         Args:
             record (NormalizedRecord): 已归一化的监控记录，由 observability_hub.recording 定义。
-
-        注意：
-            payload 字段的类型是 Any，json.dumps 可能因不可序列化的对象（如自定义类实例）
-            而抛出 TypeError，当前的 except Exception 会捕获并静默记录，
-            但调用方无法感知该条日志实际上没有写入。
         """
-        # [修复 REV-OB0405-CON-001]
-        # 将自检轮转和写入全部打包收拢进 try 块和互斥锁内。
-        # 第一层防护（Lock）：避免高并发时由于同时到达大小上限，从而触发两次轮转重命名导致的竞态崩溃。
-        # 第二层防护（try）：如果轮转时硬盘满了或者写入没有权限遭遇异常，这些观测域监控性质的意外绝不会
-        # 反抛回给主业务程序去背黑锅，造成主系统的挂机（平滑丢弃或报警）。
         try:
             # 将 NormalizedRecord 的核心字段序列化为字典
             record_dict = {
@@ -100,23 +75,11 @@ class JSONLStorageEngine:
                     f.write(line)
         except Exception as e:
             # 写入或轮转失败时降级处理：只记录错误日志，不抛异常，避免影响主业务流程
-            # 注意：调用方无法感知本次写入失败，日志可能丢失
             logger.error(f"Failed to write JSONL log: {e}")
 
     def _rotate_if_needed(self) -> None:
         """
         检查主日志文件是否超过大小上限，超出则执行文件轮转（Rolling Rotation）。
-
-        轮转逻辑（从最老到最新逐级重命名，倒序操作避免覆盖）：
-            debug_trace.jsonl.4 → debug_trace.jsonl.5  (备份数量内最老的)
-            debug_trace.jsonl.3 → debug_trace.jsonl.4
-            ...
-            debug_trace.jsonl.1 → debug_trace.jsonl.2
-            debug_trace.jsonl   → debug_trace.jsonl.1  (当前主文件归档)
-            （轮转完成后，主文件不存在，下次 write_record 会自动创建新文件）
-
-        风险：本方法在多线程并发调用时存在 TOCTOU 竞态条件。
-              详见审阅报告 [REV-OB0405-BUG-001]。
         """
         try:
             # 主文件不存在时无需轮转（首次运行或刚刚完成上一次轮转后）
@@ -127,7 +90,6 @@ class JSONLStorageEngine:
                 return
 
             # 执行文件轮转（倒序重命名，从最大序号往小遍历，避免先改小号导致大号被覆盖）
-            # 例如：backup_count=5，range(4, 0, -1) = [4, 3, 2, 1]
             for i in range(self.backup_count - 1, 0, -1):
                 src = self.log_dir / f"debug_trace.jsonl.{i}"
                 dst = self.log_dir / f"debug_trace.jsonl.{i + 1}"
@@ -138,14 +100,11 @@ class JSONLStorageEngine:
             try:
                 os.replace(self.log_file, self.log_dir / "debug_trace.jsonl.1")
             except PermissionError as pe:
-                # 捕获 Windows 下常见的文件占用问题（如被 cli_logger 打开中）
-                # 增加微小的退避重试，如果依然失败则记录明确的警告，避免静默瘫痪
+                # 捕获 Windows 下常见的文件占用问题
                 logger.warning(f"File in use, retrying rotation in 100ms... ({pe})")
                 time.sleep(0.1)
                 os.replace(self.log_file, self.log_dir / "debug_trace.jsonl.1")
                 
-            # 轮转完成后主文件 debug_trace.jsonl 不存在，下次 write_record 会自动创建
         except Exception as e:
-            # 即使轮转失败，也不能抛出异常阻断正常写入 (T5 审阅)
+            # 即使轮转失败，也不能抛出异常阻断正常写入
             logger.warning(f"Failed to rotate JSONL file {self.log_file}: {e}")
-

@@ -1,12 +1,8 @@
 import pytest
 import time
 from unittest.mock import patch
-from src.observability_hub.recording import (
-    GlobalTraceIDGenerator,
-    generate_trace_id,
-    record,
-    LogLevel
-)
+from src.observability_hub.trace.id_generator import GlobalTraceIDGenerator, generate_trace_id
+from src.observability_hub.record.recording import record, LogLevel
 
 try:
     from pydantic import BaseModel

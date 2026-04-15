@@ -5,9 +5,9 @@ import threading
 import time
 from contextlib import redirect_stderr, redirect_stdout
 
-from src.observability_hub.cli_logger import CLILogTailer
-from src.observability_hub.jsonl_storage import JSONLStorageEngine
-from src.observability_hub.recording import LogLevel, NormalizedRecord
+from src.observability_hub.cli.tailer import CLILogTailer
+from src.observability_hub.jsonl.storage import JSONLStorageEngine
+from src.observability_hub.record.recording import LogLevel, NormalizedRecord
 
 
 def test_ob_t5_01_jsonl_write_record_appends_a_line(tmp_path):

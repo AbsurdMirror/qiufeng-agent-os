@@ -1,8 +1,9 @@
-from src.observability_hub.exports import ObservabilityHubExports
-from src.observability_hub.recording import generate_trace_id, record
-from src.observability_hub.request_coloring import is_request_colored
-from src.observability_hub.jsonl_storage import JSONLStorageEngine
-from src.observability_hub.cli_logger import CLILogTailer
+from .exports.container import ObservabilityHubExports
+from .trace.id_generator import generate_trace_id
+from .record.recording import record
+from .coloring.request_coloring import is_request_colored
+from .jsonl.storage import JSONLStorageEngine
+from .cli.tailer import CLILogTailer
 
 def initialize() -> ObservabilityHubExports:
     """
@@ -17,8 +18,6 @@ def initialize() -> ObservabilityHubExports:
     """
     # [修复 REV-OBEXPORTS-CON-001]
     # 在模块点火阶段实例化最新的 JSONL 和 CLI 日志记录引擎。
-    # 这填补了此前观测总线（exports.py）暴露出去的接口仅为 None 占位符，
-    # 导致周边依赖组件一旦调用就会遭遇 AttributeError 崩溃的全局真空隐患。
     jsonl_storage = JSONLStorageEngine()
     cli_logger = CLILogTailer()
 
@@ -31,4 +30,3 @@ def initialize() -> ObservabilityHubExports:
         jsonl_storage=jsonl_storage,
         cli_logger=cli_logger,
     )
-

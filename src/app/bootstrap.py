@@ -5,7 +5,7 @@ from src.channel_gateway.exports import ChannelGatewayExports
 from src.channel_gateway import initialize as initialize_channel_gateway
 from src.model_provider.exports import ModelProviderExports
 from src.model_provider import initialize as initialize_model_provider
-from src.observability_hub.exports import ObservabilityHubExports
+from src.observability_hub.exports.container import ObservabilityHubExports
 from src.observability_hub import initialize as initialize_observability_hub
 from src.orchestration_engine.api.exports import OrchestrationEngineExports
 from src.orchestration_engine import initialize as initialize_orchestration_engine
