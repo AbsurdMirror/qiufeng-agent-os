@@ -1,7 +1,7 @@
 import pytest
 
 from src.model_provider.contracts import ModelRequest
-from src.model_provider.minimax import is_minimax_request, MiniMaxModelProviderClient
+from src.model_provider import is_minimax_request, MiniMaxModelProviderClient
 
 
 def test_mm_01_heuristic_routing():
@@ -44,7 +44,7 @@ def test_mm_03_degraded_invocation(monkeypatch):
     """MM-03: 优雅降级调用"""
     # 强制让探针返回失败状态
     monkeypatch.setattr(
-        "src.model_provider.minimax.probe_minimax_runtime",
+        "src.model_provider.providers.minimax.probe_minimax_runtime",
         lambda **kw: type("MockState", (), {"available": False, "status": "degraded", "reason": "mock_reason", "to_dict": lambda self: {}})()
     )
     

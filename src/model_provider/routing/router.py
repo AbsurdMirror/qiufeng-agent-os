@@ -16,7 +16,7 @@ class ModelRouter(ModelProviderClient):
     """
     模型路由分发器 (Model Routing)
     实现 T4 阶段的 MP-P0-01 (名称匹配) 和 MP-P0-02 (自动裁剪)
-    它就像个智能电话分机：接到请求后，先拿着“剪刀”把超长对话剪短，再根据名字呼叫确切的大模型实例。
+    它就像个智能电话分机：接到请求后，先拿着"剪刀"把超长对话剪短，再根据名字呼叫确切的大模型实例。
     """
     def __init__(self, clients: dict[str, ModelProviderClient]):
         """

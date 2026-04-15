@@ -1,7 +1,7 @@
 import pytest
 from pydantic import BaseModel
 
-from src.model_provider.schema_validator import (
+from src.model_provider import (
     AutoHealingMaxRetriesExceeded,
     SchemaValidationError,
     validate_and_heal,

@@ -7,7 +7,7 @@
 
 初学者提示：
 这里的 `__all__` 列表非常重要，它不仅告诉 Python 当执行 `from ... import *` 时该导出什么，
-更像是这个模块的“目录”，清晰地展示了本模块对外提供的所有公开 API。
+更像是这个模块的"目录"，清晰地展示了本模块对外提供的所有公开 API。
 """
 from .bootstrap import initialize
 from .contracts import (
@@ -19,21 +19,27 @@ from .contracts import (
     ModelUsage,
 )
 from .exports import ModelProviderExports
-from .litellm_adapter import (
+from .providers.litellm_adapter import (
     LiteLLMRuntimeState,
     build_litellm_completion_payload,
     normalize_litellm_response,
     probe_litellm_runtime,
 )
-from .minimax import (
+from .providers.minimax import (
     MiniMaxModelProviderClient,
     MiniMaxRuntimeState,
     is_minimax_request,
     probe_minimax_runtime,
 )
-from .router import ModelRouter
+from .routing.router import ModelRouter
+from .validators.schema_validator import (
+    AutoHealingMaxRetriesExceeded,
+    SchemaValidationError,
+    validate_and_heal,
+)
 
 __all__ = [
+    "AutoHealingMaxRetriesExceeded",
     "InMemoryModelProviderClient",
     "LiteLLMRuntimeState",
     "ModelMessage",
@@ -44,11 +50,14 @@ __all__ = [
     "ModelUsage",
     "MiniMaxModelProviderClient",
     "MiniMaxRuntimeState",
+    "SchemaValidationError",
     "build_litellm_completion_payload",
     "initialize",
     "is_minimax_request",
     "normalize_litellm_response",
     "probe_litellm_runtime",
     "probe_minimax_runtime",
+    "validate_and_heal",
     "ModelRouter",
 ]
+

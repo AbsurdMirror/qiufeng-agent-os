@@ -82,9 +82,9 @@ def test_mp_04_litellm_response_mapping_normalizes_usage_and_content():
 
 def test_mp_05_probe_minimax_runtime_degrades_without_litellm(monkeypatch):
     """测试项 MP-05: 缺失 LiteLLM 依赖时返回明确降级状态"""
-    monkeypatch.setattr("src.model_provider.litellm_adapter._has_dependency", lambda name: False)
+    monkeypatch.setattr("src.model_provider.providers.litellm_adapter._has_dependency", lambda name: False)
     monkeypatch.setattr(
-        "src.model_provider.litellm_adapter._read_dependency_version",
+        "src.model_provider.providers.litellm_adapter._read_dependency_version",
         lambda name: None,
     )
 
@@ -99,9 +99,9 @@ def test_mp_05_probe_minimax_runtime_degrades_without_litellm(monkeypatch):
 
 def test_mp_06_minimax_client_returns_degraded_response_when_runtime_unavailable(monkeypatch):
     """测试项 MP-06: MiniMax 客户端在无依赖环境下返回标准降级结果"""
-    monkeypatch.setattr("src.model_provider.litellm_adapter._has_dependency", lambda name: False)
+    monkeypatch.setattr("src.model_provider.providers.litellm_adapter._has_dependency", lambda name: False)
     monkeypatch.setattr(
-        "src.model_provider.litellm_adapter._read_dependency_version",
+        "src.model_provider.providers.litellm_adapter._read_dependency_version",
         lambda name: None,
     )
     client = MiniMaxModelProviderClient(api_key="secret", model_name="abab6.5s-chat")
@@ -142,9 +142,9 @@ def test_mp_07_minimax_client_uses_litellm_mapping_when_runtime_ready(monkeypatc
             },
         }
 
-    monkeypatch.setattr("src.model_provider.litellm_adapter._has_dependency", lambda name: True)
+    monkeypatch.setattr("src.model_provider.providers.litellm_adapter._has_dependency", lambda name: True)
     monkeypatch.setattr(
-        "src.model_provider.litellm_adapter._read_dependency_version",
+        "src.model_provider.providers.litellm_adapter._read_dependency_version",
         lambda name: "1.63.0",
     )
     client = MiniMaxModelProviderClient(
@@ -170,9 +170,9 @@ def test_mp_07_minimax_client_uses_litellm_mapping_when_runtime_ready(monkeypatc
 
 def test_mp_08_initialize_routes_minimax_requests_to_specialized_client(monkeypatch):
     """测试项 MP-08: 初始化后的模型层可识别 MiniMax 请求并进入降级分支"""
-    monkeypatch.setattr("src.model_provider.litellm_adapter._has_dependency", lambda name: False)
+    monkeypatch.setattr("src.model_provider.providers.litellm_adapter._has_dependency", lambda name: False)
     monkeypatch.setattr(
-        "src.model_provider.litellm_adapter._read_dependency_version",
+        "src.model_provider.providers.litellm_adapter._read_dependency_version",
         lambda name: None,
     )
     exports = initialize()

@@ -153,4 +153,3 @@ def validate_and_heal(
                 # 无自愈函数：无法重试，直接抛出告知调用方，由上层决定如何降级处理
                 # 如果没有提供 healing_func，简单的自愈只能是尝试截取有效部分，这里暂时抛出异常或仅依赖 Pydantic 宽容度
                 raise SchemaValidationError(f"Validation failed and no healing function provided: {e}")
-

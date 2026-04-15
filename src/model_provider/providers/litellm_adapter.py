@@ -60,7 +60,7 @@ def build_litellm_completion_payload(
     将内部统一的 ModelRequest 对象转换为 LiteLLM 的 completion 函数所需要的参数字典。
     
     设计意图：
-    将我们自己定义的强类型请求结构，平滑地“翻译”成第三方库（LiteLLM）能识别的格式。
+    将我们自己定义的强类型请求结构，平滑地"翻译"成第三方库（LiteLLM）能识别的格式。
     
     初学者提示：
     函数签名中的 `*` 表示后面的参数必须使用关键字方式传入（例如 `api_key="..."`），

@@ -5,10 +5,9 @@ from src.model_provider.contracts import (
     ModelResponse,
 )
 from src.model_provider.exports import ModelProviderExports
-from src.model_provider.minimax import MiniMaxModelProviderClient, is_minimax_request
+from src.model_provider.providers.minimax import MiniMaxModelProviderClient, is_minimax_request
+from src.model_provider.routing.router import ModelRouter
 
-
-from src.model_provider.router import ModelRouter
 
 def initialize() -> ModelProviderExports:
     """

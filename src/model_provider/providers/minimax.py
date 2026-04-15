@@ -3,7 +3,7 @@ from os import getenv
 from typing import Any
 
 from src.model_provider.contracts import ModelRequest, ModelResponse
-from src.model_provider.litellm_adapter import (
+from src.model_provider.providers.litellm_adapter import (
     build_litellm_completion_payload,
     load_litellm_completion,
     normalize_litellm_response,
@@ -43,7 +43,7 @@ class MiniMaxModelProviderClient:
     
     设计意图：
     负责封装与 MiniMax 大模型 API 通信的具体细节。
-    它依赖 LiteLLM 库来进行实际的网络请求，但在调用前会先进行“运行时探测”，
+    它依赖 LiteLLM 库来进行实际的网络请求，但在调用前会先进行"运行时探测"，
     以实现环境隔离与优雅降级（缺少依赖时不会崩溃，而是返回包含错误信息的标准化结果）。
     """
     def __init__(
@@ -195,7 +195,7 @@ def is_minimax_request(request: ModelRequest) -> bool:
     
     设计意图：
     由于请求的 `ModelRequest` 可能来自各种渠道（有些传 provider，有些传模型全称，有些传自定义 tag），
-    我们需要一个集中的地方来猜测请求的意图。这是一种典型的“基于规则的路由判定”策略。
+    我们需要一个集中的地方来猜测请求的意图。这是一种典型的"基于规则的路由判定"策略。
     
     判断优先级：
     1. 显式指定了 metadata 中的 provider 为 "minimax"。

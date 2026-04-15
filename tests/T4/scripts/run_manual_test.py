@@ -324,7 +324,7 @@ def main():
         return
 
     # 检查 MiniMax 配置
-    from src.model_provider.minimax import probe_minimax_runtime
+    from src.model_provider import probe_minimax_runtime
     mm_state = probe_minimax_runtime()
     if not mm_state.available:
         print(f"[⚠️  MiniMax] 模型未就绪: {mm_state.reason}")
