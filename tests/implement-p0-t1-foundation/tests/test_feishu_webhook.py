@@ -1,10 +1,10 @@
 import pytest
 import json
-from src.channel_gateway.transports.feishu.webhook import (
+from src.channel_gateway.channels.feishu.webhook import (
     receive_feishu_webhook,
     FeishuWebhookResult
 )
-from src.channel_gateway.domain.events import UniversalTextEvent
+from src.channel_gateway.core.domain.events import UniversalTextEvent
 
 def test_cg_01_url_verification():
     """测试项 CG-01: 处理飞书 URL 验证挑战"""

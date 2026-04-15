@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from src.channel_gateway.parsers.text_event_parser import TextEventParserFactory
-from src.channel_gateway.domain.events import UniversalEvent
+from src.channel_gateway.channels.feishu.text_event_parser import TextEventParserFactory
+from src.channel_gateway.core.domain.events import UniversalEvent
 
 
 @dataclass(frozen=True)
@@ -39,7 +39,7 @@ def receive_feishu_webhook(payload: Mapping[str, Any]) -> FeishuWebhookResult:
     # 通过策略工厂获取飞书 Webhook 的专用解析器，并将复杂解析委托给它
     parser = TextEventParserFactory.get(channel="feishu", transport="webhook")
 
-    from src.channel_gateway.session.context import session_context_controller
+    from src.channel_gateway.core.session.context import session_context_controller
     import dataclasses
 
     event = parser.parse(payload)

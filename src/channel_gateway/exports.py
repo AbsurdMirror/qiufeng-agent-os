@@ -3,12 +3,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from src.app.settings_store import FeishuSettings
-from src.channel_gateway.domain.events import UniversalEvent
-from src.channel_gateway.transports.feishu.long_connection import FeishuLongConnectionRuntime
-from src.channel_gateway.transports.feishu.webhook import FeishuWebhookResult
-from src.channel_gateway.senders.feishu_async_sender import FeishuAsyncSender
+from src.channel_gateway.core.domain.events import UniversalEvent
+from src.channel_gateway.channels.feishu.long_connection import FeishuLongConnectionRuntime
+from src.channel_gateway.channels.feishu.webhook import FeishuWebhookResult
+from src.channel_gateway.channels.feishu.sender import FeishuAsyncSender
 from src.channel_gateway.core.nonebot_runtime import NoneBotRuntime
-from src.channel_gateway.session.context import SessionContextController
+from src.channel_gateway.core.session.context import SessionContextController
 
 @dataclass(frozen=True)
 class ChannelGatewayExports:

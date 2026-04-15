@@ -2,15 +2,15 @@ from typing import Any
 
 from src.app.settings_store import FeishuSettings
 from src.channel_gateway.exports import ChannelGatewayExports
-from src.channel_gateway.transports.feishu.long_connection import (
+from src.channel_gateway.channels.feishu.long_connection import (
     initialize_feishu_long_connection,
     parse_feishu_long_connection_event,
     run_feishu_long_connection,
 )
-from src.channel_gateway.senders.feishu_async_sender import FeishuAsyncSender
-from src.channel_gateway.transports.feishu.webhook import FeishuWebhookResult, receive_feishu_webhook
+from src.channel_gateway.channels.feishu.sender import FeishuAsyncSender
+from src.channel_gateway.channels.feishu.webhook import FeishuWebhookResult, receive_feishu_webhook
 from src.channel_gateway.core.nonebot_runtime import initialize_nonebot2
-from src.channel_gateway.session.context import session_context_controller
+from src.channel_gateway.core.session.context import session_context_controller
 
 def initialize(host: str, port: int, feishu_settings: FeishuSettings | None = None) -> ChannelGatewayExports:
     """

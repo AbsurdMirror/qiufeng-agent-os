@@ -1,7 +1,7 @@
 import pytest
 import json
-from src.channel_gateway.parsers.text_event_parser import TextEventParserFactory
-from src.channel_gateway.domain.events import UniversalTextEvent
+from src.channel_gateway.channels.feishu.text_event_parser import TextEventParserFactory
+from src.channel_gateway.core.domain.events import UniversalTextEvent
 
 def get_base_payload(event_type="im.message.receive_v1", message_type="text", text_content="hello test"):
     return {

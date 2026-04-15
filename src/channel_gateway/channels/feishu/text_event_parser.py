@@ -2,7 +2,7 @@ from collections.abc import Mapping
 import json
 from typing import Any, Protocol
 
-from src.channel_gateway.domain.events import UniversalEvent, UniversalEventContent
+from src.channel_gateway.core.domain.events import UniversalEvent, UniversalEventContent
 
 
 class TextEventParser(Protocol):

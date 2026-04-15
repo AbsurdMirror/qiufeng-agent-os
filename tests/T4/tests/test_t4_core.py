@@ -5,7 +5,7 @@ from typing import Annotated
 import pytest
 from pydantic import Field
 
-from src.channel_gateway.session.context import SessionContextController
+from src.channel_gateway.core.session.context import SessionContextController
 from src.skill_hub.core.tool_parser import parse_doxygen_to_json_schema
 from src.storage_memory.backends.in_memory import InMemoryHotMemoryStore
 from src.storage_memory.contracts.models import HotMemoryItem

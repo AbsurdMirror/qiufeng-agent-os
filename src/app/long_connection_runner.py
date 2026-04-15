@@ -2,7 +2,7 @@ import asyncio
 import json
 
 from src.app.bootstrap import Application
-from src.channel_gateway.domain.events import UniversalEvent
+from src.channel_gateway.core.domain.events import UniversalEvent
 
 
 def run_feishu_long_connection(app: Application) -> None:

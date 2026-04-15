@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from src.app.settings_store import FeishuSettings
-from src.channel_gateway.parsers.text_event_parser import TextEventParserFactory
-from src.channel_gateway.domain.events import UniversalEvent
+from src.channel_gateway.channels.feishu.text_event_parser import TextEventParserFactory
+from src.channel_gateway.core.domain.events import UniversalEvent
 
 
 @dataclass(frozen=True)
@@ -51,7 +51,7 @@ def run_feishu_long_connection(
         """
         payload = _to_mapping(data)
 
-        from src.channel_gateway.session.context import session_context_controller
+        from src.channel_gateway.core.session.context import session_context_controller
         import dataclasses
 
         # 去解析所收到的原始字典数据
