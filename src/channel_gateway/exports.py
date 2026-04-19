@@ -2,13 +2,13 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from src.app.settings_store import FeishuSettings
 from src.channel_gateway.core.domain.events import UniversalEvent
 from src.channel_gateway.channels.feishu.long_connection import FeishuLongConnectionRuntime
 from src.channel_gateway.channels.feishu.webhook import FeishuWebhookResult
 from src.channel_gateway.channels.feishu.sender import FeishuAsyncSender
 from src.channel_gateway.core.nonebot_runtime import NoneBotRuntime
 from src.channel_gateway.core.session.context import SessionContextController
+from src.qfaos.config import QFAConfig
 
 @dataclass(frozen=True)
 class ChannelGatewayExports:
@@ -18,7 +18,7 @@ class ChannelGatewayExports:
     feishu_long_connection: FeishuLongConnectionRuntime
     feishu_long_connection_parser: Callable[[dict[str, Any]], UniversalEvent]
     run_feishu_long_connection: Callable[
-        [FeishuSettings, Callable[[UniversalEvent], None]],
+        [QFAConfig.Channel.Feishu, Callable[[UniversalEvent], None]],
         None,
     ]
     feishu_webhook_entry: Callable[[dict[str, Any]], FeishuWebhookResult]

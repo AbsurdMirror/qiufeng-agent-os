@@ -1,9 +1,9 @@
 import pytest
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 from src.orchestration_engine.contracts import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.skill_hub.core.capability_hub import RegisteredCapabilityHub, ModelCapabilityRouter
-from src.model_provider.contracts import ModelRequest, ModelResponse
+from src.model_provider.contracts import ModelMessage, ModelResponse
 
 
 @pytest.fixture
@@ -80,16 +80,16 @@ async def test_ch_03_invoke_success_with_metadata(hub: RegisteredCapabilityHub):
 
 
 def test_mr_01_02_build_model_request():
-    """MR-01 & MR-02: 兼容参数组装与空拦截"""
+    """MR-01 & MR-02: payload 解析与空拦截（强类型检查）"""
     from src.skill_hub.core.capability_hub import _build_model_request
     
-    # 测试 prompt 兼容转换
+    # 正常解析：messages 必须是 tuple[ModelMessage, ...]
     req1 = CapabilityRequest(
-        capability_id="model.chat",
-        payload={"prompt": "hello world"},
+        capability_id="model.chat.default",
+        payload={"messages": (ModelMessage(role="user", content="hello world"),)},
         metadata={}
     )
-    model_req1, err1 = _build_model_request(request=req1, forced_model_tag=None, forced_provider=None)
+    model_req1, err1 = _build_model_request(request=req1)
     assert err1 is None
     assert len(model_req1.messages) == 1
     assert model_req1.messages[0].content == "hello world"
@@ -97,11 +97,11 @@ def test_mr_01_02_build_model_request():
     
     # 测试空拦截
     req2 = CapabilityRequest(
-        capability_id="model.chat",
+        capability_id="model.chat.default",
         payload={},
         metadata={}
     )
-    model_req2, err2 = _build_model_request(request=req2, forced_model_tag=None, forced_provider=None)
+    model_req2, err2 = _build_model_request(request=req2)
     assert err2 is not None
     assert err2.success is False
     assert err2.error_code == "invalid_model_request"
@@ -115,35 +115,52 @@ def test_mr_03_build_model_result():
     resp_error = ModelResponse(
         model_name="test",
         content="",
+        success=False,
         finish_reason="error",
         provider_id="test",
         usage=None,
         raw={"reason": "rate_limit", "status": "degraded"}
     )
     
-    res = _build_model_result(request=req, response=resp_error, fallback_provider=None)
+    res = _build_model_result(request=req, response=resp_error)
     assert res.success is False
     assert res.error_code == "rate_limit"
 
 
 @pytest.mark.anyio
 async def test_mr_04_forced_provider_routing():
-    """MR-04: 强制提供商路由 (MiniMax)"""
-    mock_client = Mock()
-    mock_client.invoke.return_value = ModelResponse(
-        model_name="mock", content="mock", finish_reason="stop", provider_id="mock", usage=None, raw={}
-    )
-    router = ModelCapabilityRouter(mock_client)
+    """MR-04: 模型能力路由可转发到 ModelProviderClient.completion"""
+    calls = {"n": 0}
+
+    class _Client:
+        def completion(self, request):
+            calls["n"] += 1
+            assert request.model_name == "demo"
+            assert request.metadata["trace_id"] == "trace-1"
+            assert request.metadata["x"] == "y"
+            return ModelResponse(
+                model_name="demo",
+                content="mock",
+                success=True,
+                finish_reason="stop",
+                provider_id="mock",
+                usage=None,
+                raw={},
+            )
+
+    router = ModelCapabilityRouter(_Client())
     
     req = CapabilityRequest(
-        capability_id="model.minimax.chat",
-        payload={"prompt": "hi"},
-        metadata={}
+        capability_id="model.chat.default",
+        payload={
+            "messages": (ModelMessage(role="user", content="hi"),),
+            "model_name": "demo",
+            "metadata": {"x": "y"},
+        },
+        metadata={"trace_id": "trace-1"},
     )
     
-    await router.invoke_minimax(req)
-    
-    # 验证传递给 client 的 request 包含了 forced provider
-    called_req = mock_client.invoke.call_args[0][0]
-    assert called_req.metadata["provider"] == "minimax"
-    assert called_req.model_tag == "model.minimax.chat"
+    res = await router._invoke_model(req)
+    assert calls["n"] == 1
+    assert res.success is True
+    assert res.output["content"] == "mock"

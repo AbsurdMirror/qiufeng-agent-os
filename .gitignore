@@ -2,3 +2,5 @@
 .venv/
 .pytest_cache/
 __pycache__/
+tests/p05_t7/scripts/feishu_secret
+tests/p05_t7/scripts/minimax_api_key

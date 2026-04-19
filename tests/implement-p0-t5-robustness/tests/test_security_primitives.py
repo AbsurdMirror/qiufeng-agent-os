@@ -69,8 +69,7 @@ def test_sh_t5_03_with_security_policy_maps_to_capability_result_and_consumes_ti
 
     async def handler(req: CapabilityRequest) -> CapabilityResult:
         cmd = req.payload.get("command", "")
-        approved = req.payload.get("approved_ticket_id")
-        output = policy.secure_shell.execute(cmd, approved_ticket_id=approved)
+        output = policy.secure_shell.execute(cmd, approved_ticket_id=req.ticket_id)
         return CapabilityResult(capability_id=req.capability_id, success=True, output={"stdout": output})
 
     secured_handler = wrapped(handler)
@@ -84,8 +83,9 @@ def test_sh_t5_03_with_security_policy_maps_to_capability_result_and_consumes_ti
 
     req2 = CapabilityRequest(
         capability_id="tool.test.shell.exec",
-        payload={"command": "pwd", "approved_ticket_id": ticket_id},
+        payload={"command": "pwd"},
         metadata={},
+        ticket_id=ticket_id,
     )
     result2 = asyncio.run(secured_handler(req2))
     assert result2.success is True
@@ -103,8 +103,7 @@ def test_sh_t5_03_with_security_policy_maps_deny_to_security_policy_violation():
 
     async def handler(req: CapabilityRequest) -> CapabilityResult:
         cmd = req.payload.get("command", "")
-        approved = req.payload.get("approved_ticket_id")
-        output = policy.secure_shell.execute(cmd, approved_ticket_id=approved)
+        output = policy.secure_shell.execute(cmd, approved_ticket_id=req.ticket_id)
         return CapabilityResult(capability_id=req.capability_id, success=True, output={"stdout": output})
 
     secured_handler = wrapped(handler)

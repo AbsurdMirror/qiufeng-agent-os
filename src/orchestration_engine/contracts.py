@@ -42,6 +42,8 @@ class CapabilityRequest:
     payload: dict[str, Any] = field(default_factory=dict)
     # 调用时的附加元数据，可用于传递追踪ID、租户信息等上下文
     metadata: dict[str, Any] = field(default_factory=dict)
+    # 当能力执行需要用户审批时，携带用户已批准的票据 ID（用于灰名单放行与核销）
+    ticket_id: str | None = None
 
 
 @dataclass(frozen=True)

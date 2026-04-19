@@ -1,11 +1,17 @@
 from dataclasses import dataclass, field
-from importlib import import_module
 from importlib.metadata import PackageNotFoundError, version
 from importlib.util import find_spec
+import json
 from typing import Any, Mapping
 
-from src.model_provider.contracts import ModelRequest, ModelResponse, ModelUsage
-
+from src.model_provider.contracts import ModelMessage, ModelRequest, ModelResponse, ModelUsage
+from src.orchestration_engine.contracts import CapabilityDescription
+from src.model_provider.validators.output_parser import (
+    SchemaValidationError,
+    ToolCallValidationError,
+    parse_message_content,
+    parse_message_tool_calls,
+)
 
 @dataclass(frozen=True)
 class LiteLLMRuntimeState:
@@ -50,11 +56,8 @@ def probe_litellm_runtime() -> LiteLLMRuntimeState:
 
 def build_litellm_completion_payload(
     request: ModelRequest,
-    *,
-    provider: str | None = None,
     api_key: str | None = None,
     base_url: str | None = None,
-    default_model: str | None = None,
 ) -> dict[str, Any]:
     """
     将内部统一的 ModelRequest 对象转换为 LiteLLM 的 completion 函数所需要的参数字典。
@@ -66,16 +69,20 @@ def build_litellm_completion_payload(
     函数签名中的 `*` 表示后面的参数必须使用关键字方式传入（例如 `api_key="..."`），
     这有助于避免参数顺序传错的问题。
     """
-    model_name = _resolve_model_name(
-        request=request,
-        provider=provider,
-        default_model=default_model,
-    )
+    # 统一在 adapter 层注入工具提示词，避免 provider 侧重复拼接提示词。
+    effective_messages = _inject_tool_prompt_messages(request.messages, request.tools)
+
+    if getattr(request, "response_parse", None) and getattr(request.response_parse, "output_schema", None) is not None:
+        effective_messages = _inject_output_schema_prompt_messages(effective_messages, request.response_parse.output_schema)
+
+    if not isinstance(request.model_name, str):
+        raise ValueError("model_request_model_name_required")
+
     payload: dict[str, Any] = {
-        "model": model_name,
+        "model": request.model_name,
         "messages": tuple(
             {"role": message.role, "content": message.content}
-            for message in request.messages
+            for message in effective_messages
         ),
     }
     if request.temperature is not None:
@@ -84,6 +91,8 @@ def build_litellm_completion_payload(
         payload["top_p"] = request.top_p
     if request.max_tokens is not None:
         payload["max_tokens"] = request.max_tokens
+    if request.tools:
+        payload["tools"] = tuple(_to_litellm_tool(tool) for tool in request.tools)
     if api_key:
         payload["api_key"] = api_key
     if base_url:
@@ -100,62 +109,184 @@ def build_litellm_completion_payload(
     return payload
 
 
-def normalize_litellm_response(
-    response: Any,
+def build_model_response(
+    response_raw: Any,
     *,
+    request: ModelRequest,
+    output_schema: Any | None,
     fallback_model_name: str,
     provider_id: str,
 ) -> ModelResponse:
     """
-    将 LiteLLM 返回的复杂结果（通常是类似 OpenAI 格式的对象或字典），
-    归一化（整理）成我们系统内部统一的 ModelResponse 强类型对象。
+    统一构造 ModelResponse：
+    1. 只抽取一次 choice[0].message；
+    2. 使用 output_parser 完成 content/tool_calls 解析；
+    3. 产出 success 字段，供 Router 统一做重试判定。
     """
-    raw = _to_mapping(response)
+    raw = _to_mapping(response_raw)
     usage_payload = raw.get("usage")
     usage = _normalize_usage(usage_payload if isinstance(usage_payload, Mapping) else {})
     first_choice = _read_first_choice(raw)
     finish_reason = _read_string(first_choice.get("finish_reason"))
-    content = _extract_choice_content(first_choice)
     model_name = _read_string(raw.get("model")) or fallback_model_name
+    message = _read_choice_message(first_choice)
+
+    # print("response_raw:", response_raw)
+    content_value = message.get("content")
+    if not isinstance(content_value, str):
+        error_raw = dict(raw)
+        error_raw["reason"] = "model_message_content_must_be_string"
+        # print("content_value:", content_value)
+        return ModelResponse(
+            success=False,
+            model_name=model_name,
+            content="",
+            finish_reason="error",
+            provider_id=provider_id,
+            usage=usage,
+            repair_reason="model_message_content_must_be_string",
+            raw=error_raw,
+        )
+    content = content_value
+    content_effective = content.strip()
+    schema_error: str | None = None
+
+    # 先提取 tool_calls 原始结构；若无 tool_calls 但有 function_call，则归一为单条 tool_calls。
+    raw_tool_calls = message.get("tool_calls")
+    if raw_tool_calls is None:
+        function_call = message.get("function_call")
+        if isinstance(function_call, Mapping):
+            raw_tool_calls = [{"function": function_call}]
+
+    parsed = None
+    tool_calls = ()
+
+    try:
+        tool_calls = parse_message_tool_calls(raw_tool_calls, request.tools)
+    except ToolCallValidationError as exc:
+        error_raw = dict(raw)
+        error_raw["reason"] = "tool_calls_parse_failed"
+        error_raw["message"] = str(exc)
+        return ModelResponse(
+            success=False,
+            model_name=model_name,
+            content=content,
+            finish_reason="error",
+            provider_id=provider_id,
+            usage=usage,
+            repair_reason=str(exc),
+            raw=error_raw,
+        )
+
+    # 若声明了 output_schema，则执行“content 解析+schema 校验”一体化流程。
+    if output_schema is not None:
+        if content_effective:
+            try:
+                parsed = parse_message_content(output_schema, content_effective)
+            except SchemaValidationError as exc:
+                if not tool_calls:
+                    schema_error = str(exc)
+        elif not tool_calls:
+            schema_error = "model_message_content_empty"
+
+    if tool_calls:
+        success_raw = dict(raw)
+        success_raw["tool_calls"] = tuple(
+            {
+                "capability_id": call.capability_id,
+                "payload": dict(call.payload),
+                "metadata": dict(call.metadata),
+            }
+            for call in tool_calls
+        )
+
+        resolved_finish_reason = finish_reason
+        if not isinstance(resolved_finish_reason, str) or not resolved_finish_reason.strip():
+            resolved_finish_reason = "tool_calls"
+
+        return ModelResponse(
+            success=True,
+            model_name=model_name,
+            content=content,
+            finish_reason=resolved_finish_reason,
+            provider_id=provider_id,
+            usage=usage,
+            parsed=parsed,
+            tool_calls=tool_calls,
+            repair_reason=None,
+            raw=success_raw,
+        )
+
+    elif parsed is not None:
+        success_raw = dict(raw)
+
+        resolved_finish_reason = finish_reason
+        if not isinstance(resolved_finish_reason, str) or not resolved_finish_reason.strip():
+            resolved_finish_reason = "stop"
+
+        return ModelResponse(
+            success=True,
+            model_name=model_name,
+            content=content,
+            finish_reason=resolved_finish_reason,
+            provider_id=provider_id,
+            usage=usage,
+            parsed=parsed,
+            tool_calls=tool_calls,
+            repair_reason=None,
+            raw=success_raw,
+        )
+
+    elif output_schema is not None:
+        error_raw = dict(raw)
+        error_raw["reason"] = "schema_validation_failed"
+        error_raw["message"] = schema_error or "schema_validation_failed"
+        repair_reason = schema_error or "schema_validation_failed"
+        return ModelResponse(
+            success=False,
+            model_name=model_name,
+            content=content,
+            finish_reason="error",
+            provider_id=provider_id,
+            usage=usage,
+            parsed=parsed,
+            tool_calls=tool_calls,
+            repair_reason=repair_reason,
+            raw=error_raw,
+        )
+
+    elif not content_effective:
+        error_raw = dict(raw)
+        error_raw["reason"] = "model_message_content_empty"
+        return ModelResponse(
+            success=False,
+            model_name=model_name,
+            content=content,
+            finish_reason="error",
+            provider_id=provider_id,
+            usage=usage,
+            parsed=parsed,
+            tool_calls=tool_calls,
+            repair_reason="model_message_content_empty",
+            raw=error_raw,
+        )
+
+    resolved_finish_reason = finish_reason
+    if not isinstance(resolved_finish_reason, str) or not resolved_finish_reason.strip():
+        resolved_finish_reason = "stop"
+
     return ModelResponse(
+        success=True,
         model_name=model_name,
         content=content,
-        finish_reason=finish_reason,
+        finish_reason=resolved_finish_reason,
         provider_id=provider_id,
         usage=usage,
-        raw=raw,
+        parsed=parsed,
+        tool_calls=tool_calls,
+        repair_reason=None,
+        raw=dict(raw),
     )
-
-
-def load_litellm_completion() -> Any:
-    if not _has_dependency("litellm"):
-        return None
-    module = import_module("litellm")
-    completion = getattr(module, "completion", None)
-    return completion if callable(completion) else None
-
-
-def _resolve_model_name(
-    request: ModelRequest,
-    *,
-    provider: str | None,
-    default_model: str | None,
-) -> str:
-    """
-    根据请求和上下文，解析出 LiteLLM 能够识别的标准模型名称。
-    
-    设计意图：
-    由于不同的供应商要求的模型格式不一样（例如，请求 minimax 时，
-    LiteLLM 要求模型名前面必须加上 "minimax/" 前缀）。这里做统一的抹平处理。
-    """
-    raw_model_name = request.model_name or default_model or request.model_tag or "mock-model"
-    if provider == "minimax":
-        normalized = raw_model_name.strip()
-        # 如果已经有前缀就保留，否则加上 "minimax/" 前缀
-        if normalized.lower().startswith("minimax/"):
-            return normalized
-        return f"minimax/{normalized}"
-    return raw_model_name.strip()
 
 
 def _normalize_usage(usage_payload: Mapping[str, Any]) -> ModelUsage | None:
@@ -193,44 +324,79 @@ def _read_first_choice(raw: Mapping[str, Any]) -> Mapping[str, Any]:
     return {}
 
 
-def _extract_choice_content(choice: Mapping[str, Any]) -> str:
-    """
-    从单一的 Choice 字典中提取出文本内容。
-    
-    优点：
-    兼容了 OpenAI 标准格式（`message.content`）和旧版 Completion 格式（`text`）。
-    """
+def _read_choice_message(choice: Mapping[str, Any]) -> dict[str, Any]:
     message = choice.get("message")
     if isinstance(message, Mapping):
-        return _normalize_content(message.get("content"))
+        return dict(message)
     if message is not None:
-        return _normalize_content(_to_mapping(message).get("content"))
-    return _normalize_content(choice.get("text"))
+        return _to_mapping(message)
+    return {}
 
 
-def _normalize_content(value: Any) -> str:
-    """
-    把各种奇怪的返回值安全地转化为字符串。
+def _to_litellm_tool(tool: CapabilityDescription) -> dict[str, Any]:
+    capability_id = tool.capability_id
+    description = tool.description
+    input_schema = tool.input_schema
+    return {
+        "type": "function",
+        "function": {
+            "name": capability_id,
+            "description": description,
+            "parameters": dict(input_schema),
+        },
+    }
+
+
+def _inject_tool_prompt_messages(
+    messages: tuple[ModelMessage, ...],
+    tools: tuple[CapabilityDescription, ...],
+) -> tuple[ModelMessage, ...]:
+    if not tools:
+        return messages
+    tool_lines = [
+        "工具调用规则：",
+        "1. 仅可调用下列 capability_id；",
+        "2. 参数必须严格符合对应 input_schema；",
+        "3. 调用工具时输出 tool_calls，不输出多余自然语言。",
+        "允许工具列表：",
+    ]
+    for tool in tools:
+        schema_text = json.dumps(tool.input_schema, ensure_ascii=False)
+        tool_lines.append(f"- capability_id: {tool.capability_id}")
+        if tool.description:
+            tool_lines.append(f"  description: {tool.description}")
+        tool_lines.append(f"  input_schema: {schema_text}")
+    system_prompt = "\n".join(tool_lines)
+    return (ModelMessage(role="system", content=system_prompt),) + messages
+
+
+def _inject_output_schema_prompt_messages(
+    messages: tuple[ModelMessage, ...],
+    output_schema: Any | None,
+) -> tuple[ModelMessage, ...]:
+    if output_schema is None:
+        return messages
     
-    初学者提示：
-    很多时候大模型 API 可能会返回一个包含多个字典的列表（例如多模态内容），
-    这里通过判断类型，把列表里有用的文本内容拼接到一起，防止抛出 TypeError。
-    """
-    if value is None:
-        return ""
-    if isinstance(value, str):
-        return value
-    if isinstance(value, list):
-        chunks = []
-        for item in value:
-            if isinstance(item, Mapping):
-                text_value = item.get("text") or item.get("content")
-                if text_value is not None:
-                    chunks.append(str(text_value))
-            elif item is not None:
-                chunks.append(str(item))
-        return "".join(chunks)
-    return str(value)
+    schema_dict = {}
+    if hasattr(output_schema, "model_json_schema") and callable(output_schema.model_json_schema):
+        schema_dict = output_schema.model_json_schema()
+    elif hasattr(output_schema, "schema") and callable(output_schema.schema):
+        schema_dict = output_schema.schema()
+        
+    if not schema_dict:
+        return messages
+
+    schema_text = json.dumps(schema_dict, ensure_ascii=False)
+    schema_lines = [
+        "输出格式规则：",
+        "1. 必须返回合法的 JSON 字符串；",
+        "2. JSON 结构必须严格符合下列 output_schema；",
+        "3. 不要输出任何多余的自然语言解释。",
+        "output_schema：",
+        schema_text,
+    ]
+    system_prompt = "\n".join(schema_lines)
+    return (ModelMessage(role="system", content=system_prompt),) + messages
 
 
 def _to_mapping(data: Any) -> dict[str, Any]:

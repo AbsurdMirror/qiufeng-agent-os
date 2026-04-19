@@ -5,7 +5,6 @@ from src.model_provider.contracts import (
     ModelResponse,
 )
 from src.model_provider.exports import ModelProviderExports
-from src.model_provider.providers.minimax import MiniMaxModelProviderClient, is_minimax_request
 from src.model_provider.routing.router import ModelRouter
 
 
@@ -20,7 +19,6 @@ def initialize() -> ModelProviderExports:
     client = ModelRouter(
         clients={
             "default": InMemoryModelProviderClient(),
-            "minimax": MiniMaxModelProviderClient()
         }
     )
     return ModelProviderExports(
@@ -33,4 +31,4 @@ def initialize() -> ModelProviderExports:
 
 def _invoke_sync(client: ModelProviderClient, request: ModelRequest) -> ModelResponse:
     """包装代理：通过客户端发起同步推理请求"""
-    return client.invoke(request)
+    return client.completion(request)

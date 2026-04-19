@@ -5,7 +5,11 @@ from .coloring.request_coloring import is_request_colored
 from .jsonl.storage import JSONLStorageEngine
 from .cli.tailer import CLILogTailer
 
-def initialize() -> ObservabilityHubExports:
+def initialize(
+    jsonl_log_dir: str = "logs",
+    jsonl_max_bytes: int = 10 * 1024 * 1024,
+    jsonl_backup_count: int = 5,
+) -> ObservabilityHubExports:
     """
     全栈监控与治理中心 (Observability Hub) 的初始化引导函数。
     
@@ -18,7 +22,11 @@ def initialize() -> ObservabilityHubExports:
     """
     # [修复 REV-OBEXPORTS-CON-001]
     # 在模块点火阶段实例化最新的 JSONL 和 CLI 日志记录引擎。
-    jsonl_storage = JSONLStorageEngine()
+    jsonl_storage = JSONLStorageEngine(
+        log_dir=jsonl_log_dir,
+        max_bytes=jsonl_max_bytes,
+        backup_count=jsonl_backup_count,
+    )
     cli_logger = CLILogTailer()
 
     return ObservabilityHubExports(

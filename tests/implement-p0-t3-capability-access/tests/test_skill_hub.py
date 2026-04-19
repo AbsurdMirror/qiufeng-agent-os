@@ -1,6 +1,6 @@
 import asyncio
 
-from src.model_provider.contracts import ModelRequest, ModelResponse
+from src.model_provider.contracts import ModelMessage, ModelResponse
 from src.orchestration_engine.contracts import CapabilityRequest
 from src.skill_hub import initialize
 from src.skill_hub.builtin_tools.browser_use import BrowserUsePyTool
@@ -11,7 +11,6 @@ def test_sh_01_initialize_exposes_browser_pytool_exports():
     exports = initialize()
     browser_capability = exports.get_capability("tool.browser.open")
     model_capability = exports.get_capability("model.chat.default")
-    minimax_capability = exports.get_capability("model.minimax.chat")
     capability_ids = {capability.capability_id for capability in exports.list_capabilities()}
 
     assert exports.layer == "skill_hub"
@@ -19,11 +18,9 @@ def test_sh_01_initialize_exposes_browser_pytool_exports():
     assert exports.capability_hub is not None
     assert browser_capability is not None
     assert model_capability is not None
-    assert minimax_capability is not None
     assert capability_ids == {
         "tool.browser.open",
         "model.chat.default",
-        "model.minimax.chat",
     }
 
 
@@ -74,15 +71,15 @@ def test_sh_04_capability_hub_routes_model_capability_to_model_domain():
     """测试项 SH-04: Skill Hub 统一入口可转发模型域能力"""
 
     class FakeModelProviderClient:
-        def invoke(self, request: ModelRequest) -> ModelResponse:
-            assert request.model_tag == "model.minimax.chat"
+        def completion(self, request) -> ModelResponse:
+            assert request.model_name == "abab6.5s-chat"
             assert request.metadata["trace_id"] == "trace-sh-05"
-            assert request.metadata["provider"] == "minimax"
             return ModelResponse(
-                model_name="minimax/abab6.5s-chat",
+                model_name="abab6.5s-chat",
                 content="模型路由成功",
+                success=True,
                 finish_reason="stop",
-                provider_id="minimax",
+                provider_id="fake",
                 raw={"status": "ok"},
             )
 
@@ -91,17 +88,18 @@ def test_sh_04_capability_hub_routes_model_capability_to_model_domain():
     result = asyncio.run(
         exports.invoke_capability(
             CapabilityRequest(
-                capability_id="model.minimax.chat",
+                capability_id="model.chat.default",
                 payload={
-                    "messages": [{"role": "user", "content": "你好"}],
+                    "messages": (ModelMessage(role="user", content="你好"),),
+                    "model_name": "abab6.5s-chat",
                 },
                 metadata={"trace_id": "trace-sh-05"},
             )
         )
     )
 
-    assert result.capability_id == "model.minimax.chat"
+    assert result.capability_id == "model.chat.default"
     assert result.success is True
     assert result.output["content"] == "模型路由成功"
-    assert result.output["provider_id"] == "minimax"
+    assert result.output["provider_id"] == "fake"
     assert result.metadata["domain"] == "model"

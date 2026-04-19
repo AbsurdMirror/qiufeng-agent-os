@@ -21,25 +21,23 @@ from .contracts import (
 from .exports import ModelProviderExports
 from .providers.litellm_adapter import (
     LiteLLMRuntimeState,
+    build_model_response,
     build_litellm_completion_payload,
-    normalize_litellm_response,
     probe_litellm_runtime,
 )
 from .providers.minimax import (
     MiniMaxModelProviderClient,
     MiniMaxRuntimeState,
-    is_minimax_request,
-    probe_minimax_runtime,
 )
 from .routing.router import ModelRouter
-from .validators.schema_validator import (
-    AutoHealingMaxRetriesExceeded,
+from .validators.output_parser import (
     SchemaValidationError,
-    validate_and_heal,
+    ToolCallValidationError,
+    parse_message_content,
+    parse_message_tool_calls,
 )
 
 __all__ = [
-    "AutoHealingMaxRetriesExceeded",
     "InMemoryModelProviderClient",
     "LiteLLMRuntimeState",
     "ModelMessage",
@@ -51,13 +49,12 @@ __all__ = [
     "MiniMaxModelProviderClient",
     "MiniMaxRuntimeState",
     "SchemaValidationError",
+    "ToolCallValidationError",
+    "build_model_response",
     "build_litellm_completion_payload",
     "initialize",
-    "is_minimax_request",
-    "normalize_litellm_response",
     "probe_litellm_runtime",
-    "probe_minimax_runtime",
-    "validate_and_heal",
+    "parse_message_content",
+    "parse_message_tool_calls",
     "ModelRouter",
 ]
-

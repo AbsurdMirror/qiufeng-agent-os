@@ -5,6 +5,7 @@ from typing import Any
 from src.model_provider.contracts import (
     ModelMessage,
     ModelProviderClient,
+    ModelResponseParseConfig,
     ModelRequest,
     ModelResponse,
     ModelUsage,
@@ -131,7 +132,7 @@ class ModelCapabilityRouter:
     """
     def __init__(self, model_client: ModelProviderClient) -> None:
         self._model_client = model_client
-        self._default_capability = CapabilityDescription(
+        self._capability = CapabilityDescription(
             capability_id="model.chat.default",
             domain="model",
             name="model_chat_default",
@@ -140,9 +141,11 @@ class ModelCapabilityRouter:
                 "type": "object",
                 "properties": {
                     "messages": {
-                        "type": "array",
+                        "type": "python_tuple",
+                        "python_type": "tuple[ModelMessage, ...]",
                         "items": {
                             "type": "object",
+                            "python_type": "ModelMessage",
                             "properties": {
                                 "role": {"type": "string"},
                                 "content": {"type": "string"},
@@ -150,12 +153,18 @@ class ModelCapabilityRouter:
                             "required": ["role", "content"],
                         },
                     },
-                    "prompt": {"type": "string"},
                     "model_name": {"type": "string"},
                     "model_tag": {"type": "string"},
                     "temperature": {"type": "number"},
                     "top_p": {"type": "number"},
                     "max_tokens": {"type": "integer"},
+                    "tools": {
+                        "type": "python_tuple",
+                        "python_type": "tuple[CapabilityDescription, ...]",
+                        "items": {"type": "object", "python_type": "CapabilityDescription"},
+                    },
+                    "output_schema": {"type": "object"},
+                    "schema_max_retries": {"type": "integer"},
                     "metadata": {"type": "object"},
                 },
                 "additionalProperties": True,
@@ -168,64 +177,35 @@ class ModelCapabilityRouter:
                     "finish_reason": {"type": "string"},
                     "provider_id": {"type": "string"},
                     "usage": {"type": "object"},
+                    "parsed": {"type": "object"},
+                    "tool_calls": {"type": "array"},
                     "raw": {"type": "object"},
                 },
                 "additionalProperties": True,
             },
             metadata={"provider": "router", "kind": "model"},
         )
-        self._minimax_capability = CapabilityDescription(
-            capability_id="model.minimax.chat",
-            domain="model",
-            name="model_minimax_chat",
-            description="通过 MiniMax 路由发起标准对话推理请求。",
-            input_schema=self._default_capability.input_schema,
-            output_schema=self._default_capability.output_schema,
-            metadata={"provider": "minimax", "kind": "model"},
-        )
 
     def capabilities(self) -> tuple[CapabilityDescription, ...]:
-        return (self._default_capability, self._minimax_capability)
+        return (self._capability,)
 
     def register_into(self, hub: RegisteredCapabilityHub) -> None:
         hub.register_capability(
-            self._default_capability,
-            self.invoke_default,
-        )
-        hub.register_capability(
-            self._minimax_capability,
-            self.invoke_minimax,
-        )
-
-    async def invoke_default(self, request: CapabilityRequest) -> CapabilityResult:
-        return await self._invoke_model(request=request)
-
-    async def invoke_minimax(self, request: CapabilityRequest) -> CapabilityResult:
-        return await self._invoke_model(
-            request=request,
-            forced_model_tag="model.minimax.chat",
-            forced_provider="minimax",
+            self._capability,
+            self._invoke_model,
         )
 
     async def _invoke_model(
         self,
-        *,
         request: CapabilityRequest,
-        forced_model_tag: str | None = None,
-        forced_provider: str | None = None,
     ) -> CapabilityResult:
-        model_request, error = _build_model_request(
-            request=request,
-            forced_model_tag=forced_model_tag,
-            forced_provider=forced_provider,
-        )
+        model_request, error = _build_model_request(request=request)
         if error is not None:
             return error
-        response = await to_thread(self._model_client.invoke, model_request)
+        response = await to_thread(self._model_client.completion, model_request)
         return _build_model_result(
             request=request,
-            response=response,
-            fallback_provider=forced_provider,
+            response=response
         )
 
 
@@ -240,73 +220,132 @@ def register_pytools(
 def _build_model_request(
     *,
     request: CapabilityRequest,
-    forced_model_tag: str | None,
-    forced_provider: str | None,
 ) -> tuple[ModelRequest, CapabilityResult | None]:
     payload = dict(request.payload)
-    messages = _normalize_messages(payload)
-    if not messages:
+    messages, message_error = _normalize_messages(payload)
+    if message_error is not None:
         return ModelRequest(messages=()), CapabilityResult(
             capability_id=request.capability_id,
             success=False,
             output={},
             error_code="invalid_model_request",
-            error_message="model_messages_required",
-            metadata={"domain": "model", "provider": forced_provider or "router"},
+            error_message=message_error,
+            metadata={"domain": "model"},
+        )
+    tools, tools_error = _normalize_tools(payload)
+    if tools_error is not None:
+        return ModelRequest(messages=messages), CapabilityResult(
+            capability_id=request.capability_id,
+            success=False,
+            output={},
+            error_code="invalid_model_request",
+            error_message=tools_error,
+            metadata={"domain": "model"},
         )
     payload_metadata = payload.get("metadata", {})
     metadata = dict(request.metadata)
     if isinstance(payload_metadata, dict):
         metadata.update(payload_metadata)
-    if forced_provider:
-        metadata["provider"] = forced_provider
     model_request = ModelRequest(
         messages=messages,
         model_name=_normalize_optional_string(payload.get("model_name")),
-        model_tag=forced_model_tag or _normalize_optional_string(payload.get("model_tag")),
+        model_tag=_normalize_optional_string(payload.get("model_tag")),
         temperature=_normalize_optional_float(payload.get("temperature")),
         top_p=_normalize_optional_float(payload.get("top_p")),
         max_tokens=_normalize_optional_int(payload.get("max_tokens")),
+        tools=tools,
+        response_parse=ModelResponseParseConfig(
+            output_schema = payload.get("output_schema"),
+            schema_max_retries = _normalize_optional_int(payload.get("schema_max_retries"))
+        ),
         metadata=metadata,
     )
     return model_request, None
 
 
-def _normalize_messages(payload: dict[str, Any]) -> tuple[ModelMessage, ...]:
+def _normalize_messages(payload: dict[str, Any]) -> tuple[tuple[ModelMessage, ...], str | None]:
     raw_messages = payload.get("messages")
-    if isinstance(raw_messages, tuple):
-        values = raw_messages
-    elif isinstance(raw_messages, list):
-        values = tuple(raw_messages)
-    else:
-        values = ()
-    messages: list[ModelMessage] = []
-    for raw_message in values:
-        if isinstance(raw_message, ModelMessage):
-            messages.append(raw_message)
-            continue
-        if isinstance(raw_message, dict):
-            role = _normalize_optional_string(raw_message.get("role")) or "user"
-            content = _normalize_optional_string(raw_message.get("content")) or ""
-            if content:
-                messages.append(ModelMessage(role=role, content=content))
-    if messages:
-        return tuple(messages)
-    prompt = _normalize_optional_string(payload.get("prompt"))
-    if prompt:
-        return (ModelMessage(role="user", content=prompt),)
-    return ()
+    if not raw_messages:
+        return (), "model_messages_required"
+    if not isinstance(raw_messages, tuple):
+        return (), "model_messages_must_be_tuple"
+    for item in raw_messages:
+        if not isinstance(item, ModelMessage):
+            return (), "model_messages_items_must_be_model_message"
+    return raw_messages, None
+
+
+def _normalize_tools(payload: dict[str, Any]) -> tuple[tuple[CapabilityDescription, ...], str | None]:
+    raw_tools = payload.get("tools")
+    if raw_tools is None:
+        return (), None
+    if not isinstance(raw_tools, tuple):
+        return (), "model_tools_must_be_tuple"
+    for item in raw_tools:
+        if not isinstance(item, CapabilityDescription):
+            return (), "model_tools_items_must_be_capability_description"
+    return raw_tools, None
+
+
+def _normalize_optional_string(value: Any) -> str | None:
+    """
+    规范化可选字符串字段：
+    - 仅接受 str；空白字符串视为 None；
+    - 其他类型一律返回 None（不做兼容转换）。
+    """
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip()
+    return normalized or None
+
+
+def _normalize_optional_float(value: Any) -> float | None:
+    """
+    规范化可选浮点字段：
+    - 仅接受 int/float（排除 bool）；
+    - 其他类型一律返回 None（不做兼容转换）。
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    return None
+
+
+def _normalize_optional_int(value: Any) -> int | None:
+    """
+    规范化可选整数字段：
+    - 仅接受 int（排除 bool）；
+    - 其他类型一律返回 None（不做兼容转换）。
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    return None
 
 
 def _build_model_result(
     *,
     request: CapabilityRequest,
     response: ModelResponse,
-    fallback_provider: str | None,
 ) -> CapabilityResult:
+    """
+    将模型层返回的 ModelResponse 映射为编排层可消费的 CapabilityResult。
+
+    职责边界说明：
+    1. 这里只做字段映射与错误翻译，不做解析、校验和重试策略；
+    2. success/error 语义以 ModelResponse 为准，避免在 Skill Hub 再次推断状态；
+    3. 将 parsed/tool_calls/raw 全量透传，便于编排层决策下一步动作。
+    """
     raw = dict(response.raw)
-    raw_status = str(raw.get("status", "")).strip().lower()
-    success = response.finish_reason != "error" and raw_status not in {"degraded", "error"}
+    success = response.success
     error_code = None
     error_message = None
     if not success:
@@ -320,50 +359,21 @@ def _build_model_result(
             "content": response.content,
             "finish_reason": response.finish_reason,
             "provider_id": response.provider_id,
-            "usage": _serialize_usage(response.usage),
+            "usage": response.usage.to_dict() if response.usage else {},
+            "parsed": response.parsed,
+            "tool_calls": tuple(
+                {
+                    "capability_id": call.capability_id,
+                    "payload": dict(call.payload),
+                    "metadata": dict(call.metadata),
+                }
+                for call in response.tool_calls
+            ),
             "raw": raw,
         },
         error_code=error_code,
         error_message=error_message,
         metadata={
             "domain": "model",
-            "provider": response.provider_id or fallback_provider or "router",
         },
     )
-
-
-def _serialize_usage(usage: ModelUsage | None) -> dict[str, int | None]:
-    if usage is None:
-        return {}
-    return {
-        "input_tokens": usage.input_tokens,
-        "output_tokens": usage.output_tokens,
-        "total_tokens": usage.total_tokens,
-    }
-
-
-def _normalize_optional_string(value: Any) -> str | None:
-    if value is None:
-        return None
-    normalized = str(value).strip()
-    return normalized or None
-
-
-def _normalize_optional_float(value: Any) -> float | None:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int | float):
-        return float(value)
-    return None
-
-
-def _normalize_optional_int(value: Any) -> int | None:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int):
-        return value
-    return None

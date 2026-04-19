@@ -347,8 +347,7 @@ def with_security_policy(policy: ToolSecurityPrimitive) -> Callable:
                 result = await handler(request)
                 
                 # 3. 如果请求成功执行且携带有 ticket，则核销该 ticket
-                payload = request.payload or {}
-                approved_ticket_id = payload.get("approved_ticket_id")
+                approved_ticket_id = request.ticket_id
                 if approved_ticket_id and getattr(result, "success", False) is True:
                     _global_ticket_store.consume(approved_ticket_id)
                     

@@ -5,10 +5,11 @@ from src.model_provider.contracts import (
     ModelMessage,
     ModelResponse
 )
+from src.model_provider import ModelRouter
 
 def test_mp_01_invoke_with_messages():
     """测试项 MP-01: 模拟客户端常规推理"""
-    client = InMemoryModelProviderClient()
+    router = ModelRouter(clients={"test-model": InMemoryModelProviderClient()})
     
     request = ModelRequest(
         messages=(
@@ -19,27 +20,27 @@ def test_mp_01_invoke_with_messages():
         model_name="test-model"
     )
     
-    response = client.invoke(request)
+    response = router.completion(request)
     
     assert isinstance(response, ModelResponse)
     # 模拟客户端应该回显最后一条消息的内容
     assert response.content == "What is the weather today?"
-    assert response.provider_id == "in_memory"
+    assert response.provider_id == "default"
     assert response.model_name == "test-model"
     assert response.finish_reason == "stop"
 
 def test_mp_02_invoke_with_empty_messages():
     """测试项 MP-02: 模拟客户端空消息推理"""
-    client = InMemoryModelProviderClient()
+    router = ModelRouter(clients={"default": InMemoryModelProviderClient()})
     
     request = ModelRequest(
         messages=(),
-        model_tag="default-tag"
+        model_name="default",
     )
     
-    response = client.invoke(request)
+    response = router.completion(request)
     
     assert isinstance(response, ModelResponse)
     assert response.content == ""
-    assert response.provider_id == "in_memory"
-    assert response.model_name == "default-tag"
+    assert response.provider_id == "default"
+    assert response.model_name == "default"

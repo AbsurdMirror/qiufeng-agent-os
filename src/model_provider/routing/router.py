@@ -1,12 +1,14 @@
 from typing import Any
 from src.model_provider.contracts import ModelRequest, ModelResponse, ModelProviderClient, ModelMessage
+from src.model_provider.providers.litellm_adapter import (
+    build_litellm_completion_payload,
+    build_model_response,
+)
 
 import os
+import tempfile
 
 try:
-    # Set TIKTOKEN_CACHE_DIR to prevent synchronous network downloads if local cache is available
-    if not os.environ.get("TIKTOKEN_CACHE_DIR"):
-        os.environ["TIKTOKEN_CACHE_DIR"] = "/tmp/tiktoken_cache"
     import tiktoken
     HAS_TIKTOKEN = True
 except ImportError:
@@ -23,6 +25,11 @@ class ModelRouter(ModelProviderClient):
         :param clients: A dictionary mapping model names or logical tags to specific client implementations.
         """
         self._clients = clients
+        if not os.environ.get("TIKTOKEN_CACHE_DIR"):
+            os.environ["TIKTOKEN_CACHE_DIR"] = os.path.join(
+                tempfile.gettempdir(),
+                "tiktoken_cache",
+            )
         # 默认上下文窗口限制
         self._context_windows = {
             "gpt-3.5-turbo": 4096,
@@ -30,6 +37,20 @@ class ModelRouter(ModelProviderClient):
             "minimax": 32000,
             "default": 4096
         }
+
+    def add_client(self, model_name: str, client: ModelProviderClient) -> None:
+        self._clients[model_name] = client
+
+    def _build_repair_message(self, *, invalid_output: str, error_text: str) -> ModelMessage:
+        return ModelMessage(
+            role="user",
+            content=(
+                "你的上一次输出在解析阶段出错，请严格按照本轮规范重新输出。\n"
+                "要求：只输出符合规范的结果，不要附加解释文本。\n"
+                f"上一次输出: {invalid_output}\n"
+                f"解析错误: {error_text}"
+            ),
+        )
 
     def _trim_messages(self, messages: tuple[ModelMessage, ...], model_name: str) -> tuple[ModelMessage, ...]:
         """
@@ -75,12 +96,13 @@ class ModelRouter(ModelProviderClient):
         # 组合 system messages 和裁剪后的其他消息
         return tuple(system_messages + trimmed_messages[::-1])
 
-    def invoke(self, request: ModelRequest) -> ModelResponse:
+    def completion(self, request: ModelRequest) -> ModelResponse:
         """
         MP-P0-01: 显式名称匹配 (Explicit Name Matching)
         基于物理名称 (Model Name) 的直接调度匹配机制
         """
-        target_name = request.model_name or request.model_tag or "default"
+        # P0 级修复：简化路由逻辑，直接以 model_name 为主索引
+        target_name = request.model_name or "default"
 
         # MP-P0-02: 自动裁剪
         trimmed_messages = self._trim_messages(request.messages, target_name)
@@ -93,6 +115,8 @@ class ModelRouter(ModelProviderClient):
             temperature=request.temperature,
             top_p=request.top_p,
             max_tokens=request.max_tokens,
+            tools=request.tools,
+            response_parse=request.response_parse,
             metadata=request.metadata
         )
 
@@ -104,4 +128,74 @@ class ModelRouter(ModelProviderClient):
         if not client:
             raise ValueError(f"No suitable model provider found for '{target_name}'")
 
-        return client.invoke(trimmed_request)
+        response_parse = trimmed_request.response_parse
+        max_retries_raw = response_parse.schema_max_retries
+        max_retries = max_retries_raw if isinstance(max_retries_raw, int) and max_retries_raw >= 0 else 0
+        output_schema = response_parse.output_schema
+        current_request = trimmed_request
+        attempts = 0
+        while True:
+            try:
+                provider_id = client.provider_id
+                payload = build_litellm_completion_payload(
+                    current_request,
+                )
+                raw = client.completion(payload)
+                response = build_model_response(
+                    raw,
+                    request=current_request,
+                    output_schema=output_schema,
+                    fallback_model_name=current_request.model_name or target_name,
+                    provider_id=provider_id,
+                )
+            except Exception as exc:  # noqa: BLE001
+                fallback = ModelResponse(
+                    model_name=current_request.model_name or target_name,
+                    content="",
+                    success=False,
+                    finish_reason="error",
+                    provider_id=target_name,
+                    repair_reason=str(exc),
+                    raw={
+                        "reason": "model_router_completion_failed",
+                        "message": str(exc),
+                    },
+                )
+                response = fallback
+
+            if response.success:
+                return response
+            if attempts >= max_retries:
+                exhausted_raw = dict(response.raw)
+                exhausted_raw.setdefault("reason", "model_response_parse_failed")
+                exhausted_raw.setdefault("message", "response parsing failed after retries")
+                exhausted_raw["retry_count"] = attempts
+                return ModelResponse(
+                    model_name=response.model_name,
+                    content=response.content,
+                    success=False,
+                    finish_reason="error",
+                    provider_id=response.provider_id,
+                    usage=response.usage,
+                    parsed=response.parsed,
+                    tool_calls=response.tool_calls,
+                    repair_reason=response.repair_reason,
+                    raw=exhausted_raw,
+                )
+            attempts += 1
+            repair_reason = response.repair_reason or "model_response_parse_failed"
+            repair_message = self._build_repair_message(
+                invalid_output=response.content,
+                error_text=repair_reason,
+            )
+            current_request = ModelRequest(
+                messages=current_request.messages + (repair_message,),
+                model_name=current_request.model_name,
+                model_tag=current_request.model_tag,
+                temperature=current_request.temperature,
+                top_p=current_request.top_p,
+                max_tokens=current_request.max_tokens,
+                tools=current_request.tools,
+                response_parse=current_request.response_parse,
+                metadata=current_request.metadata,
+            )

@@ -8,7 +8,7 @@ from .exports import StorageMemoryExports
 import asyncio
 from .factory.create_store import create_store
 
-def initialize() -> StorageMemoryExports:
+def initialize(redis_url: str | None = None) -> StorageMemoryExports:
     """
     存储与记忆层 (Storage & Memory) 的初始化引导函数。
     
@@ -17,7 +17,7 @@ def initialize() -> StorageMemoryExports:
     从而将具体的 Store 实例封装在本层内部，不向上层泄漏。
     """
 
-    store = create_store()
+    store = create_store(redis_url=redis_url)
 
     return StorageMemoryExports(
         layer="storage_memory",

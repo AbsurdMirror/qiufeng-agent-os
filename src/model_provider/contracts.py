@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Mapping, Protocol
+from src.orchestration_engine.contracts import CapabilityRequest, CapabilityDescription
 
 
 @dataclass(frozen=True)
@@ -30,7 +31,20 @@ class ModelRequest:
     temperature: float | None = None
     top_p: float | None = None
     max_tokens: int | None = None
+    tools: tuple[CapabilityDescription, ...] = ()
+    response_parse: "ModelResponseParseConfig" = field(default_factory=lambda: ModelResponseParseConfig())
     metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ModelResponseParseConfig:
+    """
+    模型响应解析配置：
+    - output_schema: content 结构化解析目标 Schema；
+    - schema_max_retries: content/tool_calls 解析失败时的最大重试次数。
+    """
+    output_schema: Any | None = None
+    schema_max_retries: int = 0
 
 
 @dataclass(frozen=True)
@@ -39,6 +53,14 @@ class ModelUsage:
     input_tokens: int | None = None
     output_tokens: int | None = None
     total_tokens: int | None = None
+
+    def to_dict(self) -> dict[str, int | None]:
+        """将 Usage 转换为字典格式"""
+        return {
+            "input_tokens": self.input_tokens,
+            "output_tokens": self.output_tokens,
+            "total_tokens": self.total_tokens,
+        }
 
 
 @dataclass(frozen=True)
@@ -56,9 +78,13 @@ class ModelResponse:
     """
     model_name: str
     content: str
+    success: bool = True
     finish_reason: str | None = None
     provider_id: str | None = None
     usage: ModelUsage | None = None
+    parsed: Any = None
+    tool_calls: tuple[CapabilityRequest, ...] = ()
+    repair_reason: str | None = None
     raw: dict[str, Any] = field(default_factory=dict)
 
 
@@ -67,7 +93,9 @@ class ModelProviderClient(Protocol):
     模型提供商客户端协议 (Duck Typing Interface)。
     所有具体的模型服务商接入实现都必须遵循此同步调用契约。
     """
-    def invoke(self, request: ModelRequest) -> ModelResponse:
+    provider_id: str
+
+    def completion(self, request: ModelRequest) -> ModelResponse:
         raise NotImplementedError
 
 
@@ -77,14 +105,25 @@ class InMemoryModelProviderClient:
     
     主要用于 P0 T2 阶段打通链路和单元测试，它会简单地将用户输入的最后一条消息作为模型回复返回。
     """
-    def invoke(self, request: ModelRequest) -> ModelResponse:
-        latest_message = request.messages[-1].content if request.messages else ""
-        return ModelResponse(
-            model_name=request.model_name or request.model_tag or "mock-model",
-            content=latest_message,
-            finish_reason="stop",
-            provider_id="in_memory",
-            usage=None,
-            raw={},
-        )
+    provider_id = "default"
 
+    def completion(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+        """
+        生成 LiteLLM 兼容的 mock 原始响应。
+        该方法用于 Router 主链路的 completion(payload)->raw 调用约定。
+        """
+        raw_messages = payload.get("messages")
+        last_content = ""
+        if isinstance(raw_messages, tuple) and raw_messages:
+            last_item = raw_messages[-1]
+            if isinstance(last_item, dict):
+                last_content = str(last_item.get("content", ""))
+        return {
+            "model": str(payload.get("model") or "mock-model"),
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {"role": "assistant", "content": last_content},
+                }
+            ],
+        }

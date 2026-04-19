@@ -1,11 +1,13 @@
 from types import SimpleNamespace
 
-from src.app.bootstrap import build_application
-from src.app.config import AppConfig
+from tests.support_qfaos_bootstrap import (
+    QFAOSBootstrapConfig,
+    build_qfaos_application,
+)
 
 
 def test_app_01_build_application_injects_skill_hub_into_orchestration(monkeypatch):
-    """测试项 APP-01: 应用引导链路将 Skill Hub 能力中心注入编排层"""
+    """测试项 APP-01: qfaos 装配链路将 Skill Hub 能力中心注入编排层"""
     captured: dict[str, object] = {}
     fake_channel_gateway = SimpleNamespace(layer="channel_gateway")
     fake_model_provider = SimpleNamespace(layer="model_provider", client=object())
@@ -23,32 +25,32 @@ def test_app_01_build_application_injects_skill_hub_into_orchestration(monkeypat
         return SimpleNamespace(layer="orchestration_engine", capability_hub=capability_hub)
 
     monkeypatch.setattr(
-        "src.app.bootstrap.initialize_channel_gateway",
+        "tests.support_qfaos_bootstrap.initialize_channel_gateway",
         lambda host, port, **kwargs: fake_channel_gateway,
     )
     monkeypatch.setattr(
-        "src.app.bootstrap.initialize_model_provider",
+        "tests.support_qfaos_bootstrap.initialize_model_provider",
         lambda: fake_model_provider,
     )
     monkeypatch.setattr(
-        "src.app.bootstrap.initialize_skill_hub",
+        "tests.support_qfaos_bootstrap.initialize_skill_hub",
         fake_initialize_skill_hub,
     )
     monkeypatch.setattr(
-        "src.app.bootstrap.initialize_orchestration_engine",
+        "tests.support_qfaos_bootstrap.initialize_orchestration_engine",
         fake_initialize_orchestration_engine,
     )
     monkeypatch.setattr(
-        "src.app.bootstrap.initialize_storage_memory",
-        lambda: fake_storage_memory,
+        "tests.support_qfaos_bootstrap.initialize_storage_memory",
+        lambda **kwargs: fake_storage_memory,
     )
     monkeypatch.setattr(
-        "src.app.bootstrap.initialize_observability_hub",
+        "tests.support_qfaos_bootstrap.initialize_observability_hub",
         lambda: fake_observability_hub,
     )
 
-    app = build_application(
-        AppConfig(
+    app = build_qfaos_application(
+        QFAOSBootstrapConfig(
             app_name="qiufeng-agent-os",
             environment="test",
             debug=False,
@@ -64,4 +66,3 @@ def test_app_01_build_application_injects_skill_hub_into_orchestration(monkeypat
     assert app.modules.orchestration_engine.capability_hub is fake_capability_hub
     assert captured["model_client"] is fake_model_provider.client
     assert captured["capability_hub"] is fake_capability_hub
-

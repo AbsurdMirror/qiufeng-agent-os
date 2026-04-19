@@ -2,9 +2,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from src.app.settings_store import FeishuSettings
 from src.channel_gateway.channels.feishu.text_event_parser import TextEventParserFactory
 from src.channel_gateway.core.domain.events import UniversalEvent
+from src.qfaos.config import QFAConfig
 
 
 @dataclass(frozen=True)
@@ -30,7 +30,7 @@ def parse_feishu_long_connection_event(payload: Mapping[str, Any]) -> UniversalE
 
 
 def run_feishu_long_connection(
-    settings: FeishuSettings,
+    settings: QFAConfig.Channel.Feishu,
     on_text_event: Callable[[UniversalEvent], None],
 ) -> None:
     """

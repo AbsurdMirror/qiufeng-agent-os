@@ -3,9 +3,9 @@ from src.model_provider import (
     ModelMessage,
     ModelRequest,
     build_litellm_completion_payload,
+    build_model_response,
     initialize,
-    normalize_litellm_response,
-    probe_minimax_runtime,
+    LiteLLMRuntimeState,
 )
 
 
@@ -28,12 +28,11 @@ def test_mp_03_litellm_payload_mapping_keeps_standard_fields():
 
     payload = build_litellm_completion_payload(
         request,
-        provider="minimax",
         api_key="secret",
         base_url="https://api.minimax.chat/v1",
     )
 
-    assert payload["model"] == "minimax/abab6.5s-chat"
+    assert payload["model"] == "abab6.5s-chat"
     assert payload["messages"] == (
         {"role": "system", "content": "你是助手"},
         {"role": "user", "content": "介绍一下你自己"},
@@ -49,9 +48,13 @@ def test_mp_03_litellm_payload_mapping_keeps_standard_fields():
 
 def test_mp_04_litellm_response_mapping_normalizes_usage_and_content():
     """测试项 MP-04: LiteLLM 响应映射回收统一 ModelResponse"""
-    response = normalize_litellm_response(
+    request = ModelRequest(
+        messages=(ModelMessage(role="user", content="hi"),),
+        model_name="abab6.5s-chat",
+    )
+    response = build_model_response(
         {
-            "model": "minimax/abab6.5s-chat",
+            "model": "abab6.5s-chat",
             "choices": [
                 {
                     "finish_reason": "stop",
@@ -66,11 +69,13 @@ def test_mp_04_litellm_response_mapping_normalizes_usage_and_content():
                 "total_tokens": 19,
             },
         },
-        fallback_model_name="minimax/abab6.5s-chat",
+        request=request,
+        output_schema=None,
+        fallback_model_name="abab6.5s-chat",
         provider_id="minimax",
     )
 
-    assert response.model_name == "minimax/abab6.5s-chat"
+    assert response.model_name == "abab6.5s-chat"
     assert response.content == "你好，我是 MiniMax。"
     assert response.finish_reason == "stop"
     assert response.provider_id == "minimax"
@@ -80,7 +85,7 @@ def test_mp_04_litellm_response_mapping_normalizes_usage_and_content():
     assert response.usage.total_tokens == 19
 
 
-def test_mp_05_probe_minimax_runtime_degrades_without_litellm(monkeypatch):
+def test_mp_05_minimax_completion_degrades_without_litellm(monkeypatch):
     """测试项 MP-05: 缺失 LiteLLM 依赖时返回明确降级状态"""
     monkeypatch.setattr("src.model_provider.providers.litellm_adapter._has_dependency", lambda name: False)
     monkeypatch.setattr(
@@ -88,13 +93,12 @@ def test_mp_05_probe_minimax_runtime_degrades_without_litellm(monkeypatch):
         lambda name: None,
     )
 
-    state = probe_minimax_runtime(api_key="secret", model_name="abab6.5s-chat")
+    client = MiniMaxModelProviderClient(api_key="secret", model_name="abab6.5s-chat")
+    raw = client.completion({"model": "abab6.5s-chat", "messages": ()})
 
-    assert state.available is False
-    assert state.status == "degraded"
-    assert state.reason == "litellm_dependency_missing"
-    assert state.api_key_configured is True
-    assert state.to_dict()["litellm_installed"] is False
+    assert raw["status"] == "degraded"
+    assert raw["reason"] == "litellm_dependency_missing"
+    assert raw["runtime"]["litellm_installed"] is False
 
 
 def test_mp_06_minimax_client_returns_degraded_response_when_runtime_unavailable(monkeypatch):
@@ -106,19 +110,10 @@ def test_mp_06_minimax_client_returns_degraded_response_when_runtime_unavailable
     )
     client = MiniMaxModelProviderClient(api_key="secret", model_name="abab6.5s-chat")
 
-    response = client.invoke(
-        ModelRequest(
-            messages=(ModelMessage(role="user", content="你好"),),
-            model_name="minimax/abab6.5s-chat",
-        )
-    )
+    raw = client.completion({"model": "abab6.5s-chat", "messages": ()})
 
-    assert response.model_name == "minimax/abab6.5s-chat"
-    assert response.content == ""
-    assert response.finish_reason == "error"
-    assert response.provider_id == "minimax"
-    assert response.raw["status"] == "degraded"
-    assert response.raw["reason"] == "litellm_dependency_missing"
+    assert raw["status"] == "degraded"
+    assert raw["reason"] == "litellm_dependency_missing"
 
 
 def test_mp_07_minimax_client_uses_litellm_mapping_when_runtime_ready(monkeypatch):
@@ -142,40 +137,74 @@ def test_mp_07_minimax_client_uses_litellm_mapping_when_runtime_ready(monkeypatc
             },
         }
 
-    monkeypatch.setattr("src.model_provider.providers.litellm_adapter._has_dependency", lambda name: True)
     monkeypatch.setattr(
-        "src.model_provider.providers.litellm_adapter._read_dependency_version",
-        lambda name: "1.63.0",
+        "src.model_provider.providers.minimax.probe_litellm_runtime",
+        lambda: LiteLLMRuntimeState(
+            litellm_installed=True,
+            available=True,
+            status="ready",
+            reason=None,
+            litellm_version="1.63.0",
+            metadata={"provider": "litellm"},
+        ),
     )
+    monkeypatch.setattr("src.model_provider.providers.minimax.litellm.completion", fake_completion)
     client = MiniMaxModelProviderClient(
         api_key="secret",
         model_name="abab6.5s-chat",
-        completion_callable=fake_completion,
     )
 
-    response = client.invoke(
-        ModelRequest(
-            messages=(ModelMessage(role="user", content="请介绍一下 MiniMax"),),
-            model_name="abab6.5s-chat",
-            metadata={"trace_id": "trace-7"},
-        )
+    raw = client.completion(
+        {
+            "model": "abab6.5s-chat",
+            "messages": (
+                {"role": "system", "content": "s1"},
+                {"role": "system", "content": "s2"},
+                {"role": "user", "content": "u"},
+            ),
+        }
+    )
+    response = build_model_response(
+        raw,
+        request=ModelRequest(messages=(ModelMessage(role="user", content="u"),), model_name="abab6.5s-chat"),
+        output_schema=None,
+        fallback_model_name="abab6.5s-chat",
+        provider_id=client.provider_id,
     )
 
-    assert captured_payload["model"] == "minimax/abab6.5s-chat"
-    assert captured_payload["metadata"] == {"trace_id": "trace-7"}
+    assert captured_payload["model"] == "abab6.5s-chat"
+    assert captured_payload["api_key"] == "secret"
+    assert captured_payload["messages"] == [
+        {"role": "system", "content": "s1\n\ns2"},
+        {"role": "user", "content": "u"},
+    ]
     assert response.content == "MiniMax 调用成功"
     assert response.provider_id == "minimax"
-    assert response.raw["runtime"]["status"] == "ready"
 
 
 def test_mp_08_initialize_routes_minimax_requests_to_specialized_client(monkeypatch):
-    """测试项 MP-08: 初始化后的模型层可识别 MiniMax 请求并进入降级分支"""
-    monkeypatch.setattr("src.model_provider.providers.litellm_adapter._has_dependency", lambda name: False)
-    monkeypatch.setattr(
-        "src.model_provider.providers.litellm_adapter._read_dependency_version",
-        lambda name: None,
-    )
+    """测试项 MP-08: 初始化后的模型层可添加并路由到指定模型客户端"""
+    captured: dict[str, object] = {}
+
+    class _StubClient:
+        provider_id = "minimax"
+
+        def completion(self, payload: dict[str, object]) -> dict[str, object]:
+            captured.update(payload)
+            return {
+                "model": str(payload.get("model")),
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": "ok"},
+                    }
+                ],
+            }
+
     exports = initialize()
+    router = exports.client
+    assert hasattr(router, "add_client")
+    router.add_client("minimax", _StubClient())
 
     response = exports.invoke_sync(
         ModelRequest(
@@ -185,4 +214,4 @@ def test_mp_08_initialize_routes_minimax_requests_to_specialized_client(monkeypa
     )
 
     assert response.provider_id == "minimax"
-    assert response.raw["status"] == "degraded"
+    assert captured["model"] == "minimax"

@@ -1,11 +1,7 @@
-import pytest
 from pydantic import BaseModel
 
-from src.model_provider import (
-    AutoHealingMaxRetriesExceeded,
-    SchemaValidationError,
-    validate_and_heal,
-)
+from src.model_provider import ModelMessage, ModelRequest, ModelRouter
+from src.model_provider.contracts import ModelResponseParseConfig
 
 
 class _DemoSchema(BaseModel):
@@ -13,55 +9,90 @@ class _DemoSchema(BaseModel):
     score: int
 
 
-def test_mp_t5_01_strips_json_code_fence_and_validates():
-    """测试项 MP-T5-01: 剥离 ```json 代码块后可解析"""
-    raw = """```json
-{"title": "ok", "score": 1}
-```"""
-    model = validate_and_heal(_DemoSchema, raw)
-    assert model.title == "ok"
-    assert model.score == 1
+def test_mp_t5_01_router_retries_and_strips_json_code_fence():
+    """测试项 MP-T5-01: 通过 Router 入口验证 schema 解析失败后重试，且支持剥离 ```json 代码块"""
+    calls = {"n": 0, "messages": []}
 
+    class _Client:
+        provider_id = "stub"
 
-def test_mp_t5_02_without_healing_func_raises_schema_validation_error():
-    """测试项 MP-T5-02: 无自愈时校验失败"""
-    with pytest.raises(SchemaValidationError):
-        validate_and_heal(_DemoSchema, '{"title": "x"}', healing_func=None)
+        def completion(self, payload):
+            calls["n"] += 1
+            calls["messages"].append(payload.get("messages"))
+            if calls["n"] == 1:
+                return {
+                    "model": payload.get("model"),
+                    "choices": [
+                        {
+                            "finish_reason": "stop",
+                            "message": {"content": '```json\n{"title":"x"}\n```'},
+                        }
+                    ],
+                }
+            return {
+                "model": payload.get("model"),
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '```json\n{"title":"ok","score":1}\n```'},
+                    }
+                ],
+            }
 
-
-def test_mp_t5_03_healing_func_can_fix_and_eventually_succeed():
-    """测试项 MP-T5-03: 自愈重试后成功"""
-    attempts: list[str] = []
-
-    def healer(bad_input: str, err: str) -> str:
-        attempts.append(err)
-        return '{"title": "fixed", "score": 2}'
-
-    model = validate_and_heal(_DemoSchema, '{"title": "x"}', healing_func=healer, max_retries=2)
-    assert model.title == "fixed"
-    assert model.score == 2
-    assert len(attempts) == 1
-
-
-def test_mp_t5_04_fail_fast_on_auth_like_errors():
-    """测试项 MP-T5-04: 自愈 fail-fast"""
-    def healer(bad_input: str, err: str) -> str:
-        raise RuntimeError("Authentication failed: api key missing")
-
-    with pytest.raises(RuntimeError):
-        validate_and_heal(_DemoSchema, '{"title": "x"}', healing_func=healer, max_retries=3)
-
-
-def test_mp_t5_05_max_retries_semantics_is_retries_plus_first_attempt():
-    """测试项 MP-T5-05: max_retries 语义"""
-    calls = {"n": 0}
-
-    def healer(bad_input: str, err: str) -> str:
-        calls["n"] += 1
-        return '{"title": "x"}'
-
-    with pytest.raises(AutoHealingMaxRetriesExceeded):
-        validate_and_heal(_DemoSchema, '{"title": "x"}', healing_func=healer, max_retries=2)
+    router = ModelRouter(clients={"demo": _Client()})
+    response = router.completion(
+        ModelRequest(
+            messages=(ModelMessage(role="user", content="hi"),),
+            model_name="demo",
+            response_parse=ModelResponseParseConfig(output_schema=_DemoSchema, schema_max_retries=1),
+        )
+    )
 
     assert calls["n"] == 2
+    assert response.success is True
+    assert response.parsed.title == "ok"
+    assert response.parsed.score == 1
+    assert any(
+        isinstance(batch, tuple)
+        and any(
+            isinstance(item, dict)
+            and item.get("role") == "user"
+            and "你的上一次输出在解析阶段出错" in str(item.get("content", ""))
+            for item in batch
+        )
+        for batch in calls["messages"]
+    )
 
+
+def test_mp_t5_02_router_exhausts_retries_and_returns_error_response():
+    """测试项 MP-T5-02: 通过 Router 入口验证 max_retries 语义为“首次 + 重试次数”"""
+    calls = {"n": 0}
+
+    class _Client:
+        provider_id = "stub"
+
+        def completion(self, payload):
+            calls["n"] += 1
+            return {
+                "model": payload.get("model"),
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"title":"x"}'},
+                    }
+                ],
+            }
+
+    router = ModelRouter(clients={"demo": _Client()})
+    response = router.completion(
+        ModelRequest(
+            messages=(ModelMessage(role="user", content="hi"),),
+            model_name="demo",
+            response_parse=ModelResponseParseConfig(output_schema=_DemoSchema, schema_max_retries=2),
+        )
+    )
+
+    assert calls["n"] == 3
+    assert response.success is False
+    assert response.finish_reason == "error"
+    assert response.raw["retry_count"] == 2
