@@ -16,7 +16,7 @@ if project_root not in sys.path:
 
 from src.app.bootstrap import build_application
 from src.app.config import load_config
-from src.orchestration_engine.contracts import CapabilityRequest
+from src.domain.capabilities import CapabilityRequest
 
 
 def _screenshot_dir() -> str:

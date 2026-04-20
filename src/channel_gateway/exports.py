@@ -2,7 +2,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from src.channel_gateway.core.domain.events import UniversalEvent
+from src.domain.events import UniversalEvent
 from src.channel_gateway.channels.feishu.long_connection import FeishuLongConnectionRuntime
 from src.channel_gateway.channels.feishu.webhook import FeishuWebhookResult
 from src.channel_gateway.channels.feishu.sender import FeishuAsyncSender

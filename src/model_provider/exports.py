@@ -1,7 +1,8 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from src.model_provider.contracts import ModelProviderClient, ModelRequest, ModelResponse
+from src.domain.models import ModelRequest, ModelResponse
+from src.model_provider.contracts import ModelProviderClient
 
 
 @dataclass(frozen=True)

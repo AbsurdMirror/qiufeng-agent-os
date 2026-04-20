@@ -5,8 +5,8 @@ from typing import Any
 
 import httpx
 
-from src.channel_gateway.core.domain.responses import ReplyText, ReplyPrimitive
-from src.channel_gateway.core.domain.events import UniversalEvent
+from src.domain.responses import ReplyPrimitive, ReplyText
+from src.domain.events import UniversalEvent
 
 # ============================================================
 # 渠道适配层 —— 飞书异步消息发送器 (Feishu Async Message Sender)

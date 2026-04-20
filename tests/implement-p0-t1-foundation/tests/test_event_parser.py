@@ -1,7 +1,7 @@
 import pytest
 import json
 from src.channel_gateway.channels.feishu.text_event_parser import TextEventParserFactory
-from src.channel_gateway.core.domain.events import UniversalTextEvent
+from src.domain.events import UniversalEvent
 
 def get_base_payload(event_type="im.message.receive_v1", message_type="text", text_content="hello test"):
     return {
@@ -32,7 +32,7 @@ def test_cg_02_webhook_parse_valid_text_event():
     payload = get_base_payload()
     event = parser.parse(payload)
     
-    assert isinstance(event, UniversalTextEvent)
+    assert isinstance(event, UniversalEvent)
     assert event.platform_type == "feishu"
     assert event.text == "hello test"
     assert len(event.contents) == 1
@@ -45,7 +45,7 @@ def test_cg_03_long_connection_parse_valid_text_event():
     payload = get_base_payload()
     event = parser.parse(payload)
     
-    assert isinstance(event, UniversalTextEvent)
+    assert isinstance(event, UniversalEvent)
     assert event.platform_type == "feishu"
     assert event.text == "hello test"
     assert len(event.contents) == 1

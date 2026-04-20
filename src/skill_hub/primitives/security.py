@@ -10,7 +10,7 @@ from typing import Any
 
 import bashlex
 
-from src.orchestration_engine.contracts import CapabilityRequest, CapabilityResult
+from src.domain.capabilities import CapabilityRequest, CapabilityResult
 
 # ============================================================
 # 能力中心 —— 安全原语 (Security Primitive)

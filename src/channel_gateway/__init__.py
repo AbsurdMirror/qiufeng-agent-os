@@ -2,7 +2,7 @@
 # P0.5 T1 阶段：继续只暴露稳定入口 initialize，内部已改走新路径
 from .bootstrap import initialize
 from .channels.feishu.text_event_parser import TextEventParserFactory
-from .core.domain.events import UniversalEvent, UniversalEventContent, UniversalTextEvent
+from src.domain.events import UniversalEvent, UniversalEventContent
 from .exports import ChannelGatewayExports
 from .channels.feishu.long_connection import (
     FeishuLongConnectionRuntime,

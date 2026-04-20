@@ -1,12 +1,8 @@
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from src.orchestration_engine.contracts import (
-    CapabilityDescription,
-    CapabilityHub,
-    CapabilityRequest,
-    CapabilityResult,
-)
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
+from src.orchestration_engine.contracts import CapabilityHub
 
 
 @dataclass(frozen=True)

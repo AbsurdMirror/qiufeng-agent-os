@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.channel_gateway.core.domain.events import UniversalEvent
+from src.domain.events import UniversalEvent
 from src.orchestration_engine.contracts import CapabilityHub
 from src.orchestration_engine.context.runtime_context import RuntimeContext
 

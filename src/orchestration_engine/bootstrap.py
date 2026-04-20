@@ -1,11 +1,6 @@
 from src.orchestration_engine.registry.agent_registry import AgentRegistry, AgentSpec, InMemoryAgentRegistry
-from src.orchestration_engine.contracts import (
-    CapabilityDescription,
-    CapabilityHub,
-    CapabilityRequest,
-    CapabilityResult,
-    NullCapabilityHub,
-)
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
+from src.orchestration_engine.contracts import CapabilityHub, NullCapabilityHub
 from src.orchestration_engine.exports import OrchestrationEngineExports
 from src.orchestration_engine.runtime.langgraph_runtime import LangGraphRuntime
 from src.storage_memory.exports import StorageMemoryExports

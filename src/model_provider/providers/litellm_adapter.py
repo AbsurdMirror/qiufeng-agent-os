@@ -4,8 +4,8 @@ from importlib.util import find_spec
 import json
 from typing import Any, Mapping
 
-from src.model_provider.contracts import ModelMessage, ModelRequest, ModelResponse, ModelUsage
-from src.orchestration_engine.contracts import CapabilityDescription
+from src.domain.models import ModelMessage, ModelRequest, ModelResponse, ModelUsage
+from src.domain.capabilities import CapabilityDescription
 from src.model_provider.validators.output_parser import (
     SchemaValidationError,
     ToolCallValidationError,
@@ -69,12 +69,6 @@ def build_litellm_completion_payload(
     函数签名中的 `*` 表示后面的参数必须使用关键字方式传入（例如 `api_key="..."`），
     这有助于避免参数顺序传错的问题。
     """
-    # 统一在 adapter 层注入工具提示词，避免 provider 侧重复拼接提示词。
-    effective_messages = _inject_tool_prompt_messages(request.messages, request.tools)
-
-    if getattr(request, "response_parse", None) and getattr(request.response_parse, "output_schema", None) is not None:
-        effective_messages = _inject_output_schema_prompt_messages(effective_messages, request.response_parse.output_schema)
-
     if not isinstance(request.model_name, str):
         raise ValueError("model_request_model_name_required")
 
@@ -82,7 +76,7 @@ def build_litellm_completion_payload(
         "model": request.model_name,
         "messages": tuple(
             {"role": message.role, "content": message.content}
-            for message in effective_messages
+            for message in request.messages
         ),
     }
     if request.temperature is not None:
@@ -97,6 +91,8 @@ def build_litellm_completion_payload(
         payload["api_key"] = api_key
     if base_url:
         payload["base_url"] = base_url
+    if getattr(request, "response_parse", None) and getattr(request.response_parse, "output_schema", None) is not None:
+        payload["response_format"] = request.response_parse.output_schema
     
     # 缺点与漏洞风险点：这里使用 dict() 只是浅拷贝。
     # 如果 request.metadata 中包含嵌套的可变对象（如列表、字典），在后续修改 payload["metadata"] 时可能会篡改原始请求数据。

@@ -24,6 +24,7 @@ class ReplyPrimitive(Protocol):
     """
     pass
 
+
 @dataclass(frozen=True)
 class ReplyText:
     """
@@ -54,5 +55,4 @@ class ReplyText:
         # 拦截空白内容，防止向渠道下发空载荷引发目标平台 API 报错
         if not self.content:
             raise ValueError("ReplyText content cannot be empty.")
-
 

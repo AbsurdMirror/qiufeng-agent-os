@@ -3,7 +3,7 @@ import types
 import sys
 from pathlib import Path
 
-from src.orchestration_engine.contracts import CapabilityRequest
+from src.domain.capabilities import CapabilityRequest
 from src.skill_hub.builtin_tools.browser_use import BrowserUsePyTool
 
 

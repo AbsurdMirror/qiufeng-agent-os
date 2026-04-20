@@ -1,8 +1,8 @@
 import pytest
 
-from src.channel_gateway.core.domain.events import UniversalEvent, UniversalEventContent
+from src.domain.events import UniversalEvent, UniversalEventContent
 from src.orchestration_engine.context.runtime_context import RuntimeContext
-from src.orchestration_engine.contracts import CapabilityDescription, CapabilityRequest, CapabilityResult
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.qfaos import QFAConfig, QFAEnum, QFAOS
 from src.qfaos.runtime.context_facade import DefaultQFAExecutionContext, DefaultQFASessionContext
 from src.skill_hub.core.capability_hub import RegisteredCapabilityHub

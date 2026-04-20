@@ -2,19 +2,15 @@ from asyncio import to_thread
 from collections.abc import Awaitable, Callable, Iterable
 from typing import Any
 
-from src.model_provider.contracts import (
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
+from src.domain.models import (
     ModelMessage,
-    ModelProviderClient,
     ModelResponseParseConfig,
     ModelRequest,
     ModelResponse,
     ModelUsage,
 )
-from src.orchestration_engine.contracts import (
-    CapabilityDescription,
-    CapabilityRequest,
-    CapabilityResult,
-)
+from src.model_provider.contracts import ModelProviderClient
 from src.skill_hub.contracts import PyTool
 from src.skill_hub.primitives.security import with_security_policy, default_security_policy
 

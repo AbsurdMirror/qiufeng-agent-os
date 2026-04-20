@@ -1,11 +1,8 @@
 import asyncio
 
 from src.orchestration_engine import initialize
-from src.orchestration_engine.contracts import (
-    CapabilityDescription,
-    CapabilityRequest,
-    NullCapabilityHub,
-)
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest
+from src.orchestration_engine.contracts import NullCapabilityHub
 
 
 def test_oe_08_null_capability_hub_supports_discovery():

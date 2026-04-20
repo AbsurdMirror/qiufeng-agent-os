@@ -65,16 +65,3 @@ class UniversalEvent:
                 return content.data
         return ""
 
-
-# 别名映射，确保兼容上层尚未重构的遗留代码（例如旧版编排层直接 import UniversalTextEvent）
-UniversalTextEvent = UniversalEvent
-
-
-class DuplicateMessageError(Exception):
-    """
-    重复消息异常 (Duplicate Message Error)。
-
-    当渠道网关检测到收到的消息已经被处理过（或正在处理中）时抛出此异常。
-    用于优雅拦截和消化各平台的重试请求。
-    """
-    pass

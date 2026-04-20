@@ -28,14 +28,11 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from src.model_provider.contracts import InMemoryModelProviderClient, ModelMessage
+from src.domain.models import ModelMessage
+from src.model_provider.contracts import InMemoryModelProviderClient
 from src.model_provider.providers.minimax import MiniMaxModelProviderClient
 from src.model_provider.routing.router import ModelRouter
-from src.orchestration_engine.contracts import (
-    CapabilityDescription,
-    CapabilityRequest,
-    CapabilityResult,
-)
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.skill_hub.bootstrap import initialize as initialize_skill_hub
 
 

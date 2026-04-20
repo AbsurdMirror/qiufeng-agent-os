@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from src.model_provider import ModelMessage, ModelRequest, ModelRouter
-from src.model_provider.contracts import ModelResponseParseConfig
+from src.domain.models import ModelMessage, ModelRequest, ModelResponseParseConfig
+from src.model_provider import ModelRouter
 
 
 class _DemoSchema(BaseModel):

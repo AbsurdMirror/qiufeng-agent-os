@@ -1,9 +1,9 @@
 import pytest
 from unittest.mock import AsyncMock
 
-from src.orchestration_engine.contracts import CapabilityDescription, CapabilityRequest, CapabilityResult
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.skill_hub.core.capability_hub import RegisteredCapabilityHub, ModelCapabilityRouter
-from src.model_provider.contracts import ModelMessage, ModelResponse
+from src.domain.models import ModelMessage, ModelResponse
 
 
 @pytest.fixture

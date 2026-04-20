@@ -8,7 +8,10 @@ from .builtin_tools.browser_use import BrowserUsePyTool
 from .core.capability_hub import ModelCapabilityRouter, RegisteredCapabilityHub, register_pytools
 from .contracts import PyTool, PyToolDefinition
 from .exports import SkillHubExports
-from .core.tool_parser import parse_doxygen_to_json_schema
+from .core.tool_parser import (
+    parse_doxygen_to_json_schema,
+    parse_function_output_to_json_schema,
+)
 
 __all__ = [
     "BrowserUsePyTool",
@@ -20,4 +23,5 @@ __all__ = [
     "initialize",
     "register_pytools",
     "parse_doxygen_to_json_schema",
+    "parse_function_output_to_json_schema",
 ]

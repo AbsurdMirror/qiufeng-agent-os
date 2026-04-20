@@ -1,5 +1,6 @@
 from typing import Any
-from src.model_provider.contracts import ModelRequest, ModelResponse, ModelProviderClient, ModelMessage
+from src.domain.models import ModelMessage, ModelRequest, ModelResponse
+from src.model_provider.contracts import ModelProviderClient
 from src.model_provider.providers.litellm_adapter import (
     build_litellm_completion_payload,
     build_model_response,
@@ -141,6 +142,7 @@ class ModelRouter(ModelProviderClient):
                     current_request,
                 )
                 raw = client.completion(payload)
+                # print("DEBUG", "model output 原始 raw: ", raw)
                 response = build_model_response(
                     raw,
                     request=current_request,
@@ -159,6 +161,7 @@ class ModelRouter(ModelProviderClient):
                     raw={
                         "reason": "model_router_completion_failed",
                         "message": str(exc),
+                        "traceback": __import__('traceback').format_exc(),
                     },
                 )
                 response = fallback

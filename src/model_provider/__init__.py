@@ -12,8 +12,10 @@
 from .bootstrap import initialize
 from .contracts import (
     InMemoryModelProviderClient,
-    ModelMessage,
     ModelProviderClient,
+)
+from src.domain.models import (
+    ModelMessage,
     ModelRequest,
     ModelResponse,
     ModelUsage,

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from src.channel_gateway.channels.feishu.text_event_parser import TextEventParserFactory
-from src.channel_gateway.core.domain.events import UniversalEvent
+from src.domain.events import UniversalEvent
 from src.qfaos.config import QFAConfig
 
 

@@ -15,12 +15,12 @@ if project_root not in sys.path:
 
 from src.app.bootstrap import build_application
 from src.app.config import AppConfig, load_config
-from src.channel_gateway.core.domain.events import UniversalEvent
-from src.channel_gateway.core.domain.responses import ReplyText
+from src.domain.events import UniversalEvent
+from src.domain.responses import ReplyText
 from src.observability_hub.jsonl.storage import JSONLStorageEngine
 from src.observability_hub.record.recording import LogLevel, record
 from src.observability_hub.trace.id_generator import generate_trace_id
-from src.orchestration_engine.contracts import CapabilityDescription, CapabilityRequest, CapabilityResult
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 
 
 @dataclass(frozen=True)

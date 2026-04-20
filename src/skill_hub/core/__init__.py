@@ -8,7 +8,10 @@ skill_hub.core —— Skill Hub 核心框架模块。
 """
 from .capability_hub import ModelCapabilityRouter, RegisteredCapabilityHub
 from ..contracts import PyTool, PyToolDefinition
-from .tool_parser import parse_doxygen_to_json_schema
+from .tool_parser import (
+    parse_doxygen_to_json_schema,
+    parse_function_output_to_json_schema,
+)
 
 __all__ = [
     "ModelCapabilityRouter",
@@ -16,4 +19,5 @@ __all__ = [
     "PyToolDefinition",
     "RegisteredCapabilityHub",
     "parse_doxygen_to_json_schema",
+    "parse_function_output_to_json_schema",
 ]

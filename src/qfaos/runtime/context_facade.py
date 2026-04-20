@@ -1,17 +1,13 @@
 from typing import Any, Literal
 
-from src.channel_gateway.core.domain.events import UniversalEvent
-from src.channel_gateway.core.domain.responses import ReplyText
+from src.domain.events import UniversalEvent
+from src.domain.responses import ReplyText
 from src.channel_gateway.exports import ChannelGatewayExports
 from src.observability_hub.exports import ObservabilityHubExports
 from src.orchestration_engine.context.runtime_context import RuntimeContext
-from src.model_provider.contracts import ModelMessage
-from src.orchestration_engine.contracts import (
-    CapabilityDescription,
-    CapabilityHub,
-    CapabilityRequest,
-    CapabilityResult,
-)
+from src.domain.models import ModelMessage
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
+from src.orchestration_engine.contracts import CapabilityHub
 from src.qfaos.config import QFAConfig
 from src.qfaos.enums import QFAEnum
 from src.qfaos.errors import QFAInvalidConfigError
@@ -21,7 +17,7 @@ from src.qfaos.runtime.contracts import (
     QFASessionContext,
     QFAToolResult,
 )
-from src.storage_memory.contracts.models import HotMemoryItem
+from src.domain.memory import HotMemoryItem
 from src.storage_memory.exports import StorageMemoryExports
 
 from ..internal.primitives import reset_approved_ticket_id, set_approved_ticket_id
@@ -59,10 +55,10 @@ class DefaultQFASessionContext(QFASessionContext):
             return []
         return [dict(item) for item in history if isinstance(item, dict)]
 
-    async def add_memory(self, content: str) -> None:
+    async def add_memory(self, content: str, role: str = "assistant") -> None:
         item = HotMemoryItem(
             trace_id=self._runtime_context.trace_id,
-            role="assistant",
+            role=role,
             content=content,
         )
         await self._storage_memory.append_hot_memory(
@@ -73,7 +69,7 @@ class DefaultQFASessionContext(QFASessionContext):
         )
         dialogue = self._runtime_context.memory.setdefault("dialogue_history", [])
         if isinstance(dialogue, list):
-            dialogue.append({"role": "assistant", "content": content})
+            dialogue.append({"role": role, "content": content})
 
     async def model_ask(
         self,
@@ -107,6 +103,7 @@ class DefaultQFASessionContext(QFASessionContext):
                 metadata={"trace_id": self._runtime_context.trace_id},
             )
         )
+        # print("DEBUG", "self._capability_hub.invoke result is ", result)
         return self._to_model_output(result)
 
     async def call_pytool(
@@ -166,9 +163,6 @@ class DefaultQFASessionContext(QFASessionContext):
                 response=result.error_message or "",
             )
         output = result.output
-        print("DEBUG",
-            f"_to_model_output: result.output={output}"
-        )
         tool_calls = output.get("tool_calls", [])
         if isinstance(tool_calls, tuple) and tool_calls:
             first = tool_calls[0]
@@ -198,16 +192,29 @@ class DefaultQFASessionContext(QFASessionContext):
     ) -> QFAToolResult:
         capability = self._capability_hub.get_capability(capability_id)
         tool_desc = capability.description if capability else ""
-        if not result.success and result.error_code == "requires_user_approval":
-            ticket = result.metadata.get("ticket_id")
-            return QFAToolResult(
-                is_ask_ticket=True,
-                ticket=str(ticket) if ticket else None,
-                tool_name=capability_id,
-                tool_desc=tool_desc,
-                tool_args=tool_args,
-                output=dict(result.output),
-            )
+        if not result.success:
+            if result.error_code == "requires_user_approval":
+                ticket = result.metadata.get("ticket_id")
+                return QFAToolResult(
+                    is_ask_ticket=True,
+                    ticket=str(ticket) if ticket else None,
+                    tool_name=capability_id,
+                    tool_desc=tool_desc,
+                    tool_args=tool_args,
+                    output=dict(result.output),
+                )
+            else:
+                return QFAToolResult(
+                    is_ask_ticket=False,
+                    ticket=None,
+                    tool_name=capability_id,
+                    tool_desc=tool_desc,
+                    tool_args=tool_args,
+                    output={
+                        "error_code": result.error_code,
+                        "error_message": result.error_message,
+                    },
+                )
         return QFAToolResult(
             is_ask_ticket=False,
             ticket=None,

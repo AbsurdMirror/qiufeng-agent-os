@@ -121,13 +121,16 @@ class MiniMaxModelProviderClient:
             payload_dict["messages"] = merged_messages
 
         try:
-            litellm.model_cost["minimax/MiniMax-M2.7"] = {
+            fake_model_cost = {
                 "max_tokens": 200000,
                 "input_cost_per_token": 0.000001,  # 随便填个数，防止计费逻辑崩溃
                 "output_cost_per_token": 0.000002,
                 "lite_llm_model_name": "MiniMax-M2.7",
                 "model_name": "minimax/MiniMax-M2.7"
             }
+            litellm.model_cost["minimax/MiniMax-M2.7"] = fake_model_cost
+            litellm.model_cost["minimax/MiniMax-M2.7-highspeed"] = fake_model_cost
+            litellm.model_cost["minimax/MiniMax-M2.5-highspeed"] = fake_model_cost
             # litellm._turn_on_debug()
             # print("payload_dict", payload_dict)
             response = litellm.completion(**payload_dict)

@@ -4,7 +4,7 @@ from src.channel_gateway.channels.feishu.webhook import (
     receive_feishu_webhook,
     FeishuWebhookResult
 )
-from src.channel_gateway.core.domain.events import UniversalTextEvent
+from src.domain.events import UniversalEvent
 
 def test_cg_01_url_verification():
     """测试项 CG-01: 处理飞书 URL 验证挑战"""

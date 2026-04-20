@@ -1,4 +1,3 @@
-import asyncio
 import uuid
 import time
 from typing import Annotated
@@ -6,9 +5,12 @@ import pytest
 from pydantic import Field
 
 from src.channel_gateway.core.session.context import SessionContextController
-from src.skill_hub.core.tool_parser import parse_doxygen_to_json_schema
+from src.skill_hub.core.tool_parser import (
+    parse_doxygen_to_json_schema,
+    parse_function_output_to_json_schema,
+)
 from src.storage_memory.backends.in_memory import InMemoryHotMemoryStore
-from src.storage_memory.contracts.models import HotMemoryItem
+from src.domain.memory import HotMemoryItem
 
 # AT-01: 身份映射幂等性
 def test_session_context_mapping():
@@ -57,7 +59,7 @@ def test_tool_parser_pydantic_schema():
     # 设计测试工具函数
     def dummy_tool(
         query: Annotated[str, Field(description="搜索关键字")],
-        count: Annotated[int, Field(description="返回条数")] = 10
+        count: Annotated[int | None, Field(description="返回条数")] = 10
     ):
         """这是一个测试搜索工具"""
         return f"Searching {query} with {count}"
@@ -76,7 +78,29 @@ def test_tool_parser_pydantic_schema():
     assert "count" in props
     assert props["count"].get("description") == "返回条数"
     assert props["count"].get("type") == "integer"
-    assert props["count"].get("default") == 10
+    assert "default" not in props["count"]
+    assert schema.get("required") == ["query"]
+
+
+def test_tool_parser_requires_annotated():
+    def bad_tool(query: str):
+        return query
+
+    with pytest.raises(TypeError, match="Annotated"):
+        parse_doxygen_to_json_schema(bad_tool)
+
+
+def test_tool_output_parser_schema():
+    def dummy_tool() -> Annotated[str, Field(description="工具执行结果文本")]:
+        return "ok"
+
+    schema = parse_function_output_to_json_schema(dummy_tool)
+    props = schema.get("properties", {})
+
+    assert "title" not in schema
+    assert schema.get("required") == ["result"]
+    assert props["result"].get("description") == "工具执行结果文本"
+    assert props["result"].get("type") == "string"
 
 # AT-04: 热记忆 LIFO 推留截断逻辑
 @pytest.mark.asyncio

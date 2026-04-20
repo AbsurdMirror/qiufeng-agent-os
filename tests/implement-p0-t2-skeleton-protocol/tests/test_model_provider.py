@@ -1,10 +1,6 @@
 import pytest
-from src.model_provider.contracts import (
-    InMemoryModelProviderClient,
-    ModelRequest,
-    ModelMessage,
-    ModelResponse
-)
+from src.domain.models import ModelMessage, ModelRequest, ModelResponse
+from src.model_provider.contracts import InMemoryModelProviderClient
 from src.model_provider import ModelRouter
 
 def test_mp_01_invoke_with_messages():

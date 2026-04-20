@@ -4,10 +4,7 @@ import re
 
 from pydantic import BaseModel, ValidationError
 
-from src.orchestration_engine.contracts import (
-    CapabilityDescription,
-    CapabilityRequest,
-)
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -80,12 +77,20 @@ def _parse_and_validate_tool_call_item(
 
     capability = allowed.get(capability_id)
     if capability is None:
-        raise ToolCallValidationError(f"tool_not_allowed:{capability_id}")
+        return CapabilityRequest(
+            capability_id=-1,
+            payload=f"tool_not_allowed:{capability_id}, valid tools: {', '.join(allowed.keys())}",
+            metadata={},
+        )
 
     payload = _parse_tool_arguments(function.get("arguments"))
     payload_error = _validate_payload_by_schema(payload, capability.input_schema)
     if payload_error is not None:
-        raise ToolCallValidationError(f"tool_args_invalid:{capability_id}:{payload_error}")
+        return CapabilityRequest(
+            capability_id=-1,
+            payload=f"tool_args_invalid:{capability_id}:{payload_error}",
+            metadata={},
+        )
 
     metadata: dict[str, Any] = {}
     call_id = item.get("id")

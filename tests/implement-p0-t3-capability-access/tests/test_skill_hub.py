@@ -1,7 +1,7 @@
 import asyncio
 
-from src.model_provider.contracts import ModelMessage, ModelResponse
-from src.orchestration_engine.contracts import CapabilityRequest
+from src.domain.models import ModelMessage, ModelResponse
+from src.domain.capabilities import CapabilityRequest
 from src.skill_hub import initialize
 from src.skill_hub.builtin_tools.browser_use import BrowserUsePyTool
 

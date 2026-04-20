@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from src.orchestration_engine.contracts import CapabilityRequest, CapabilityResult
+from src.domain.capabilities import CapabilityRequest, CapabilityResult
 from src.skill_hub.primitives.security import (
     SecurityApprovalRequiredError,
     SecurityError,

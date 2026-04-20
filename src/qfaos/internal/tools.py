@@ -4,11 +4,7 @@ from typing import Any, Annotated
 
 from pydantic import validate_call, Field
 
-from src.orchestration_engine.contracts import (
-    CapabilityDescription,
-    CapabilityRequest,
-    CapabilityResult,
-)
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.skill_hub.core.tool_parser import parse_doxygen_to_json_schema
 
 

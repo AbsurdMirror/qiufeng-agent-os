@@ -21,3 +21,4 @@ class HotMemoryItem:
     role: str
     content: str
     metadata: dict[str, Any] = field(default_factory=dict)
+

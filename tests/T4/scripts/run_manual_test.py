@@ -25,13 +25,13 @@ from pydantic import Field
 
 from src.app.bootstrap import Application, build_application
 from src.app.config import load_config
-from src.channel_gateway.core.domain.events import UniversalEvent
-from src.model_provider.contracts import ModelMessage, ModelRequest
-from src.orchestration_engine.contracts import CapabilityDescription, CapabilityRequest, CapabilityResult
+from src.domain.events import UniversalEvent
+from src.domain.models import ModelMessage, ModelRequest
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.orchestration_engine.context.state_context_manager import StateContextManager
 from src.skill_hub.core.capability_hub import RegisteredCapabilityHub
 from src.skill_hub.core.tool_parser import parse_doxygen_to_json_schema
-from src.storage_memory.contracts.models import HotMemoryItem
+from src.domain.memory import HotMemoryItem
 from src.storage_memory.factory.create_store import HAS_REDIS
 
 

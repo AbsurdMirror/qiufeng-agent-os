@@ -1,11 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from src.orchestration_engine.contracts import (
-    CapabilityDescription,
-    CapabilityRequest,
-    CapabilityResult,
-)
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 
 
 @dataclass(frozen=True)

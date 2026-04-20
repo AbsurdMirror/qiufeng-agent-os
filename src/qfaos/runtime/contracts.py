@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
-from src.channel_gateway.core.domain.events import UniversalEvent
-from src.orchestration_engine.contracts import CapabilityDescription
+from src.domain.events import UniversalEvent
+from src.domain.capabilities import CapabilityDescription
 from src.qfaos.config import QFAConfig
 from src.qfaos.enums import QFAEnum
 

@@ -4,11 +4,7 @@ from pathlib import Path
 import time
 from typing import Any
 
-from src.orchestration_engine.contracts import (
-    CapabilityDescription,
-    CapabilityRequest,
-    CapabilityResult,
-)
+from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 
 
 def _probe_browser_use_runtime() -> tuple[bool, str | None, dict[str, Any]]:

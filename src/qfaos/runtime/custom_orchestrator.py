@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from src.channel_gateway.core.domain.events import UniversalEvent
+from src.domain.events import UniversalEvent
 from src.channel_gateway.exports import ChannelGatewayExports
 from src.observability_hub.exports import ObservabilityHubExports
 from src.orchestration_engine.context.runtime_context import RuntimeContext

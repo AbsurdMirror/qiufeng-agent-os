@@ -27,9 +27,9 @@ if project_root not in sys.path:
 from src.app.bootstrap import build_application  # 用于构建并初始化整个应用
 from src.app.config import load_config  # 用于加载配置文件（如飞书的 AppID 等）
 from src.app.config import AppConfig  # 配置的数据类型定义
-from src.channel_gateway.core.domain.events import UniversalEvent, UniversalEventContent  # 统一的事件模型（代表一条规范化后的消息）
-from src.model_provider.contracts import ModelMessage, ModelRequest  # 模型调用的数据结构定义
-from src.storage_memory.contracts.models import HotMemoryItem  # 短期记忆的数据结构定义
+from src.domain.events import UniversalEvent, UniversalEventContent  # 统一的事件模型（代表一条规范化后的消息）
+from src.domain.models import ModelMessage, ModelRequest  # 模型调用的数据结构定义
+from src.domain.memory import HotMemoryItem  # 短期记忆的数据结构定义
 
 
 def _extract_text_content(event: UniversalEvent) -> str:
