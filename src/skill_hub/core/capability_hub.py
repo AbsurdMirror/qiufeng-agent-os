@@ -8,7 +8,6 @@ from src.domain.capabilities import CapabilityDescription, CapabilityRequest, Ca
 from src.domain.translators.schema_translator import SchemaTranslator
 from src.domain.models import (
     ModelMessage,
-    ModelResponseParseConfig,
     ModelRequest,
     ModelResponse,
     ModelUsage,

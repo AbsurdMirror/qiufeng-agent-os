@@ -18,17 +18,6 @@ class ModelMessage:
 
 
 @dataclass(frozen=True)
-class ModelResponseParseConfig:
-    """
-    模型响应解析配置：
-    - output_schema: content 结构化解析目标 Schema；
-    - schema_max_retries: content/tool_calls 解析失败时的最大重试次数。
-    """
-    output_schema: Any | None = None
-    schema_max_retries: int = 0
-
-
-@dataclass(frozen=True)
 class ModelRequest:
     """
     模型推理请求的统一输入参数模型。
@@ -44,7 +33,8 @@ class ModelRequest:
     top_p: float | None = None
     max_tokens: int | None = None
     tools: tuple[CapabilityDescription, ...] = ()
-    response_parse: "ModelResponseParseConfig" = field(default_factory=lambda: ModelResponseParseConfig())
+    output_schema: Any | None = None
+    max_retries: int = 3
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -85,6 +75,7 @@ class ModelResponse:
     usage: ModelUsage | None = None
     parsed: Any = None
     tool_calls: tuple[CapabilityRequest, ...] = ()
+    tool_call_str: str | None = None
     repair_reason: str | None = None
     raw: dict[str, Any] = field(default_factory=dict)
 

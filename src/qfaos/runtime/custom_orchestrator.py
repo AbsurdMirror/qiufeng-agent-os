@@ -55,8 +55,8 @@ class CustomExecuteOrchestrator(BaseOrchestrator):
         except Exception as exc:
             if self._observability is not None:
                 self._observability.record(
-                    "qfaos.custom_execute.error",
-                    {"error": str(exc), "trace_id": ctx.trace_id},
+                    ctx.trace_id,
+                    {"event": "qfaos.custom_execute.error", "error": str(exc)},
                     "ERROR",
                 )
             raise

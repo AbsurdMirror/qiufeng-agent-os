@@ -1,6 +1,8 @@
+from collections.abc import Mapping
+from typing import Any
 from .exports import ObservabilityHubExports
 from .trace.id_generator import generate_trace_id
-from .record.recording import record
+from .record.recording import record, LogLevel, NormalizedRecord
 from .coloring.request_coloring import is_request_colored
 from .jsonl.storage import JSONLStorageEngine
 from .cli.tailer import CLILogTailer
@@ -27,13 +29,25 @@ def initialize(
         max_bytes=jsonl_max_bytes,
         backup_count=jsonl_backup_count,
     )
-    cli_logger = CLILogTailer()
+    cli_logger = CLILogTailer(log_file=str(jsonl_storage.log_file))
+
+    def record_and_persist(
+        trace_id: str,
+        data: Mapping[str, Any] | str | Any,
+        level: LogLevel | str = LogLevel.INFO,
+    ) -> NormalizedRecord:
+        """
+        包装后的 record 函数：不仅进行归一化，还自动写入持久化存储。
+        """
+        normalized = record(trace_id, data, level)
+        jsonl_storage.write_record(normalized)
+        return normalized
 
     return ObservabilityHubExports(
         layer="observability_hub",
         status="initialized",
         trace_id_generator=generate_trace_id,
-        record=record,
+        record=record_and_persist,
         is_request_colored=is_request_colored,
         jsonl_storage=jsonl_storage,
         cli_logger=cli_logger,

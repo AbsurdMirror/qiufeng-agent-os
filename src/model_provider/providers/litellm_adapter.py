@@ -94,8 +94,8 @@ def build_litellm_completion_payload(
         payload["api_key"] = api_key
     if base_url:
         payload["base_url"] = base_url
-    if getattr(request, "response_parse", None) and getattr(request.response_parse, "output_schema", None) is not None:
-        payload["response_format"] = request.response_parse.output_schema
+    if getattr(request, "output_schema", None) is not None:
+        payload["response_format"] = request.output_schema
     
     # 缺点与漏洞风险点：这里使用 dict() 只是浅拷贝。
     # 如果 request.metadata 中包含嵌套的可变对象（如列表、字典），在后续修改 payload["metadata"] 时可能会篡改原始请求数据。
@@ -159,9 +159,12 @@ def build_model_response(
 
         # 3. 解析 Tool Calls
         tool_calls = ()
+        tool_call_str = None
         if message_obj.tool_calls:
             try:
                 tool_calls = convert_litellm_tool_calls(message_obj.tool_calls, request.tools)
+                # 记录原始工具调用的字符串表示，用于上层透传
+                tool_call_str = str(message_obj.tool_calls)
             except ToolCallValidationError as exc:
                 return ModelResponse(
                     success=False,
@@ -203,6 +206,7 @@ def build_model_response(
                 usage=usage,
                 parsed=parsed,
                 tool_calls=tool_calls,
+                tool_call_str=tool_call_str,
                 raw={"response_raw": str(response_raw)},
             )
 

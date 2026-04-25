@@ -107,8 +107,18 @@ class SchemaTranslator:
             for name, param in sig.parameters.items():
                 if name in ("self", "cls"):
                     continue
+
+                # 显式提取描述以确保注入到最终 Schema
+                _, description = _parse_annotated_contract(
+                    annotation=param.annotation,
+                    func=func,
+                    field_name=name,
+                    kind_label="parameter",
+                )
+
                 parameter_specs.append({
                     "name": name,
+                    "description": description,
                     "is_optional": _is_optional_annotation(param.annotation),
                     "has_default": param.default != inspect.Parameter.empty,
                 })
@@ -118,7 +128,18 @@ class SchemaTranslator:
             properties = schema.get("properties", {})
             result_schema = properties.get("result")
             if isinstance(result_schema, dict):
+                if func:
+                    # 显式提取输出描述以确保注入
+                    _, description = _parse_annotated_contract(
+                        annotation=inspect.signature(func).return_annotation,
+                        func=func,
+                        field_name="return",
+                        kind_label="return",
+                    )
+                    result_schema["description"] = description
+                
                 properties["result"] = _strip_top_level_nullability(result_schema)
+            
             schema["properties"] = properties
             schema["required"] = ["result"]
             return schema
@@ -187,6 +208,8 @@ def _normalize_input_schema_for_llm(schema: dict[str, Any], parameter_specs: lis
         if isinstance(field_schema, dict):
             field_schema.pop("default", None)
             field_schema.pop("title", None)
+            # 显式注入描述，防止 Pydantic model_json_schema 丢失或将其放入 $defs
+            field_schema["description"] = spec["description"]
             if spec["is_optional"]:
                 field_schema = _strip_top_level_nullability(field_schema)
             properties[name] = field_schema

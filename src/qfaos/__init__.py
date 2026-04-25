@@ -3,7 +3,7 @@ from .enums import QFAEnum
 from .qfaos import QFAOS
 from .builtins import BrowserUsePyTool, ToolSecurityPrimitive
 from src.domain.decorators import qfaos_pytool
-from .runtime.contracts import QFAEvent, QFAExecutionContext
+from .runtime.contracts import QFAEvent, QFAExecutionContext, QFASessionContext
 from .errors import (
     QFAError,
     QFAInvalidConfigError,
@@ -28,4 +28,5 @@ __all__ = [
     "qfaos_pytool",
     "QFAEvent",
     "QFAExecutionContext",
+    "QASessionContext",
 ]

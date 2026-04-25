@@ -26,7 +26,7 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, Field
 
-from src.domain.models import ModelMessage, ModelResponse, ModelResponseParseConfig
+from src.domain.models import ModelMessage, ModelResponse
 from src.model_provider.contracts import InMemoryModelProviderClient
 from src.model_provider.providers.minimax import MiniMaxModelProviderClient
 from src.model_provider.routing.router import ModelRouter
@@ -137,9 +137,8 @@ def _build_output_schema_payload(model_name: str) -> dict[str, Any]:
                 ModelMessage(role="user", content="请提取以下数值：12.3 和 55.3"),
             ),
             "model_name": model_name,
-            "response_parse": ModelResponseParseConfig(
-                output_schema=FormattedAnswer.model_json_schema()
-            ),
+            "output_schema": FormattedAnswer.model_json_schema(),
+            "max_retries": 1,
         }
     }
 

@@ -26,7 +26,7 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, Field
 
-from src.domain.models import ModelMessage, ModelResponse, ModelResponseParseConfig
+from src.domain.models import ModelMessage, ModelResponse
 from src.model_provider.contracts import InMemoryModelProviderClient
 from src.model_provider.providers.minimax import MiniMaxModelProviderClient
 from src.model_provider.routing.router import ModelRouter
@@ -156,11 +156,9 @@ async def main() -> None:
                 "messages": tuple(messages),
                 "model_name": model_name,
                 "tools": tools,
-                "response_parse": ModelResponseParseConfig(
-                     output_schema=CalculationResult,
-                     schema_max_retries=2,
-                 ),
-            }
+                "output_schema": CalculationResult,
+                "max_retries": 2,
+              }
         }
         request = CapabilityRequest(
             capability_id="model.chat.default",

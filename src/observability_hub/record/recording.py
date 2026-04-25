@@ -1,5 +1,5 @@
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass, asdict
 from enum import Enum
 import time
 from typing import Any
@@ -110,8 +110,18 @@ def _flatten_mapping(
     for key, value in data.items():
         key_str = str(key)
         composite_key = f"{parent_key}.{key_str}" if parent_key else key_str
+        
         if isinstance(value, Mapping):
+            # 递归处理嵌套字典
             flattened.update(_flatten_mapping(value, composite_key))
+        elif is_dataclass(value):
+            # 递归处理 dataclass (如 ModelResponse)
+            flattened.update(_flatten_mapping(asdict(value), composite_key))
+        elif _is_base_model_instance(value):
+            # 递归处理 Pydantic 模型
+            serialized = _serialize_base_model(value)
+            flattened.update(_flatten_mapping(serialized, composite_key))
         else:
+            # 基本类型直接存储
             flattened[composite_key] = value
     return flattened

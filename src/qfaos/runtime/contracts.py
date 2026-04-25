@@ -37,6 +37,7 @@ class QFAModelOutput:
 
     is_pytool_call: bool
     tool_call: dict[str, Any] | None
+    tool_call_str: str | None
     is_answer: bool
     response: str | None
 
@@ -63,7 +64,7 @@ class QFASessionContext(Protocol):
     async def get_memory(self) -> list[dict[str, Any]]:
         raise NotImplementedError
 
-    async def add_memory(self, content: str) -> None:
+    async def add_memory(self, content: str, role: str = "assistant") -> None:
         raise NotImplementedError
 
     async def model_ask(

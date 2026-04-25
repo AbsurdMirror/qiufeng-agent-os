@@ -36,7 +36,10 @@ class FunctionPyTool:
             params_obj = SchemaTranslator.validate_payload(self.capability.input_model, request.payload or {})
             
             # 2. 执行底层函数 (解包参数)
-            result = self._func(**params_obj.model_dump())
+            # 注意：不能使用 params_obj.model_dump()，因为它会递归地将嵌套的 dataclass/model 转换为 dict。
+            # 我们需要直接从 params_obj 获取属性，以保持原始类型（如 BillCardItem 实例）。
+            kwargs = {field: getattr(params_obj, field) for field in type(params_obj).model_fields}
+            result = self._func(**kwargs)
             if inspect.isawaitable(result):
                 result = await result
             

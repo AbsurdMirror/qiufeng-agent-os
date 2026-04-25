@@ -128,7 +128,8 @@ class ModelRouter(ModelProviderClient):
             top_p=request.top_p,
             max_tokens=request.max_tokens,
             tools=request.tools,
-            response_parse=request.response_parse,
+            output_schema=request.output_schema,
+            max_retries=request.max_retries,
             metadata=request.metadata
         )
 
@@ -138,21 +139,9 @@ class ModelRouter(ModelProviderClient):
             raise ValueError(f"No suitable model provider found for '{trimmed_request.model_name}'")
 
         trace_id = trimmed_request.metadata.get("trace_id", "unknown")
-        if self._observability:
-            self._observability.record(
-                trace_id,
-                {
-                    "event": "model.completion.started",
-                    "model_name": trimmed_request.model_name,
-                    "payload": payload,
-                },
-                "INFO",
-            )
 
-        response_parse = trimmed_request.response_parse
-        max_retries_raw = response_parse.schema_max_retries
-        max_retries = max_retries_raw if isinstance(max_retries_raw, int) and max_retries_raw >= 0 else 0
-        output_schema = response_parse.output_schema
+        max_retries = trimmed_request.max_retries
+        output_schema = trimmed_request.output_schema
         current_request = trimmed_request
         attempts = 0
         while True:
@@ -162,6 +151,17 @@ class ModelRouter(ModelProviderClient):
                 )
 
                 provider_id = client.provider_id
+                
+                if self._observability:
+                    self._observability.record(
+                        trace_id,
+                        {
+                            "event": "model.completion.started",
+                            "model_request": payload,
+                            "provider_id": provider_id,
+                        },
+                        "INFO",
+                    )
                 raw = client.completion(payload)
                 if self._observability:
                     self._observability.record(
@@ -198,6 +198,7 @@ class ModelRouter(ModelProviderClient):
 
             if response.success:
                 return response
+
             if attempts >= max_retries:
                 exhausted_raw = dict(response.raw)
                 exhausted_raw.setdefault("reason", "model_response_parse_failed")
@@ -212,6 +213,7 @@ class ModelRouter(ModelProviderClient):
                     usage=response.usage,
                     parsed=response.parsed,
                     tool_calls=response.tool_calls,
+                    tool_call_str=response.tool_call_str,
                     repair_reason=response.repair_reason,
                     raw=exhausted_raw,
                 )
@@ -229,6 +231,7 @@ class ModelRouter(ModelProviderClient):
                 top_p=current_request.top_p,
                 max_tokens=current_request.max_tokens,
                 tools=current_request.tools,
-                response_parse=current_request.response_parse,
+                output_schema=current_request.output_schema,
+                max_retries=current_request.max_retries,
                 metadata=current_request.metadata,
             )

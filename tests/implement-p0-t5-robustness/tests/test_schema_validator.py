@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from src.domain.models import ModelMessage, ModelRequest, ModelResponseParseConfig
+from src.domain.models import ModelMessage, ModelRequest
 from src.model_provider import ModelRouter
 
 
@@ -44,7 +44,8 @@ def test_mp_t5_01_router_retries_and_strips_json_code_fence():
         ModelRequest(
             messages=(ModelMessage(role="user", content="hi"),),
             model_name="demo",
-            response_parse=ModelResponseParseConfig(output_schema=_DemoSchema, schema_max_retries=1),
+            output_schema=_DemoSchema,
+            max_retries=1,
         )
     )
 
@@ -88,7 +89,8 @@ def test_mp_t5_02_router_exhausts_retries_and_returns_error_response():
         ModelRequest(
             messages=(ModelMessage(role="user", content="hi"),),
             model_name="demo",
-            response_parse=ModelResponseParseConfig(output_schema=_DemoSchema, schema_max_retries=2),
+            output_schema=_DemoSchema,
+            max_retries=2,
         )
     )
 

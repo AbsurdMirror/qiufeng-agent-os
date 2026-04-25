@@ -165,18 +165,18 @@ class DefaultQFASessionContext(QFASessionContext):
     def record(self, event_name: str, payload: dict[str, Any] | str, level: str = "INFO") -> None:
         if self._observability is None:
             return
-        record = self._observability.record(
+        self._observability.record(
             self._runtime_context.trace_id,
             {"event": event_name, "payload": payload},
             level,
         )
-        self._observability.jsonl_storage.write_record(record)
 
     def _to_model_output(self, result: CapabilityResult) -> QFAModelOutput:
         if not result.success:
             return QFAModelOutput(
                 is_pytool_call=False,
                 tool_call=None,
+                tool_call_str=None,
                 is_answer=True,
                 response=result.error_message or "",
             )
@@ -207,6 +207,7 @@ class DefaultQFASessionContext(QFASessionContext):
             return QFAModelOutput(
                 is_pytool_call=True,
                 tool_call=tool_call_dict,
+                tool_call_str=output.tool_call_str,
                 is_answer=False,
                 response=None,
             )
@@ -215,6 +216,7 @@ class DefaultQFASessionContext(QFASessionContext):
         return QFAModelOutput(
             is_pytool_call=False,
             tool_call=None,
+            tool_call_str=None,
             is_answer=True,
             response=output.content or "",
         )

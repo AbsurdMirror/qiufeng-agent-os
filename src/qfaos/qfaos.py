@@ -371,8 +371,7 @@ class QFAOS:
             jsonl_backup_count=log_cfg.jsonl_backup_count,
         )
         boot_trace_id = observability.trace_id_generator()
-        boot_record = observability.record(boot_trace_id, {"event": "qfaos.run.started"}, "INFO")
-        observability.jsonl_storage.write_record(boot_record)
+        observability.record(boot_trace_id, {"event": "qfaos.run.started"}, "INFO")
 
         redis_url = memory_cfg.redis_url if memory_cfg.backend == QFAEnum.Memory.Backend.redis else None
         storage_memory = initialize_storage_memory(redis_url=redis_url, observability=observability)
