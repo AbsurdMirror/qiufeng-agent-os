@@ -106,7 +106,6 @@ class DefaultQFASessionContext(QFASessionContext):
                 metadata={"trace_id": self._runtime_context.trace_id},
             )
         )
-        print("DEBUG", "self._capability_hub.invoke result is ", result)
         return self._to_model_output(result)
 
     async def call_pytool(

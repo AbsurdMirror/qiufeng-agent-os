@@ -21,17 +21,21 @@ try:
 except ImportError:
     HAS_TIKTOKEN = False
 
+from src.observability_hub.exports import ObservabilityHubExports
+
 class ModelRouter(ModelProviderClient):
     """
     模型路由分发器 (Model Routing)
     实现 T4 阶段的 MP-P0-01 (名称匹配) 和 MP-P0-02 (自动裁剪)
     它就像个智能电话分机：接到请求后，先拿着"剪刀"把超长对话剪短，再根据名字呼叫确切的大模型实例。
     """
-    def __init__(self, clients: dict[str, RawModelProviderClient]):
+    def __init__(self, clients: dict[str, RawModelProviderClient], observability: ObservabilityHubExports | None = None):
         """
         :param clients: A dictionary mapping model names or logical tags to specific client implementations.
+        :param observability: 可选的监控模块导出对象。
         """
         self._clients = clients
+        self._observability = observability
         if not os.environ.get("TIKTOKEN_CACHE_DIR"):
             os.environ["TIKTOKEN_CACHE_DIR"] = os.path.join(
                 tempfile.gettempdir(),
@@ -133,6 +137,18 @@ class ModelRouter(ModelProviderClient):
         if not client:
             raise ValueError(f"No suitable model provider found for '{trimmed_request.model_name}'")
 
+        trace_id = trimmed_request.metadata.get("trace_id", "unknown")
+        if self._observability:
+            self._observability.record(
+                trace_id,
+                {
+                    "event": "model.completion.started",
+                    "model_name": trimmed_request.model_name,
+                    "payload": payload,
+                },
+                "INFO",
+            )
+
         response_parse = trimmed_request.response_parse
         max_retries_raw = response_parse.schema_max_retries
         max_retries = max_retries_raw if isinstance(max_retries_raw, int) and max_retries_raw >= 0 else 0
@@ -147,7 +163,16 @@ class ModelRouter(ModelProviderClient):
 
                 provider_id = client.provider_id
                 raw = client.completion(payload)
-                print("DEBUG", "model output 原始 raw: ", raw)
+                if self._observability:
+                    self._observability.record(
+                        trace_id,
+                        {
+                            "event": "model.completion.raw_output",
+                            "model_name": current_request.model_name,
+                            "raw": raw,
+                        },
+                        "DEBUG",
+                    )
                 response = build_model_response(
                     raw,
                     request=current_request,

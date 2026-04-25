@@ -5,6 +5,7 @@ from typing import Any, Callable
 from src.channel_gateway.channels.feishu.text_event_parser import TextEventParserFactory
 from src.domain.events import UniversalEvent
 from src.qfaos.config import QFAConfig
+from src.observability_hub.exports import ObservabilityHubExports
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,7 @@ def parse_feishu_long_connection_event(payload: Mapping[str, Any]) -> UniversalE
 def run_feishu_long_connection(
     settings: QFAConfig.Channel.Feishu,
     on_text_event: Callable[[UniversalEvent], None],
+    observability: ObservabilityHubExports | None = None,
 ) -> None:
     """
     启动并阻塞运行飞书 WebSocket 客户端。
@@ -50,6 +52,19 @@ def run_feishu_long_connection(
         然后使用解析工厂统一解析，并触发上层回调。
         """
         payload = _to_mapping(data)
+
+        if observability:
+            # 在渠道最边缘记录原始事件进入
+            # 注意：此时还没有 TraceID，我们生成一个临时的或记录无 ID 的原始日志
+            temp_trace_id = observability.trace_id_generator()
+            observability.record(
+                temp_trace_id,
+                {
+                    "event": "channel.feishu.raw_event_received",
+                    "payload_preview": str(payload)[:1000],
+                },
+                "INFO",
+            )
 
         from src.channel_gateway.core.session.context import session_context_controller
         import dataclasses

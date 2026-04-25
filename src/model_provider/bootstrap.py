@@ -5,9 +5,10 @@ from src.model_provider.contracts import (
 )
 from src.model_provider.exports import ModelProviderExports
 from src.model_provider.routing.router import ModelRouter
+from src.observability_hub.exports import ObservabilityHubExports
 
 
-def initialize() -> ModelProviderExports:
+def initialize(observability: ObservabilityHubExports | None = None) -> ModelProviderExports:
     """
     模型抽象层 (Model Provider) 的初始化引导函数。
     
@@ -16,7 +17,7 @@ def initialize() -> ModelProviderExports:
     """
     # T4: MP-P0-01, MP-P0-02
     # 默认情况下不注册任何具体 Inner Client，Router 会在请求 'default' 模型时自动触发内聚的 Mock 逻辑。
-    client = ModelRouter(clients={})
+    client = ModelRouter(clients={}, observability=observability)
     return ModelProviderExports(
         layer="model_provider",
         status="initialized",

@@ -375,7 +375,7 @@ class QFAOS:
         observability.jsonl_storage.write_record(boot_record)
 
         redis_url = memory_cfg.redis_url if memory_cfg.backend == QFAEnum.Memory.Backend.redis else None
-        storage_memory = initialize_storage_memory(redis_url=redis_url)
+        storage_memory = initialize_storage_memory(redis_url=redis_url, observability=observability)
 
         router = ModelRouter(
             clients={
@@ -385,9 +385,10 @@ class QFAOS:
                     model_name=model_cfg.model_name,
                     base_url=model_cfg.base_url,
                 ),
-            }
+            },
+            observability=observability,
         )
-        skill_hub = initialize_skill_hub()
+        skill_hub = initialize_skill_hub(observability=observability)
         hub = skill_hub.capability_hub
 
         # 1. 自动挂载模型能力
@@ -413,6 +414,7 @@ class QFAOS:
         oe = initialize_orchestration_engine(
             capability_hub=hub,
             storage_memory=storage_memory,
+            observability=observability,
         )
         if oe.context_manager is None:
             raise QFAInvalidConfigError("orchestration_engine 未正确注入 context_manager")
@@ -421,6 +423,7 @@ class QFAOS:
             host="127.0.0.1",
             port=8000,
             feishu_settings=feishu_cfg,
+            observability=observability,
         )
 
         orchestrator = CustomExecuteOrchestrator(
@@ -433,17 +436,26 @@ class QFAOS:
 
         event_queue: mp.Queue = mp.Queue()
 
-        def _worker(settings: dict[str, Any], q: mp.Queue) -> None:
+        def _worker(settings: dict[str, Any], q: mp.Queue, log_cfg_dict: dict[str, Any]) -> None:
             cfg = QFAConfig.Channel.Feishu(**settings)
+            
+            # 在子进程中重新初始化一个轻量级的 observability 用于记录
+            # 因为 ObservabilityHubExports 包含 Callable，可能无法直接跨进程序列化
+            from src.observability_hub.bootstrap import initialize as init_obs
+            obs = init_obs(
+                jsonl_log_dir=log_cfg_dict.get("jsonl_log_dir", "logs"),
+                jsonl_max_bytes=log_cfg_dict.get("jsonl_max_bytes", 10 * 1024 * 1024),
+                jsonl_backup_count=log_cfg_dict.get("jsonl_backup_count", 5),
+            )
 
             def _on_text_event(event: Any) -> None:
                 q.put(event)
 
-            run_feishu_long_connection(cfg, _on_text_event)
+            run_feishu_long_connection(cfg, _on_text_event, observability=obs)
 
         proc = mp.Process(
             target=_worker,
-            args=(feishu_cfg.model_dump(), event_queue),
+            args=(feishu_cfg.model_dump(), event_queue, log_cfg.model_dump()),
             daemon=True,
         )
         proc.start()

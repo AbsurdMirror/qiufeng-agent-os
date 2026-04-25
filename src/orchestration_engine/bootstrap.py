@@ -5,11 +5,13 @@ from src.orchestration_engine.exports import OrchestrationEngineExports
 from src.orchestration_engine.runtime.langgraph_runtime import LangGraphRuntime
 from src.storage_memory.exports import StorageMemoryExports
 from src.orchestration_engine.context.state_context_manager import StateContextManager
+from src.observability_hub.exports import ObservabilityHubExports
 
 
 def initialize(
     capability_hub: CapabilityHub | None = None,
     storage_memory: StorageMemoryExports | None = None,
+    observability: ObservabilityHubExports | None = None,
 ) -> OrchestrationEngineExports:
     """
     编排引擎层 (Orchestration Engine) 的初始化引导函数。

@@ -11,11 +11,13 @@ from src.channel_gateway.channels.feishu.webhook import FeishuWebhookResult, rec
 from src.channel_gateway.core.nonebot_runtime import initialize_nonebot2
 from src.channel_gateway.core.session.context import session_context_controller
 from src.qfaos.config import QFAConfig
+from src.observability_hub.exports import ObservabilityHubExports
 
 def initialize(
     host: str,
     port: int,
     feishu_settings: QFAConfig.Channel.Feishu | None = None,
+    observability: ObservabilityHubExports | None = None,
 ) -> ChannelGatewayExports:
     """
     渠道适配层 (Channel Gateway) 的初始化引导函数。

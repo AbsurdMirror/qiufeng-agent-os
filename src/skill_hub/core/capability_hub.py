@@ -16,6 +16,7 @@ from src.domain.models import (
 from src.model_provider.contracts import ModelProviderClient
 from src.skill_hub.contracts import PyTool
 from src.skill_hub.primitives.security import with_security_policy, default_security_policy
+from src.observability_hub.exports import ObservabilityHubExports
 
 # ============================================================
 # 能力中心 —— 注册中心与调度总线 (Capability Hub)
@@ -41,9 +42,10 @@ class RegisteredCapabilityHub:
     所有的工具（PyTool）和模型路由都会注册到这里，编排层只需要通过唯一的 `invoke` 方法
     和能力 ID，就能调用底层的任何功能。这也为拦截器（审计、日志、安全验证）提供了单一挂载点。
     """
-    def __init__(self) -> None:
+    def __init__(self, observability: ObservabilityHubExports | None = None) -> None:
         self._capabilities: dict[str, CapabilityDescription] = {}
         self._handlers: dict[str, CapabilityHandler] = {}
+        self._observability = observability
 
     def register_capability(
         self,
@@ -147,11 +149,34 @@ class RegisteredCapabilityHub:
             )
         handler = self._handlers[request.capability_id]
         
+        trace_id = request.metadata.get("trace_id", "unknown")
+        if self._observability:
+            self._observability.record(
+                trace_id,
+                {
+                    "event": "capability.invoke.started",
+                    "capability_id": request.capability_id,
+                    "payload": request.payload,
+                    "domain": capability.domain,
+                },
+                "INFO",
+            )
+
         # 异常隔离兜底：如果 handler 内部由于（如模型超时、JSON 解析失败等）抛出未捕获异常，
         # 在此处被捕获并转化为 CapabilityResult(success=False)，防止整个编排主协程崩溃。
         try:
             result = await handler(request)
         except Exception as e:
+            if self._observability:
+                self._observability.record(
+                    trace_id,
+                    {
+                        "event": "capability.invoke.failed",
+                        "capability_id": request.capability_id,
+                        "error": str(e),
+                    },
+                    "ERROR",
+                )
             return CapabilityResult(
                 capability_id=request.capability_id,
                 success=False,
@@ -161,6 +186,19 @@ class RegisteredCapabilityHub:
                 metadata={"domain": capability.domain}
             )
         
+        if self._observability:
+            self._observability.record(
+                trace_id,
+                {
+                    "event": "capability.invoke.completed",
+                    "capability_id": result.capability_id,
+                    "success": result.success,
+                    "output": result.output if result.success else None,
+                    "error_message": result.error_message if not result.success else None,
+                },
+                "INFO" if result.success else "WARNING",
+            )
+
         metadata = dict(result.metadata)
         metadata.setdefault("domain", capability.domain)
         return CapabilityResult(
