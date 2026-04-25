@@ -25,10 +25,10 @@ def test_oe_09_null_capability_hub_returns_standard_result():
     """测试项 OE-09: 空能力中心返回统一错误结果结构"""
     hub = NullCapabilityHub()
     result = asyncio.run(
-        hub.invoke(CapabilityRequest(capability_id="model.chat.default"))
+        hub.invoke(CapabilityRequest(capability_id="model.completion"))
     )
 
-    assert result.capability_id == "model.chat.default"
+    assert result.capability_id == "model.completion"
     assert result.success is False
     assert result.error_code == "capability_not_found"
     assert result.output == {}

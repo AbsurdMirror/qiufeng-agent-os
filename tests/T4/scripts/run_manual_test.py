@@ -30,7 +30,7 @@ from src.domain.models import ModelMessage, ModelRequest
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.orchestration_engine.context.state_context_manager import StateContextManager
 from src.skill_hub.core.capability_hub import RegisteredCapabilityHub
-from src.skill_hub.core.tool_parser import parse_doxygen_to_json_schema
+from src.domain.translators.schema_translator import SchemaTranslator
 from src.domain.memory import HotMemoryItem
 from src.storage_memory.factory.create_store import HAS_REDIS
 
@@ -62,7 +62,7 @@ def calculate_sum(
 
 def _wrap_func_as_capability(func) -> tuple[CapabilityDescription, Any]:
     """利用 T4 的 ToolParser 将 Python 函数包装为标准 Capability"""
-    schema = parse_doxygen_to_json_schema(func)
+    schema = SchemaTranslator.model_to_schema(SchemaTranslator.func_to_input_model(func), is_input=True, func=func)
     desc = CapabilityDescription(
         capability_id=f"tool.test.{func.__name__}",
         domain="tool.test",

@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from typing import Any, Protocol
-from .models import HotMemoryItem
+from src.domain.memory import HotMemoryItem
 
 
 class HotMemoryCarrier(Protocol):

@@ -3,15 +3,16 @@ import sys
 import sqlite3
 import threading
 import argparse
+from contextvars import ContextVar
 from datetime import datetime
+from dataclasses import dataclass
 from typing import List, Dict, Any, Optional, Annotated
 
 # 将项目根目录添加到 sys.path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from pydantic import Field
-from src.qfaos import QFAConfig, QFAEnum, QFAOS
-from src.qfaos.runtime.contracts import QFAEvent, QFAExecutionContext
+from src.qfaos import QFAConfig, QFAEnum, QFAOS, qfaos_pytool, QFAEvent, QFAExecutionContext
 from src.observability_hub.cli.tailer import CLILogTailer
 
 
@@ -21,6 +22,15 @@ def _tool_success(data: Any = None, message: str = "ok") -> Dict[str, Any]:
 
 def _tool_error(error: Exception, code: str = "TOOL_ERROR") -> Dict[str, Any]:
     return {"ok": False, "code": code, "error": str(error)}
+
+
+@dataclass
+class BillCardItem:
+    id: int
+    category: str
+    date: str
+    amount: float
+    remark: Optional[str]
 
 
 class BillManager:
@@ -288,128 +298,230 @@ minimax_cfg = QFAConfig.Model.MiniMax(
 )
 agent.register_model(QFAEnum.Model.MiniMax, minimax_cfg)
 
+# --- 全局上下文管理 ---
+_current_session_ctx: ContextVar[Optional[Any]] = ContextVar("_current_session_ctx", default=None)
+
 # 4. 账单管理工具实例化
 bill_manager = BillManager(db_path=str(base_dir / "bills.db"))
 
 # 5. 定义账单管理工具 (pytools)
 # 注意：仅将账单操作工具暴露给 AI 模型，分类管理工具 (add_category, delete_category) 仅通过 CLI 使用。
 
-@agent.custom_pytool
-def list_categories() -> Dict[str, Any]:
+@qfaos_pytool(id="list_categories")
+async def list_categories() -> Annotated[Dict[str, Any], Field(description="包含分类列表的响应对象")]:
     """获取所有已定义的账单分类列表。"""
     try:
-        return _tool_success({"categories": bill_manager.list_categories()})
+        categories = bill_manager.list_categories()
+        session = _current_session_ctx.get()
+        if session:
+            msg = f"[list_categories] 执行获取所有已定义的账单分类列表：\n- 已定义的账单分类列表: {', '.join(categories)}"
+            await session.send_message(QFAEnum.Channel.Feishu, msg)
+        return _tool_success({"categories": categories})
     except Exception as e:
         return _tool_error(e, code="LIST_CATEGORIES_FAILED")
 
 
-@agent.custom_pytool
-def get_today_date() -> Dict[str, Any]:
+@qfaos_pytool(id="get_today_date")
+async def get_today_date() -> Annotated[Dict[str, Any], Field(description="包含今日日期的响应对象")]:
     """返回今天的日期（YYYY-MM-DD）。"""
     try:
         today = datetime.now().strftime("%Y-%m-%d")
+        session = _current_session_ctx.get()
+        if session:
+            msg = f"[get_today_date] 执行返回今天的日期（YYYY-MM-DD）：\n- 今日日期: {today}"
+            await session.send_message(QFAEnum.Channel.Feishu, msg)
         return _tool_success({"today": today})
     except Exception as e:
         return _tool_error(e, code="GET_TODAY_DATE_FAILED")
 
 
-@agent.custom_pytool
-def add_bill(
+@qfaos_pytool(id="add_bill")
+async def add_bill(
     category: Annotated[str, Field(description="账单分类")],
     amount: Annotated[float, Field(description="账单金额")],
     date: Annotated[str, Field(description="账单日期，格式为 YYYY-MM-DD")],
-    remark: Annotated[str, Field(description="备注信息")]
-) -> Dict[str, Any]:
+    remark: Annotated[Optional[str], Field(description="备注信息")] = None
+) -> Annotated[Dict[str, Any], Field(description="账单添加操作的结果")]:
     """添加一条新的账单记录。"""
     try:
         bill_id = bill_manager.add_bill(category, amount, date, remark)
+        session = _current_session_ctx.get()
+        if session:
+            msg = f"[add_bill] 执行添加一条新的账单记录：\n- 账单分类: {category}\n- 账单金额: {amount}\n- 账单日期: {date}\n- 备注信息: {remark or '无'}\n- 生成的账单 ID: {bill_id}"
+            await session.send_message(QFAEnum.Channel.Feishu, msg)
         return _tool_success({"bill_id": bill_id}, message="账单添加成功")
     except Exception as e:
         return _tool_error(e, code="ADD_BILL_FAILED")
 
-@agent.custom_pytool
-def update_bill(
+@qfaos_pytool(id="update_bill")
+async def update_bill(
     bill_id: Annotated[int, Field(description="要修改的账单 ID")],
     category: Annotated[Optional[str], Field(description="新的分类")] = None,
     amount: Annotated[Optional[float], Field(description="新的金额")] = None,
     date: Annotated[Optional[str], Field(description="新的日期")] = None,
     remark: Annotated[Optional[str], Field(description="新的备注")] = None
-) -> Dict[str, Any]:
+) -> Annotated[Dict[str, Any], Field(description="账单修改操作的结果")]:
     """根据 ID 修改已有账单的信息。"""
     try:
         updated = bill_manager.update_bill(bill_id, category, amount, date, remark)
         if not updated:
             return {"ok": False, "code": "UPDATE_BILL_NOT_FOUND", "error": f"未找到可更新账单，bill_id={bill_id}"}
+        
+        session = _current_session_ctx.get()
+        if session:
+            msg = f"[update_bill] 执行根据 ID 修改已有账单的信息：\n- 要修改的账单 ID: {bill_id}"
+            if category: msg += f"\n- 新的分类: {category}"
+            if amount is not None: msg += f"\n- 新的金额: {amount}"
+            if date: msg += f"\n- 新的日期: {date}"
+            if remark is not None: msg += f"\n- 新的备注: {remark}"
+            msg += f"\n- 修改结果: {'成功' if updated else '失败'}"
+            await session.send_message(QFAEnum.Channel.Feishu, msg)
+            
         return _tool_success({"updated": True}, message="账单修改成功")
     except Exception as e:
         return _tool_error(e, code="UPDATE_BILL_FAILED")
 
-@agent.custom_pytool
-def delete_bill(
+
+@qfaos_pytool(id="delete_bill")
+async def delete_bill(
     bill_id: Annotated[int, Field(description="要删除的账单 ID")]
-) -> Dict[str, Any]:
+) -> Annotated[Dict[str, Any], Field(description="账单删除操作的结果")]:
     """根据 ID 删除一条账单记录。"""
     try:
         deleted = bill_manager.delete_bill(bill_id)
         if not deleted:
             return {"ok": False, "code": "DELETE_BILL_NOT_FOUND", "error": f"未找到可删除账单，bill_id={bill_id}"}
+        
+        session = _current_session_ctx.get()
+        if session:
+            msg = f"[delete_bill] 执行根据 ID 删除一条账单记录：\n- 要删除的账单 ID: {bill_id}\n- 删除结果: {'成功' if deleted else '失败'}"
+            await session.send_message(QFAEnum.Channel.Feishu, msg)
+            
         return _tool_success({"deleted": True}, message="账单删除成功")
     except Exception as e:
         return _tool_error(e, code="DELETE_BILL_FAILED")
 
-@agent.custom_pytool
-def get_bill_by_id(
+
+@qfaos_pytool(id="get_bill_by_id")
+async def get_bill_by_id(
     bill_id: Annotated[int, Field(description="账单 ID")]
-) -> Dict[str, Any]:
+) -> Annotated[Dict[str, Any], Field(description="包含账单详情的响应对象")]:
     """根据 ID 获取单条账单的详细信息。"""
     try:
         bill = bill_manager.get_bill_by_id(bill_id)
         if bill is None:
             return {"ok": False, "code": "BILL_NOT_FOUND", "error": f"未找到账单，bill_id={bill_id}"}
+        
+        session = _current_session_ctx.get()
+        if session:
+            msg = f"[get_bill_by_id] 执行根据 ID 获取单条账单的详细信息：\n- 账单 ID: {bill_id}\n- 查询到的账单详情: {bill}"
+            await session.send_message(QFAEnum.Channel.Feishu, msg)
+            
         return _tool_success({"bill": bill})
     except Exception as e:
         return _tool_error(e, code="GET_BILL_FAILED")
 
-@agent.custom_pytool
-def query_bills(
+
+@qfaos_pytool(id="query_bills")
+async def query_bills(
     start_date: Annotated[Optional[str], Field(description="起始日期")] = None,
     end_date: Annotated[Optional[str], Field(description="结束日期")] = None,
     category: Annotated[Optional[str], Field(description="账单分类")] = None,
     min_amount: Annotated[Optional[float], Field(description="最小金额")] = None,
     max_amount: Annotated[Optional[float], Field(description="最大金额")] = None
-) -> Dict[str, Any]:
+) -> Annotated[Dict[str, Any], Field(description="包含筛选出的账单列表的响应对象")]:
     """根据日期范围、分类、金额范围等条件筛选账单。"""
     try:
         bills = bill_manager.query_bills(start_date, end_date, category, min_amount, max_amount)
+        
+        session = _current_session_ctx.get()
+        if session:
+            msg = f"[query_bills] 执行根据日期范围、分类、金额范围等条件筛选账单：\n- 起始日期: {start_date or '未设置'}\n- 结束日期: {end_date or '未设置'}\n- 账单分类: {category or '未设置'}\n- 最小金额: {min_amount if min_amount is not None else '未设置'}\n- 最大金额: {max_amount if max_amount is not None else '未设置'}\n- 筛选结果数量: {len(bills)}"
+            await session.send_message(QFAEnum.Channel.Feishu, msg)
+            
         return _tool_success({"bills": bills})
     except Exception as e:
         return _tool_error(e, code="QUERY_BILLS_FAILED")
 
-@agent.custom_pytool
-def get_statistics(
+
+@qfaos_pytool(id="get_statistics")
+async def get_statistics(
     start_date: Annotated[Optional[str], Field(description="起始日期")] = None,
     end_date: Annotated[Optional[str], Field(description="结束日期")] = None,
     category: Annotated[Optional[str], Field(description="账单分类")] = None,
     min_amount: Annotated[Optional[float], Field(description="最小金额")] = None,
     max_amount: Annotated[Optional[float], Field(description="最大金额")] = None
-) -> Dict[str, Any]:
+) -> Annotated[Dict[str, Any], Field(description="包含统计分析数据的响应对象")]:
     """统计指定范围内的账单数据（总和、条数及按分类统计）。"""
     try:
         stats = bill_manager.get_statistics(start_date, end_date, category, min_amount, max_amount)
+        
+        session = _current_session_ctx.get()
+        if session:
+            msg = f"[get_statistics] 执行统计指定范围内的账单数据（总和、条数及按分类统计）：\n- 起始日期: {start_date or '未设置'}\n- 结束日期: {end_date or '未设置'}\n- 账单分类: {category or '未设置'}\n- 账单总金额: {stats['total_sum']}\n- 账单总笔数: {stats['total_count']}"
+            await session.send_message(QFAEnum.Channel.Feishu, msg)
+            
         return _tool_success({"statistics": stats})
     except Exception as e:
         return _tool_error(e, code="GET_STATISTICS_FAILED")
 
+
+@qfaos_pytool(id="send_bill_card")
+async def send_bill_card(
+    bills: Annotated[List[BillCardItem], Field(description="账单明细列表，每项为 BillCardItem（包含 id, category, date, amount, remark）")]
+) -> Annotated[Dict[str, Any], Field(description="卡片发送操作的结果")]:
+    """将账单明细以美观的飞书卡片形式发送给用户。"""
+    try:
+        session = _current_session_ctx.get()
+        if not session:
+            return _tool_error(RuntimeError("Session context not found"))
+
+        if not bills:
+            await session.send_message(QFAEnum.Channel.Feishu, "没有找到符合条件的账单。")
+            return _tool_success(message="No bills to send")
+
+        print("b的type是：", type(bills))
+
+        total_sum = sum(b.amount for b in bills)
+        formatted_bills = []
+        for b in bills:
+            formatted_bills.append({
+                "date": b.date,
+                "amount": f"{b.amount:.2f}",
+                "remark": b.remark or "无",
+                "category": b.category,
+                "id": b.id
+            })
+
+        # 构造卡片变量
+        template_variable = {
+            "total": f"¥{total_sum:,.2f}",
+            "object_list_1": formatted_bills[:10]  # 限制展示前10条
+        }
+
+        # 写死 Template ID
+        template_id = "AAqezhmtrTuZ0" 
+
+        await session.send_feishu_card_message(
+            template_id=template_id,
+            template_variable=template_variable
+        )
+        
+        return _tool_success(message="账单卡片发送成功")
+    except Exception as e:
+        return _tool_error(e, code="SEND_BILL_CARD_FAILED")
+
+
 # 6. 注册工具到 Agent
-# 注意：仅向 AI 暴露账单操作和查询统计工具
-agent.register_tool("list_categories", list_categories)
-agent.register_tool("get_today_date", get_today_date)
-agent.register_tool("add_bill", add_bill)
-agent.register_tool("update_bill", update_bill)
-agent.register_tool("delete_bill", delete_bill)
-agent.register_tool("get_bill_by_id", get_bill_by_id)
-agent.register_tool("query_bills", query_bills)
-agent.register_tool("get_statistics", get_statistics)
+agent.register_pytool(list_categories)
+agent.register_pytool(get_today_date)
+agent.register_pytool(add_bill)
+agent.register_pytool(update_bill)
+agent.register_pytool(delete_bill)
+agent.register_pytool(get_bill_by_id)
+agent.register_pytool(query_bills)
+agent.register_pytool(get_statistics)
+agent.register_pytool(send_bill_card)
 
 # 7. 注册记忆策略与观测 log 策略
 memory_cfg = QFAConfig.Memory(
@@ -426,6 +538,13 @@ agent.register_observability_log(log_cfg)
 @agent.custom_execute
 async def execute(event:QFAEvent, ctx:QFAExecutionContext) -> None:
     session_ctx = ctx.get_session_ctx(event.session_id)
+    token = _current_session_ctx.set(session_ctx)
+    try:
+        await _do_execute(event, ctx, session_ctx)
+    finally:
+        _current_session_ctx.reset(token)
+
+async def _do_execute(event:QFAEvent, ctx:QFAExecutionContext, session_ctx: Any) -> None:
     session_ctx.record(
         "bill.event.received",
         {"channel": str(event.channel), "type": str(event.type), "session_id": event.session_id},
@@ -519,10 +638,14 @@ async def execute(event:QFAEvent, ctx:QFAExecutionContext) -> None:
     1. **主动询问**：如果用户提供的账单信息不完整（如缺少金额），请主动询问用户。
     2. **智能推测**：根据用户的描述自动推测最合适的账单分类（例如“吃火锅”推测为“餐饮”）。
     3. **自动备注**：根据上下文自动为账单补充有意义的备注信息。
+    4. **可视化展示**：当用户要求查看账单明细、查询账单或获取统计后的明细时，**必须调用 `send_bill_card` 工具**，将账单列表以卡片形式展示给用户，而不是直接输出文本列表。
     
     **重要指令**
     - 账单的分类是固定的，你在添加或修改账单的分类时，必须保证分类在已存在的分类列表中。
     - 回答用户账单信息时必须是真的调用工具查询到的账单信息，不能你自己编造。尤其是新建账单后一定要再次读取验证。
+    - **当你查询到账单数据后，请立即调用 `send_bill_card` 工具进行展示。**
+
+    今天的日期是: {datetime.now().strftime("%Y-%m-%d")}
 
     请直接根据用户的意图调用工具或直接回答用户问题。
     用户当前输入：{user_input}
@@ -557,6 +680,10 @@ async def execute(event:QFAEvent, ctx:QFAExecutionContext) -> None:
 
             # 去一下开头的换行
             response_text = response_text.lstrip("\n")
+            
+            if not response_text:
+                session_ctx.record("bill.ai.answer.empty", {"model": minimax_cfg.model_name}, level="WARNING")
+                response_text = "抱歉，我未能生成有效的回复，请稍后再试。"
             
             session_ctx.record("bill.ai.answer", {"text": response_text}, level="INFO")
             await session_ctx.add_memory(f"Assistant: {response_text}")

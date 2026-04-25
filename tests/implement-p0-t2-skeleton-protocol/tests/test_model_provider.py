@@ -5,7 +5,8 @@ from src.model_provider import ModelRouter
 
 def test_mp_01_invoke_with_messages():
     """测试项 MP-01: 模拟客户端常规推理"""
-    router = ModelRouter(clients={"test-model": InMemoryModelProviderClient()})
+    # 移除 InMemoryModelProviderClient，利用 Router 内置的 default mock 逻辑
+    router = ModelRouter(clients={})
     
     request = ModelRequest(
         messages=(
@@ -13,7 +14,7 @@ def test_mp_01_invoke_with_messages():
             ModelMessage(role="user", content="Hello, how are you?"),
             ModelMessage(role="user", content="What is the weather today?")
         ),
-        model_name="test-model"
+        model_name="default"
     )
     
     response = router.completion(request)
@@ -22,12 +23,13 @@ def test_mp_01_invoke_with_messages():
     # 模拟客户端应该回显最后一条消息的内容
     assert response.content == "What is the weather today?"
     assert response.provider_id == "default"
-    assert response.model_name == "test-model"
+    assert response.model_name == "default"
     assert response.finish_reason == "stop"
 
 def test_mp_02_invoke_with_empty_messages():
     """测试项 MP-02: 模拟客户端空消息推理"""
-    router = ModelRouter(clients={"default": InMemoryModelProviderClient()})
+    # 同样利用内置 mock
+    router = ModelRouter(clients={})
     
     request = ModelRequest(
         messages=(),

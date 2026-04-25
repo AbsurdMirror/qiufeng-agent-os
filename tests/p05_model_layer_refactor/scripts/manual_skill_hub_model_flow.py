@@ -18,22 +18,22 @@ P0.5 模型层重构后的手动验证脚本。
 - USER_QUESTION
 """
 
-from __future__ import annotations
-
 import asyncio
 import os
 from dataclasses import asdict, is_dataclass
 from pprint import pprint
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from src.domain.models import ModelMessage
+from src.domain.models import ModelMessage, ModelResponse, ModelResponseParseConfig
 from src.model_provider.contracts import InMemoryModelProviderClient
 from src.model_provider.providers.minimax import MiniMaxModelProviderClient
 from src.model_provider.routing.router import ModelRouter
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
+from src.domain.translators.schema_translator import SchemaTranslator
 from src.skill_hub.bootstrap import initialize as initialize_skill_hub
+
 
 
 class FormattedAnswer(BaseModel):
@@ -104,53 +104,43 @@ def _resolve_model_client() -> tuple[ModelRouter, str]:
 def _build_plain_payload(model_name: str, question: str) -> dict[str, Any]:
     """普通文本场景 payload。"""
     return {
-        "messages": (
-            ModelMessage(role="system", content="你是一个简洁的助手。"),
-            ModelMessage(role="user", content=question),
-        ),
-        "model_name": model_name,
+        "request": {
+            "messages": (
+                ModelMessage(role="system", content="你是一个简洁的助手。"),
+                ModelMessage(role="user", content=question),
+            ),
+            "model_name": model_name,
+        }
     }
 
 
-def _build_tool_payload(model_name: str, tools: tuple[CapabilityDescription, ...]) -> dict[str, Any]:
+def _build_tool_call_payload(model_name: str) -> dict[str, Any]:
     """工具调用场景 payload。"""
     return {
-        "messages": (
-            ModelMessage(
-                role="user",
-                content="如果需要计算，请直接使用工具调用，不要输出自然语言解释。",
+        "request": {
+            "messages": (
+                ModelMessage(role="system", content="你是一个数学专家。"),
+                ModelMessage(role="user", content="请问 12 + 34 等于多少？"),
             ),
-            ModelMessage(
-                role="user",
-                content="请计算 12 + 30，并通过工具返回。",
-            ),
-        ),
-        "model_name": model_name,
-        "tools": tools,
+            "model_name": model_name,
+            "tools": _build_tools(),
+        }
     }
 
 
-def _build_schema_payload(model_name: str) -> dict[str, Any]:
+def _build_output_schema_payload(model_name: str) -> dict[str, Any]:
     """输出格式化场景 payload。"""
     return {
-        "messages": (
-            ModelMessage(
-                role="system",
-                content=(
-                    "给你两个数字，你需要计算它们的和与差。"
-                    "不要输出其他文本。"
-                ),
+        "request": {
+            "messages": (
+                ModelMessage(role="system", content="你是一个数据提取专家。"),
+                ModelMessage(role="user", content="请提取以下数值：12.3 和 55.3"),
             ),
-            ModelMessage(
-                role="user",
-                content=(
-                    "12.3, 55.3"
-                ),
+            "model_name": model_name,
+            "response_parse": ModelResponseParseConfig(
+                output_schema=FormattedAnswer.model_json_schema()
             ),
-        ),
-        "model_name": model_name,
-        "output_schema": FormattedAnswer,
-        "schema_max_retries": 2,
+        }
     }
 
 
@@ -197,7 +187,8 @@ async def main() -> None:
     user_question = os.getenv("USER_QUESTION", "请用一句话介绍你自己。")
 
     model_client, model_name = _resolve_model_client()
-    skill_hub = initialize_skill_hub(model_client=model_client)
+    skill_hub = initialize_skill_hub()
+    skill_hub.capability_hub.register_instance_capabilities(model_client)
 
     print("\n已初始化 SkillHub，模型目标:", model_name)
     print("可用能力:")
@@ -217,14 +208,14 @@ async def main() -> None:
     # await _invoke_case(
     #     invoke_capability=skill_hub.invoke_capability,
     #     case_name="tool_calls",
-    #     payload=_build_tool_payload(model_name=model_name, tools=tools),
+    #     payload=_build_tool_call_payload(model_name=model_name),
     # )
 
     # 场景3：输出格式化（schema）
     await _invoke_case(
         invoke_capability=skill_hub.invoke_capability,
         case_name="output_schema",
-        payload=_build_schema_payload(model_name=model_name),
+        payload=_build_output_schema_payload(model_name=model_name),
     )
 
 

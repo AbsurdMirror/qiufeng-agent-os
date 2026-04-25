@@ -85,7 +85,15 @@ class QFASessionContext(Protocol):
     async def send_message(self, channel: QFAEnum.Channel, text: str) -> None:
         raise NotImplementedError
 
-    def record(self, event_name: str, payload: dict[str, Any] | str, level: str = "info") -> None:
+    async def send_feishu_card_message(
+        self,
+        template_id: str,
+        template_variable: dict[str, Any],
+    ) -> None:
+        """发送飞书卡片消息（飞书专属接口）。"""
+        raise NotImplementedError
+
+    def record(self, event_name: str, payload: dict[str, Any] | str, level: str = "INFO") -> None:
         raise NotImplementedError
 
 

@@ -5,10 +5,7 @@ import pytest
 from pydantic import Field
 
 from src.channel_gateway.core.session.context import SessionContextController
-from src.skill_hub.core.tool_parser import (
-    parse_doxygen_to_json_schema,
-    parse_function_output_to_json_schema,
-)
+from src.domain.translators.schema_translator import SchemaTranslator
 from src.storage_memory.backends.in_memory import InMemoryHotMemoryStore
 from src.domain.memory import HotMemoryItem
 
@@ -64,7 +61,7 @@ def test_tool_parser_pydantic_schema():
         """这是一个测试搜索工具"""
         return f"Searching {query} with {count}"
         
-    schema = parse_doxygen_to_json_schema(dummy_tool)
+    schema = SchemaTranslator.model_to_schema(SchemaTranslator.func_to_input_model(dummy_tool), is_input=True, func=dummy_tool)
     
     # 验证没有 title
     assert "title" not in schema
@@ -87,14 +84,14 @@ def test_tool_parser_requires_annotated():
         return query
 
     with pytest.raises(TypeError, match="Annotated"):
-        parse_doxygen_to_json_schema(bad_tool)
+        SchemaTranslator.func_to_input_model(bad_tool)
 
 
 def test_tool_output_parser_schema():
     def dummy_tool() -> Annotated[str, Field(description="工具执行结果文本")]:
         return "ok"
 
-    schema = parse_function_output_to_json_schema(dummy_tool)
+    schema = SchemaTranslator.model_to_schema(SchemaTranslator.func_to_output_model(dummy_tool), is_input=False, func=dummy_tool)
     props = schema.get("properties", {})
 
     assert "title" not in schema

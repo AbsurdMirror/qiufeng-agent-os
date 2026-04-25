@@ -1,14 +1,18 @@
-from typing import Any, Mapping, Protocol
+from typing import Any, Mapping, Protocol, Union
 from src.domain.models import (
     ModelRequest,
     ModelResponse,
 )
+import litellm
+
+LiteLLMRawResponse = Union["litellm.ModelResponse", "litellm.CustomStreamWrapper", ModelResponse]
 
 
 class ModelProviderClient(Protocol):
     """
-    模型提供商客户端协议 (Duck Typing Interface)。
-    所有具体的模型服务商接入实现都必须遵循此同步调用契约。
+    对外模型提供商客户端协议 (Outer Interface)。
+    输入为 ModelRequest，输出为 ModelResponse。
+    适用于 Router 和独立的模拟客户端。
     """
     provider_id: str
 
@@ -16,31 +20,47 @@ class ModelProviderClient(Protocol):
         raise NotImplementedError
 
 
+class RawModelProviderClient(Protocol):
+    """
+    对内模型提供商客户端协议 (Inner Interface)。
+    输入为 Mapping[str, Any]，输出为 LiteLLM 兼容的原始响应。
+    适用于具体模型的适配器实现（如 MiniMax）。
+    """
+    provider_id: str
+
+    def completion(self, payload: Mapping[str, Any]) -> LiteLLMRawResponse:
+        raise NotImplementedError
+
+
 class InMemoryModelProviderClient:
     """
-    内存级模拟模型客户端 (Mock Provider)。
+    内存级模拟模型客户端 (Mock Provider) - 对外版本。
     
-    主要用于 P0 T2 阶段打通链路和单元测试，它会简单地将用户输入的最后一条消息作为模型回复返回。
+    接口输入为 ModelRequest，输出为 ModelResponse。
     """
     provider_id = "default"
 
-    def completion(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+    def completion(self, request: ModelRequest) -> ModelResponse:
         """
-        生成 LiteLLM 兼容的 mock 原始响应。
-        该方法用于 Router 主链路的 completion(payload)->raw 调用约定。
+        简单地将用户输入的最后一条消息作为模型回复返回。
         """
-        raw_messages = payload.get("messages")
         last_content = ""
-        if isinstance(raw_messages, tuple) and raw_messages:
-            last_item = raw_messages[-1]
-            if isinstance(last_item, dict):
-                last_content = str(last_item.get("content", ""))
-        return {
-            "model": str(payload.get("model") or "mock-model"),
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {"role": "assistant", "content": last_content},
-                }
-            ],
-        }
+        if request.messages:
+            last_content = request.messages[-1].content
+        
+        return ModelResponse(
+            success=True,
+            model_name=request.model_name or "mock-model",
+            content=last_content,
+            finish_reason="stop",
+            provider_id=self.provider_id,
+            raw={
+                "model": request.model_name or "mock-model",
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"role": "assistant", "content": last_content},
+                    }
+                ],
+            }
+        )

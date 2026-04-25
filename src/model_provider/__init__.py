@@ -36,7 +36,6 @@ from .validators.output_parser import (
     SchemaValidationError,
     ToolCallValidationError,
     parse_message_content,
-    parse_message_tool_calls,
 )
 
 __all__ = [

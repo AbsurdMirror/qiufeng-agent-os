@@ -48,7 +48,7 @@ def record(
     Returns:
         NormalizedRecord: 归一化后的记录实体
     """
-    normalized_level = level if isinstance(level, LogLevel) else LogLevel(level)
+    normalized_level = level if isinstance(level, LogLevel) else LogLevel(str(level).upper())
     payload, payload_type = _normalize_data(data)
     return NormalizedRecord(
         trace_id=trace_id,

@@ -57,7 +57,7 @@ class CustomExecuteOrchestrator(BaseOrchestrator):
                 self._observability.record(
                     "qfaos.custom_execute.error",
                     {"error": str(exc), "trace_id": ctx.trace_id},
-                    "error",
+                    "ERROR",
                 )
             raise
         return dict(ctx.state)

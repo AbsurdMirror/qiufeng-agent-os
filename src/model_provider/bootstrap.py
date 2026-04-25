@@ -1,5 +1,4 @@
 from src.model_provider.contracts import (
-    InMemoryModelProviderClient,
     ModelProviderClient,
     ModelRequest,
     ModelResponse,
@@ -16,11 +15,8 @@ def initialize() -> ModelProviderExports:
     初始化底层的模型客户端，并暴露代理方法供编排引擎调用。
     """
     # T4: MP-P0-01, MP-P0-02
-    client = ModelRouter(
-        clients={
-            "default": InMemoryModelProviderClient(),
-        }
-    )
+    # 默认情况下不注册任何具体 Inner Client，Router 会在请求 'default' 模型时自动触发内聚的 Mock 逻辑。
+    client = ModelRouter(clients={})
     return ModelProviderExports(
         layer="model_provider",
         status="initialized",

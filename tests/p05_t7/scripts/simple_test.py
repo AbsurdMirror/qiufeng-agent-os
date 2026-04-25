@@ -3,8 +3,7 @@ from typing import Annotated
 
 from pydantic import Field
 
-from src.qfaos import QFAConfig, QFAEnum, QFAOS
-
+from src.qfaos import QFAConfig, QFAEnum, QFAOS, qfaos_pytool
 
 # 1. 创建 QFAOS 实例
 my_agent = QFAOS()
@@ -48,7 +47,7 @@ def send_email_policy(to: str, _subject: str, _body: str) -> QFAEnum.Primitive.P
 my_agent.register_security_primitive("send_email", send_email_action, send_email_policy)
 
 # 5. 注册工具（example.py#L41-60）
-@my_agent.custom_pytool
+@qfaos_pytool(id="calculate")
 def calculate(
     a: Annotated[int, Field(description="第一个整数")],
     b: Annotated[int, Field(description="第二个整数")],
@@ -56,7 +55,7 @@ def calculate(
     return a + b
 
 
-@my_agent.custom_pytool
+@qfaos_pytool(id="send_email")
 def send_email(
     to: Annotated[str, Field(description="收件人邮箱地址")],
     subject: Annotated[str, Field(description="邮件主题")],
@@ -65,8 +64,8 @@ def send_email(
     return my_agent.primitives.send_email(to, subject, body)
 
 
-my_agent.register_tool("calculate", calculate)
-my_agent.register_tool("send_email", send_email)
+my_agent.register_pytool(calculate)
+my_agent.register_pytool(send_email)
 
 # 6. 注册记忆策略（example.py#L62-67）
 memory_cfg = QFAConfig.Memory(

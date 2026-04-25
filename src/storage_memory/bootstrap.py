@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 from typing import Any
 
-from .contracts.models import HotMemoryItem
+from src.domain.memory import HotMemoryItem
 from .contracts.protocols import StorageAccessProtocol
 from .exports import StorageMemoryExports
 

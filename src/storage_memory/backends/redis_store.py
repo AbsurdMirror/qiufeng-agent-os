@@ -2,7 +2,7 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
-from ..contracts.models import HotMemoryItem
+from src.domain.memory import HotMemoryItem
 from ..contracts.protocols import HotMemoryCarrier, StorageAccessProtocol
 from ..internal.keys import _build_hot_key, _build_state_key
 from ..internal.codecs import _dump_hot_memory_item, _load_hot_memory_item

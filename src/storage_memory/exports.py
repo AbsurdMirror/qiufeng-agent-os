@@ -2,7 +2,7 @@ from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from .contracts.models import HotMemoryItem
+from src.domain.memory import HotMemoryItem
 from .contracts.protocols import HotMemoryCarrier, StorageAccessProtocol
 
 

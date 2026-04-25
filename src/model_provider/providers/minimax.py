@@ -2,7 +2,11 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping
 import litellm
 
-from src.model_provider.providers.litellm_adapter import probe_litellm_runtime
+from src.domain.models import ModelResponse
+from src.model_provider.contracts import RawModelProviderClient, LiteLLMRawResponse
+from src.model_provider.providers.litellm_adapter import (
+    probe_litellm_runtime,
+)
 
 
 @dataclass
@@ -31,7 +35,7 @@ class MiniMaxRuntimeState:
         }
 
 
-class MiniMaxModelProviderClient:
+class MiniMaxModelProviderClient(RawModelProviderClient):
     """
     MiniMax 模型供应商的具体客户端实现。
     
@@ -80,7 +84,7 @@ class MiniMaxModelProviderClient:
         state.status = "ready"
         return state
 
-    def completion(self, payload: Mapping[str, Any]) -> Mapping[str, Any]:
+    def completion(self, payload: Mapping[str, Any]) -> LiteLLMRawResponse:
         """
         MiniMax 的唯一模型调用入口。
 
@@ -135,20 +139,36 @@ class MiniMaxModelProviderClient:
             # print("payload_dict", payload_dict)
             response = litellm.completion(**payload_dict)
         except Exception as exc:
-            degraded = _build_degraded_response(runtime_state=runtime_state)
-            degraded["reason"] = "minimax_request_failed"
-            degraded["message"] = str(exc)
-            return degraded
+            return ModelResponse(
+                success=False,
+                model_name=self._model_name or "minimax-model",
+                content="",
+                finish_reason="error",
+                provider_id=self.provider_id,
+                repair_reason="minimax_request_failed",
+                raw={
+                    "reason": "minimax_request_failed",
+                    "message": str(exc),
+                    "runtime": runtime_state.to_dict(),
+                },
+            )
         return response
 
 
 def _build_degraded_response(
     runtime_state: MiniMaxRuntimeState,
-) -> dict[str, Any]:
+) -> ModelResponse:
     """构造 LiteLLM 兼容的降级 raw 响应。"""
-    return {
-        "choices": [],
-        "status": runtime_state.status,
-        "reason": runtime_state.reason or "minimax_runtime_unavailable",
-        "runtime": runtime_state.to_dict(),
-    }
+    return ModelResponse(
+        success=False,
+        model_name="minimax-model",
+        content="",
+        finish_reason="error",
+        provider_id="minimax",
+        repair_reason=runtime_state.reason or "minimax_runtime_unavailable",
+        raw={
+            "status": runtime_state.status,
+            "reason": runtime_state.reason or "minimax_runtime_unavailable",
+            "runtime": runtime_state.to_dict(),
+        },
+    )

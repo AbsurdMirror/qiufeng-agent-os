@@ -49,7 +49,7 @@ def build_qfaos_application(config: QFAOSBootstrapConfig) -> QFAOSApplication:
         feishu_settings=config.feishu,
     )
     model_provider = initialize_model_provider()
-    skill_hub = initialize_skill_hub(model_client=model_provider.client)
+    skill_hub = initialize_skill_hub()
     storage_memory = initialize_storage_memory(redis_url=config.redis_url)
     orchestration_engine = initialize_orchestration_engine(
         capability_hub=skill_hub.capability_hub,

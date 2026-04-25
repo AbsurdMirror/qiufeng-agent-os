@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable, Any
 
 # ============================================================
 # 渠道适配层 —— 响应原语 (Channel Gateway Response Primitives)
@@ -55,4 +55,25 @@ class ReplyText:
         # 拦截空白内容，防止向渠道下发空载荷引发目标平台 API 报错
         if not self.content:
             raise ValueError("ReplyText content cannot be empty.")
+
+
+@dataclass(frozen=True)
+class FeishuReplyCard:
+    """
+    飞书专属卡片响应原语 (Feishu-Specific Card Reply Primitive)。
+
+    设计意图:
+        封装飞书消息卡片（Template 模式）所需的特定数据结构。
+        由于不同渠道的卡片实现差异极大，本原语被明确标记为 Feishu 专属。
+
+    Attributes:
+        template_id (str): 飞书卡片搭建工具生成的卡片 ID (ct_xxx)。
+        template_variable (dict[str, Any]): 对应模板中定义的变量数据。
+    """
+    template_id: str
+    template_variable: dict[str, Any]
+
+    def __post_init__(self):
+        if not self.template_id:
+            raise ValueError("FeishuReplyCard template_id cannot be empty.")
 

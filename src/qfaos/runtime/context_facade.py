@@ -1,12 +1,13 @@
 from typing import Any, Literal
 
 from src.domain.events import UniversalEvent
-from src.domain.responses import ReplyText
+from src.domain.responses import ReplyText, FeishuReplyCard
 from src.channel_gateway.exports import ChannelGatewayExports
 from src.observability_hub.exports import ObservabilityHubExports
 from src.orchestration_engine.context.runtime_context import RuntimeContext
-from src.domain.models import ModelMessage
+from src.domain.models import ModelMessage, ModelResponse
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
+from src.domain.translators.schema_translator import SchemaTranslator
 from src.orchestration_engine.contracts import CapabilityHub
 from src.qfaos.config import QFAConfig
 from src.qfaos.enums import QFAEnum
@@ -94,16 +95,18 @@ class DefaultQFASessionContext(QFASessionContext):
         messages = self._build_messages(prompt)
         result = await self._capability_hub.invoke(
             CapabilityRequest(
-                capability_id="model.chat.default",
+                capability_id="model.completion",
                 payload={
-                    "messages": messages,
-                    "model_name": model_name,
-                    "tools": selected_tools
+                    "request": {
+                        "messages": messages,
+                        "model_name": model_name,
+                        "tools": selected_tools
+                    }
                 },
                 metadata={"trace_id": self._runtime_context.trace_id},
             )
         )
-        # print("DEBUG", "self._capability_hub.invoke result is ", result)
+        print("DEBUG", "self._capability_hub.invoke result is ", result)
         return self._to_model_output(result)
 
     async def call_pytool(
@@ -144,7 +147,23 @@ class DefaultQFASessionContext(QFASessionContext):
             self._event,
         )
 
-    def record(self, event_name: str, payload: dict[str, Any] | str, level: str = "info") -> None:
+    async def send_feishu_card_message(
+        self,
+        template_id: str,
+        template_variable: dict[str, Any],
+    ) -> None:
+        if self._channel_gateway is None:
+            raise QFAInvalidConfigError("当前上下文未注入 Channel Gateway，无法发送消息")
+        
+        await self._channel_gateway.feishu_sender.send_feishu_card_reply(
+            FeishuReplyCard(
+                template_id=template_id,
+                template_variable=template_variable
+            ),
+            self._event
+        )
+
+    def record(self, event_name: str, payload: dict[str, Any] | str, level: str = "INFO") -> None:
         if self._observability is None:
             return
         record = self._observability.record(
@@ -162,26 +181,43 @@ class DefaultQFASessionContext(QFASessionContext):
                 is_answer=True,
                 response=result.error_message or "",
             )
-        output = result.output
-        tool_calls = output.get("tool_calls", [])
-        if isinstance(tool_calls, tuple) and tool_calls:
-            first = tool_calls[0]
-            tool_call = first if isinstance(first, dict) else None
-        else:
-            tool_call = None
-        if tool_call:
+
+        # 1. 自动推导与反序列化 (T3 架构核心)
+        cap_desc = self._capability_hub.get_capability(result.capability_id)
+        if not cap_desc:
+            raise QFAInvalidConfigError(f"无法获取能力描述: {result.capability_id}")
+
+        # 验证并还原为 Model 实例 (SchemaTranslator 会自动处理包裹的 'result' 字段)
+        parsed_obj = SchemaTranslator.validate_payload(cap_desc.output_model, result.output)
+        
+        # 提取真正的返回值 (ModelResponse 实例)
+        output: ModelResponse = getattr(parsed_obj, "result")
+        assert isinstance(output, ModelResponse), f"期望 ModelResponse，实际得到: {type(output)}"
+
+        # 2. 转换逻辑
+        # 优先检查工具调用 (T4 模型能力规范)
+        if output.tool_calls:
+            # 提取第一个工具调用进行处理
+            first_call = output.tool_calls[0]
+            # 兼容处理：CapabilityRequest 转为 QFA 内部使用的 dict 格式
+            tool_call_dict = {
+                "capability_id": first_call.capability_id,
+                "payload": first_call.payload,
+                "metadata": first_call.metadata,
+            }
             return QFAModelOutput(
                 is_pytool_call=True,
-                tool_call=tool_call,
+                tool_call=tool_call_dict,
                 is_answer=False,
                 response=None,
             )
-        content = output.get("content")
+
+        # 无工具调用，则视为普通文本回答
         return QFAModelOutput(
             is_pytool_call=False,
             tool_call=None,
             is_answer=True,
-            response=str(content) if content is not None else "",
+            response=output.content or "",
         )
 
     def _to_tool_result(
@@ -190,8 +226,11 @@ class DefaultQFASessionContext(QFASessionContext):
         tool_args: dict[str, Any],
         result: CapabilityResult,
     ) -> QFAToolResult:
+        # 1. 获取能力描述 (T3 架构核心)
         capability = self._capability_hub.get_capability(capability_id)
-        tool_desc = capability.description if capability else ""
+        tool_desc = capability.description if capability else f"工具 {capability_id}"
+
+        # 2. 处理失败场景
         if not result.success:
             if result.error_code == "requires_user_approval":
                 ticket = result.metadata.get("ticket_id")
@@ -201,7 +240,7 @@ class DefaultQFASessionContext(QFASessionContext):
                     tool_name=capability_id,
                     tool_desc=tool_desc,
                     tool_args=tool_args,
-                    output=dict(result.output),
+                    output=dict(result.output),  # 审批阶段的 output 通常包含提示信息
                 )
             else:
                 return QFAToolResult(
@@ -215,13 +254,40 @@ class DefaultQFASessionContext(QFASessionContext):
                         "error_message": result.error_message,
                     },
                 )
+
+        # 3. 处理成功场景：自动推导与反序列化 (T3 架构核心)
+        if not capability:
+            # 兜底：如果没有能力描述，回退到原始字典
+            return QFAToolResult(
+                is_ask_ticket=False,
+                ticket=None,
+                tool_name=capability_id,
+                tool_desc=tool_desc,
+                tool_args=tool_args,
+                output=dict(result.output),
+            )
+
+        # 验证并还原为 Model 实例
+        parsed_obj = SchemaTranslator.validate_payload(capability.output_model, result.output)
+        
+        # 提取真正的返回值 (由 SchemaTranslator 包装在 result 字段中)
+        raw_output = getattr(parsed_obj, "result")
+        
+        # 统一转为 dict 返回给编排层 (QFA 契约要求 output 为 dict)
+        if hasattr(raw_output, "model_dump"):
+            final_output = raw_output.model_dump(mode="json")
+        elif hasattr(raw_output, "__dict__"):
+            final_output = dict(raw_output)
+        else:
+            final_output = {"result": raw_output}
+
         return QFAToolResult(
             is_ask_ticket=False,
             ticket=None,
             tool_name=capability_id,
             tool_desc=tool_desc,
             tool_args=tool_args,
-            output=dict(result.output),
+            output=final_output,
         )
 
     def _build_messages(self, prompt: str) -> tuple[ModelMessage, ...]:

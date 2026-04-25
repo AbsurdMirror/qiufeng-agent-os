@@ -67,12 +67,21 @@ class _QFAObservabilityLogConfig(BaseModel):
     ] = 5
 
 
+class _QFABuiltinToolsConfig(BaseModel):
+    enable: Annotated[
+        bool,
+        Field(default=False, description="是否启用全部内置工具（如浏览器工具等）"),
+    ] = False
+
+
 class QFAConfig:
     """
     QFAOS SDK 全局配置模型集合。
     
     采用 Pydantic V2 编写，支持自动校验、环境变量映射及 IDE 智能提示。
     """
+    BuiltinTools = _QFABuiltinToolsConfig
+
     class Channel:
         """渠道相关配置模型。"""
         Feishu = _QFAChannelFeishuConfig

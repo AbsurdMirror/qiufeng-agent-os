@@ -1,8 +1,11 @@
 from asyncio import to_thread
 from collections.abc import Awaitable, Callable, Iterable
-from typing import Any
+from typing import Any, Annotated
+import inspect
 
+from pydantic import Field
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
+from src.domain.translators.schema_translator import SchemaTranslator
 from src.domain.models import (
     ModelMessage,
     ModelResponseParseConfig,
@@ -66,6 +69,62 @@ class RegisteredCapabilityHub:
         self._handlers[capability.capability_id] = safe_handler
         return capability
 
+    def register_instance_capabilities(self, instance: Any) -> list[CapabilityDescription]:
+        """
+        自动扫描并注册类实例中被 @qfaos_pytool 装饰的方法。
+        
+        设计意图：
+        支持类级别的能力定义，自动处理参数校验与结果转换。
+        """
+        registered = []
+        # 获取所有成员方法
+        for name, method in inspect.getmembers(instance, predicate=inspect.ismethod):
+            # 装饰器打上的元数据标签
+            meta_desc = getattr(method, "__qfa_capability__", None)
+            if not isinstance(meta_desc, CapabilityDescription):
+                continue
+            
+            # 构造自动处理的 Handler
+            async def auto_handler(request: CapabilityRequest, _method=method, _desc=meta_desc) -> CapabilityResult:
+                try:
+                    # 1. 验证并转换输入载荷 (聚合参数)
+                    params_obj = SchemaTranslator.validate_payload(_desc.input_model, request.payload or {})
+                    
+                    # 提取参数字典
+                    params = dict(params_obj)
+                    
+                    # 自动合并：将 CapabilityRequest.metadata 合并到方法的 metadata 参数中（如果存在）
+                    if "metadata" in params and isinstance(params["metadata"], dict):
+                        merged_meta = dict(request.metadata)
+                        merged_meta.update(params["metadata"])
+                        params["metadata"] = merged_meta
+                    
+                    # 2. 执行方法 (支持异步/同步)
+                    result = _method(**params)
+                    if inspect.isawaitable(result):
+                        result = await result
+                    
+                    # 3. 验证并转换返回值 (归一化为 dict)
+                    output = SchemaTranslator.serialize_instance(_desc.output_model, result)
+                    
+                    return CapabilityResult(
+                        capability_id=request.capability_id,
+                        success=True,
+                        output=output,
+                    )
+                except Exception as exc:
+                    return CapabilityResult(
+                        capability_id=request.capability_id,
+                        success=False,
+                        output={},
+                        error_code="capability_execution_error",
+                        error_message=str(exc),
+                    )
+
+            self.register_capability(meta_desc, auto_handler)
+            registered.append(meta_desc)
+        return registered
+
     def list_capabilities(self) -> tuple[CapabilityDescription, ...]:
         return tuple(self._capabilities.values())
 
@@ -114,97 +173,6 @@ class RegisteredCapabilityHub:
         )
 
 
-class ModelCapabilityRouter:
-    """
-    模型能力路由，将底层的 `ModelProviderClient` 包装为标准的 `Capability`。
-    
-    设计意图：
-    将模型推理能力也视作一种普通的工具能力注册到 Hub 中，
-    实现 "一切皆能力" 的统一调用模型。
-    
-    缺点：
-    它在注册时使用了反向注入（传入 hub 并调用 `register_into`）。
-    这种耦合设计在扩展更多工具或能力域时，会导致注册代码变得冗长。
-    """
-    def __init__(self, model_client: ModelProviderClient) -> None:
-        self._model_client = model_client
-        self._capability = CapabilityDescription(
-            capability_id="model.chat.default",
-            domain="model",
-            name="model_chat_default",
-            description="通过统一模型提供方发起标准对话推理请求。",
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "messages": {
-                        "type": "python_tuple",
-                        "python_type": "tuple[ModelMessage, ...]",
-                        "items": {
-                            "type": "object",
-                            "python_type": "ModelMessage",
-                            "properties": {
-                                "role": {"type": "string"},
-                                "content": {"type": "string"},
-                            },
-                            "required": ["role", "content"],
-                        },
-                    },
-                    "model_name": {"type": "string"},
-                    "model_tag": {"type": "string"},
-                    "temperature": {"type": "number"},
-                    "top_p": {"type": "number"},
-                    "max_tokens": {"type": "integer"},
-                    "tools": {
-                        "type": "python_tuple",
-                        "python_type": "tuple[CapabilityDescription, ...]",
-                        "items": {"type": "object", "python_type": "CapabilityDescription"},
-                    },
-                    "output_schema": {"type": "object"},
-                    "schema_max_retries": {"type": "integer"},
-                    "metadata": {"type": "object"},
-                },
-                "additionalProperties": True,
-            },
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "model_name": {"type": "string"},
-                    "content": {"type": "string"},
-                    "finish_reason": {"type": "string"},
-                    "provider_id": {"type": "string"},
-                    "usage": {"type": "object"},
-                    "parsed": {"type": "object"},
-                    "tool_calls": {"type": "array"},
-                    "raw": {"type": "object"},
-                },
-                "additionalProperties": True,
-            },
-            metadata={"provider": "router", "kind": "model"},
-        )
-
-    def capabilities(self) -> tuple[CapabilityDescription, ...]:
-        return (self._capability,)
-
-    def register_into(self, hub: RegisteredCapabilityHub) -> None:
-        hub.register_capability(
-            self._capability,
-            self._invoke_model,
-        )
-
-    async def _invoke_model(
-        self,
-        request: CapabilityRequest,
-    ) -> CapabilityResult:
-        model_request, error = _build_model_request(request=request)
-        if error is not None:
-            return error
-        response = await to_thread(self._model_client.completion, model_request)
-        return _build_model_result(
-            request=request,
-            response=response
-        )
-
-
 def register_pytools(
     hub: RegisteredCapabilityHub,
     pytools: Iterable[PyTool],
@@ -212,164 +180,3 @@ def register_pytools(
     for pytool in pytools:
         hub.register_capability(pytool.capability, pytool.invoke)
 
-
-def _build_model_request(
-    *,
-    request: CapabilityRequest,
-) -> tuple[ModelRequest, CapabilityResult | None]:
-    payload = dict(request.payload)
-    messages, message_error = _normalize_messages(payload)
-    if message_error is not None:
-        return ModelRequest(messages=()), CapabilityResult(
-            capability_id=request.capability_id,
-            success=False,
-            output={},
-            error_code="invalid_model_request",
-            error_message=message_error,
-            metadata={"domain": "model"},
-        )
-    tools, tools_error = _normalize_tools(payload)
-    if tools_error is not None:
-        return ModelRequest(messages=messages), CapabilityResult(
-            capability_id=request.capability_id,
-            success=False,
-            output={},
-            error_code="invalid_model_request",
-            error_message=tools_error,
-            metadata={"domain": "model"},
-        )
-    payload_metadata = payload.get("metadata", {})
-    metadata = dict(request.metadata)
-    if isinstance(payload_metadata, dict):
-        metadata.update(payload_metadata)
-    model_request = ModelRequest(
-        messages=messages,
-        model_name=_normalize_optional_string(payload.get("model_name")),
-        model_tag=_normalize_optional_string(payload.get("model_tag")),
-        temperature=_normalize_optional_float(payload.get("temperature")),
-        top_p=_normalize_optional_float(payload.get("top_p")),
-        max_tokens=_normalize_optional_int(payload.get("max_tokens")),
-        tools=tools,
-        response_parse=ModelResponseParseConfig(
-            output_schema = payload.get("output_schema"),
-            schema_max_retries = _normalize_optional_int(payload.get("schema_max_retries"))
-        ),
-        metadata=metadata,
-    )
-    return model_request, None
-
-
-def _normalize_messages(payload: dict[str, Any]) -> tuple[tuple[ModelMessage, ...], str | None]:
-    raw_messages = payload.get("messages")
-    if not raw_messages:
-        return (), "model_messages_required"
-    if not isinstance(raw_messages, tuple):
-        return (), "model_messages_must_be_tuple"
-    for item in raw_messages:
-        if not isinstance(item, ModelMessage):
-            return (), "model_messages_items_must_be_model_message"
-    return raw_messages, None
-
-
-def _normalize_tools(payload: dict[str, Any]) -> tuple[tuple[CapabilityDescription, ...], str | None]:
-    raw_tools = payload.get("tools")
-    if raw_tools is None:
-        return (), None
-    if not isinstance(raw_tools, tuple):
-        return (), "model_tools_must_be_tuple"
-    for item in raw_tools:
-        if not isinstance(item, CapabilityDescription):
-            return (), "model_tools_items_must_be_capability_description"
-    return raw_tools, None
-
-
-def _normalize_optional_string(value: Any) -> str | None:
-    """
-    规范化可选字符串字段：
-    - 仅接受 str；空白字符串视为 None；
-    - 其他类型一律返回 None（不做兼容转换）。
-    """
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        return None
-    normalized = value.strip()
-    return normalized or None
-
-
-def _normalize_optional_float(value: Any) -> float | None:
-    """
-    规范化可选浮点字段：
-    - 仅接受 int/float（排除 bool）；
-    - 其他类型一律返回 None（不做兼容转换）。
-    """
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int | float):
-        return float(value)
-    return None
-
-
-def _normalize_optional_int(value: Any) -> int | None:
-    """
-    规范化可选整数字段：
-    - 仅接受 int（排除 bool）；
-    - 其他类型一律返回 None（不做兼容转换）。
-    """
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int):
-        return value
-    return None
-
-
-def _build_model_result(
-    *,
-    request: CapabilityRequest,
-    response: ModelResponse,
-) -> CapabilityResult:
-    """
-    将模型层返回的 ModelResponse 映射为编排层可消费的 CapabilityResult。
-
-    职责边界说明：
-    1. 这里只做字段映射与错误翻译，不做解析、校验和重试策略；
-    2. success/error 语义以 ModelResponse 为准，避免在 Skill Hub 再次推断状态；
-    3. 将 parsed/tool_calls/raw 全量透传，便于编排层决策下一步动作。
-    """
-    raw = dict(response.raw)
-    success = response.success
-    error_code = None
-    error_message = None
-    if not success:
-        error_code = str(raw.get("reason") or "model_request_failed")
-        error_message = str(raw.get("message") or raw.get("reason") or "model_request_failed")
-    return CapabilityResult(
-        capability_id=request.capability_id,
-        success=success,
-        output={
-            "model_name": response.model_name,
-            "content": response.content,
-            "finish_reason": response.finish_reason,
-            "provider_id": response.provider_id,
-            "usage": response.usage.to_dict() if response.usage else {},
-            "parsed": response.parsed,
-            "tool_calls": tuple(
-                {
-                    "capability_id": call.capability_id,
-                    "payload": dict(call.payload),
-                    "metadata": dict(call.metadata),
-                }
-                for call in response.tool_calls
-            ),
-            "raw": raw,
-        },
-        error_code=error_code,
-        error_message=error_message,
-        metadata={
-            "domain": "model",
-        },
-    )

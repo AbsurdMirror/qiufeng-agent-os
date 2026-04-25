@@ -16,8 +16,7 @@ def test_app_01_build_application_injects_skill_hub_into_orchestration(monkeypat
     fake_storage_memory = SimpleNamespace(layer="storage_memory")
     fake_observability_hub = SimpleNamespace(layer="observability_hub")
 
-    def fake_initialize_skill_hub(*, model_client: object) -> object:
-        captured["model_client"] = model_client
+    def fake_initialize_skill_hub() -> object:
         return fake_skill_hub
 
     def fake_initialize_orchestration_engine(*, capability_hub: object, **kwargs) -> object:
@@ -64,5 +63,4 @@ def test_app_01_build_application_injects_skill_hub_into_orchestration(monkeypat
     assert app.modules.model_provider is fake_model_provider
     assert app.modules.skill_hub is fake_skill_hub
     assert app.modules.orchestration_engine.capability_hub is fake_capability_hub
-    assert captured["model_client"] is fake_model_provider.client
     assert captured["capability_hub"] is fake_capability_hub

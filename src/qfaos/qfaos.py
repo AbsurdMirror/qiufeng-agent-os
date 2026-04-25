@@ -9,6 +9,7 @@ import multiprocessing as mp
 
 from src.channel_gateway.bootstrap import initialize as initialize_channel_gateway
 from src.channel_gateway.channels.feishu.long_connection import run_feishu_long_connection
+from src.domain.translators.schema_translator import SchemaTranslator
 from src.model_provider.contracts import InMemoryModelProviderClient
 from src.model_provider.providers.minimax import MiniMaxModelProviderClient
 from src.model_provider.routing.router import ModelRouter
@@ -16,6 +17,7 @@ from src.observability_hub.bootstrap import initialize as initialize_observabili
 from src.orchestration_engine.bootstrap import initialize as initialize_orchestration_engine
 from src.qfaos.runtime.custom_orchestrator import CustomExecuteOrchestrator
 from src.skill_hub.bootstrap import initialize as initialize_skill_hub
+from src.skill_hub.builtin_tools.browser_use import BrowserUsePyTool
 from src.skill_hub.core.capability_hub import register_pytools
 from src.storage_memory.bootstrap import initialize as initialize_storage_memory
 
@@ -59,6 +61,14 @@ class QFAOS:
         self._observability_registry = ObservabilityRegistry()
         self._primitive_accessor = PrimitiveAccessor(self._primitive_registry)
         self._execute_handler: Callable[[QFAEvent, QFAExecutionContext], Any] | None = None
+        self._enable_builtin_tools: bool = False
+
+    @validate_call
+    def enable_builtin_tools(self, enable: bool = True) -> None:
+        """
+        [SDK] 配置是否挂载全部内置工具。
+        """
+        self._enable_builtin_tools = enable
 
     @validate_call
     def register_channel(
@@ -153,52 +163,76 @@ class QFAOS:
         self._primitive_registry.register(normalized_id, secure_primitive)
 
     @validate_call
-    def custom_pytool(
-        self,
-        func: Annotated[Callable[..., Any], Field(description="待标记为工具的用户定义函数")],
-    ) -> Callable[..., Any]:
-        """
-        标记并包装一个工具函数。
-        
-        被此装饰器标记后的函数才能通过 register_tool 注册。
-        它会自动利用 Pydantic V2 对函数的原生签名进行运行时校验。
-        
-        Args:
-            func: 用户定义的 Python 函数。
-            
-        Returns:
-            Callable[..., Any]: 增加了 Pydantic 校验并标记为工具的包装函数。
-        """
-        validated_func = validate_call(func)
-        setattr(validated_func, "__qfa_custom_pytool__", True)
-        return validated_func
-
-    @validate_call
-    def register_tool(
+    def pytool(
         self,
         tool_id: Annotated[str, Field(min_length=1, description="工具的唯一标识符")],
-        func: Annotated[Callable[..., Any], Field(description="已被 custom_pytool 标记过的工具函数")],
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+        """
+        [推荐接口] 装饰即注册：将一个函数标记为工具并自动注册到 QFAOS。
+        
+        该装饰器集成了元数据推导、运行时校验与自动化注册，是定义自定义工具的最佳实践。
+        
+        Args:
+            tool_id: 工具的唯一 ID，将作为大模型调用的标识。
+            
+        Returns:
+            Callable: 装饰器函数。
+        """
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+            # 1. 构造工具适配器 (内部自动完成 Schema 推导)
+            pytool = FunctionPyTool(tool_id=tool_id, func=func)
+            # 2. 自动注册到工具表
+            self._tool_registry.register(tool_id, pytool)
+            # 3. 标记为已验证工具 (保持兼容性，但内部已完成注册)
+            setattr(func, "__qfa_capability__", pytool.capability)
+            return func
+        return decorator
+
+    @validate_call
+    def register_pytool_instance(
+        self,
+        instance: Annotated[Any, Field(description="包含 @qfaos_pytool 装饰方法的类实例")],
+    ) -> None:
+        """
+        [推荐接口] 实例注册：自动扫描并注册类实例中所有被 @qfaos_pytool 装饰的方法。
+        
+        适用于将多个相关工具组织在同一个类中的场景。
+        
+        Args:
+            instance: 目标类实例。
+        """
+        # 此处我们不需要立即执行扫描，而是记录该实例。
+        # 在 run() 阶段初始化 CapabilityHub 时，会统一调用 hub.register_instance_capabilities。
+        # 为了保持 QFAOS 结构的简单，我们将其存入 tool_registry 的一个特殊集合中。
+        if not hasattr(self._tool_registry, "_instances"):
+            self._tool_registry._instances = []
+        self._tool_registry._instances.append(instance)
+
+    @validate_call
+    def register_pytool(
+        self,
+        func: Annotated[Callable[..., Any], Field(description="已被 @qfaos_pytool 标记过的工具函数")],
     ) -> None:
         """
         注册一个工具函数。
         
         该函数会被转换成 SkillHub 兼容的 PyTool 协议对象。
+        自动从函数的 @qfaos_pytool 标记中提取工具 ID。
         
         Args:
-            tool_id: 工具 ID，不能为空。
-            func: 目标函数，必须先经过 @agent.custom_pytool 装饰。
+            func: 目标函数，必须先经过 @qfaos_pytool 装饰。
             
         Raises:
-            QFAInvalidConfigError: 当 ID 为空或函数未经过标记时抛出。
+            QFAInvalidConfigError: 当函数未经过标记时抛出。
         """
-        normalized_id = tool_id.strip()
-        if not normalized_id:
-            raise QFAInvalidConfigError("工具 ID 不能为空")
+        if not hasattr(func, "__qfa_capability__"):
+            raise QFAInvalidConfigError("工具函数必须先使用 @qfaos_pytool 进行标记")
+        
+        # 提取标记中的 ID
+        desc = getattr(func, "__qfa_capability__")
+        tool_id = desc.capability_id
 
-        if not getattr(func, "__qfa_custom_pytool__", False):
-            raise QFAInvalidConfigError(f"工具函数 '{normalized_id}' 必须先使用 @custom_pytool 进行标记")
-
-        self._tool_registry.register(normalized_id, FunctionPyTool(normalized_id, func))
+        self._tool_registry.register(tool_id, FunctionPyTool(tool_id, func))
 
     @validate_call
     def register_memory(
@@ -353,15 +387,28 @@ class QFAOS:
                 ),
             }
         )
-        skill_hub = initialize_skill_hub(model_client=router)
+        skill_hub = initialize_skill_hub()
         hub = skill_hub.capability_hub
 
-        tools = tuple(
+        # 1. 自动挂载模型能力
+        hub.register_instance_capabilities(router)
+
+        # 2. 根据用户配置挂载内置工具
+        if self._enable_builtin_tools:
+            register_pytools(hub, (BrowserUsePyTool(),))
+
+        # 3. 挂载用户注册的工具
+        user_tools = tuple(
             self._tool_registry.get(tool_id)
             for tool_id in self._tool_registry.list_tools()
             if self._tool_registry.get(tool_id) is not None
         )
-        register_pytools(hub, tools)
+        register_pytools(hub, user_tools)
+
+        # 注册自动扫描的类实例能力
+        if hasattr(self._tool_registry, "_instances"):
+            for instance in self._tool_registry._instances:
+                hub.register_instance_capabilities(instance)
 
         oe = initialize_orchestration_engine(
             capability_hub=hub,

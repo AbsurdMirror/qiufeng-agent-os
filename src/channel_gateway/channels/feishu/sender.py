@@ -5,7 +5,7 @@ from typing import Any
 
 import httpx
 
-from src.domain.responses import ReplyPrimitive, ReplyText
+from src.domain.responses import ReplyPrimitive, ReplyText, FeishuReplyCard
 from src.domain.events import UniversalEvent
 
 # ============================================================
@@ -165,11 +165,67 @@ class FeishuAsyncSender:
                 
         return last_result or {"status": "failed", "error": "Empty message chunks"}
 
-    async def send_card_reply(self, reply: ReplyPrimitive, target_event: UniversalEvent) -> dict[str, Any]:
+    async def send_feishu_card_reply(self, reply: FeishuReplyCard, target_event: UniversalEvent) -> dict[str, Any]:
         """
-        向飞书投递消息卡片（异步占位）。
+        向飞书投递消息卡片（异步）。
+        对应规格 GW-P0-09 以及飞书卡片模板发送流程。
         """
-        raise NotImplementedError("Feishu card sending is not implemented yet.")
+        # 1. 构造路由 ID 和类型
+        if target_event.group_id:
+            receive_id = target_event.group_id
+            receive_id_type = "chat_id"
+        else:
+            receive_id = target_event.user_id
+            receive_id_type = "open_id"
+
+        # 2. 构造卡片载荷
+        card_content = {
+            "type": "template",
+            "data": {
+                "template_id": reply.template_id,
+                "template_variable": reply.template_variable
+            }
+        }
+
+        payload = {
+            "receive_id": receive_id,
+            "msg_type": "interactive",
+            "content": json.dumps(card_content, ensure_ascii=False),
+        }
+        
+        # 支持回复特定消息
+        if target_event.message_id:
+            payload["reply_to"] = target_event.message_id
+
+        if self.mock_mode:
+            logger.info(f"[MOCK FEISHU CARD SEND] type={receive_id_type} Template={reply.template_id} Payload: {payload}")
+            return {"status": "success", "mock": True, "payload": payload}
+
+        # 3. 真实发送模式
+        try:
+            token = await self._get_tenant_access_token()
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json; charset=utf-8"
+            }
+            url = f"https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type={receive_id_type}"
+            
+            response = await self._client.post(url, headers=headers, json=payload)
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get("code") != 0:
+                logger.error(f"Feishu Send Card API returned error: {data}")
+                return {"status": "failed", "error": data}
+                
+            return {"status": "success", "data": data.get("data")}
+            
+        except httpx.RequestError as e:
+            logger.error(f"Network error while sending card to Feishu: {e}")
+            return {"status": "failed", "error": str(e)}
+        except Exception as e:
+            logger.error(f"Failed to send card to Feishu: {e}")
+            return {"status": "failed", "error": str(e)}
 
     async def aclose(self):
         """

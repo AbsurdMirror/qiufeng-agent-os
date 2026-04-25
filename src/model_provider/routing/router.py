@@ -1,6 +1,12 @@
-from typing import Any
-from src.domain.models import ModelMessage, ModelRequest, ModelResponse
-from src.model_provider.contracts import ModelProviderClient
+from typing import Any, Annotated
+from pydantic import Field
+from src.domain.models import (
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+)
+from src.domain.decorators import qfaos_pytool
+from src.model_provider.contracts import ModelProviderClient, RawModelProviderClient
 from src.model_provider.providers.litellm_adapter import (
     build_litellm_completion_payload,
     build_model_response,
@@ -21,7 +27,7 @@ class ModelRouter(ModelProviderClient):
     实现 T4 阶段的 MP-P0-01 (名称匹配) 和 MP-P0-02 (自动裁剪)
     它就像个智能电话分机：接到请求后，先拿着"剪刀"把超长对话剪短，再根据名字呼叫确切的大模型实例。
     """
-    def __init__(self, clients: dict[str, ModelProviderClient]):
+    def __init__(self, clients: dict[str, RawModelProviderClient]):
         """
         :param clients: A dictionary mapping model names or logical tags to specific client implementations.
         """
@@ -39,7 +45,7 @@ class ModelRouter(ModelProviderClient):
             "default": 4096
         }
 
-    def add_client(self, model_name: str, client: ModelProviderClient) -> None:
+    def add_client(self, model_name: str, client: RawModelProviderClient) -> None:
         self._clients[model_name] = client
 
     def _build_repair_message(self, *, invalid_output: str, error_text: str) -> ModelMessage:
@@ -97,16 +103,17 @@ class ModelRouter(ModelProviderClient):
         # 组合 system messages 和裁剪后的其他消息
         return tuple(system_messages + trimmed_messages[::-1])
 
-    def completion(self, request: ModelRequest) -> ModelResponse:
+    @qfaos_pytool(id="model.completion", domain="model")
+    def completion(
+        self,
+        request: Annotated[ModelRequest, Field(description="模型补全请求对象")],
+    ) -> Annotated[ModelResponse, Field(description="模型补全响应对象")]:
         """
         MP-P0-01: 显式名称匹配 (Explicit Name Matching)
         基于物理名称 (Model Name) 的直接调度匹配机制
         """
-        # P0 级修复：简化路由逻辑，直接以 model_name 为主索引
-        target_name = request.model_name or "default"
-
         # MP-P0-02: 自动裁剪
-        trimmed_messages = self._trim_messages(request.messages, target_name)
+        trimmed_messages = self._trim_messages(request.messages, request.model_name)
 
         # 构建新的请求对象
         trimmed_request = ModelRequest(
@@ -122,12 +129,9 @@ class ModelRouter(ModelProviderClient):
         )
 
         # MP-P0-01: 路由匹配
-        client = self._clients.get(target_name)
+        client = self._clients.get(trimmed_request.model_name)
         if not client:
-            client = self._clients.get("default")
-
-        if not client:
-            raise ValueError(f"No suitable model provider found for '{target_name}'")
+            raise ValueError(f"No suitable model provider found for '{trimmed_request.model_name}'")
 
         response_parse = trimmed_request.response_parse
         max_retries_raw = response_parse.schema_max_retries
@@ -137,26 +141,27 @@ class ModelRouter(ModelProviderClient):
         attempts = 0
         while True:
             try:
-                provider_id = client.provider_id
                 payload = build_litellm_completion_payload(
                     current_request,
                 )
+
+                provider_id = client.provider_id
                 raw = client.completion(payload)
-                # print("DEBUG", "model output 原始 raw: ", raw)
+                print("DEBUG", "model output 原始 raw: ", raw)
                 response = build_model_response(
                     raw,
                     request=current_request,
                     output_schema=output_schema,
-                    fallback_model_name=current_request.model_name or target_name,
+                    fallback_model_name=current_request.model_name,
                     provider_id=provider_id,
                 )
             except Exception as exc:  # noqa: BLE001
                 fallback = ModelResponse(
-                    model_name=current_request.model_name or target_name,
+                    model_name=current_request.model_name,
                     content="",
                     success=False,
                     finish_reason="error",
-                    provider_id=target_name,
+                    provider_id=provider_id,
                     repair_reason=str(exc),
                     raw={
                         "reason": "model_router_completion_failed",

@@ -71,7 +71,7 @@ def _build_capability_hub() -> RegisteredCapabilityHub:
 
     hub.register_capability(
         CapabilityDescription(
-            capability_id="model.chat.default",
+            capability_id="model.completion",
             domain="model",
             name="model_minimax_chat",
             description="minimax",

@@ -7,13 +7,13 @@ model_provider.validators —— 模型输出解析与校验模块。
 from .output_parser import (
     SchemaValidationError,
     ToolCallValidationError,
+    convert_litellm_tool_calls,
     parse_message_content,
-    parse_message_tool_calls,
 )
 
 __all__ = [
     "SchemaValidationError",
     "ToolCallValidationError",
+    "convert_litellm_tool_calls",
     "parse_message_content",
-    "parse_message_tool_calls",
 ]

@@ -17,22 +17,25 @@ P0.5 模型层重构后的手动验证脚本：ReAct 循环与 Schema 解析。
 - MINIMAX_MODEL
 """
 
-from __future__ import annotations
-
 import asyncio
 import json
 import os
 from dataclasses import asdict, is_dataclass
 from pprint import pprint
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from src.domain.models import ModelMessage
+from src.domain.models import ModelMessage, ModelResponse, ModelResponseParseConfig
 from src.model_provider.contracts import InMemoryModelProviderClient
 from src.model_provider.providers.minimax import MiniMaxModelProviderClient
 from src.model_provider.routing.router import ModelRouter
-from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
+from src.domain.capabilities import (
+    CapabilityDescription,
+    CapabilityRequest,
+    CapabilityResult,
+)
+from src.domain.translators.schema_translator import SchemaTranslator
 from src.skill_hub.bootstrap import initialize as initialize_skill_hub
 
 
@@ -128,7 +131,8 @@ def _serialize_result(result: CapabilityResult) -> dict[str, Any]:
 
 async def main() -> None:
     model_client, model_name = _resolve_model_client()
-    skill_hub = initialize_skill_hub(model_client=model_client)
+    skill_hub = initialize_skill_hub()
+    skill_hub.capability_hub.register_instance_capabilities(model_client)
 
     print(f"已初始化 SkillHub，模型目标: {model_name}")
     tools = _build_tools()
@@ -148,11 +152,15 @@ async def main() -> None:
     for turn in range(1, max_turns + 1):
         print(f"\n========== Turn {turn} ==========")
         payload = {
-            "messages": tuple(messages),
-            "model_name": model_name,
-            "tools": tools,
-            "output_schema": CalculationResult,
-            "schema_max_retries": 2,
+            "request": {
+                "messages": tuple(messages),
+                "model_name": model_name,
+                "tools": tools,
+                "response_parse": ModelResponseParseConfig(
+                     output_schema=CalculationResult,
+                     schema_max_retries=2,
+                 ),
+            }
         }
         request = CapabilityRequest(
             capability_id="model.chat.default",

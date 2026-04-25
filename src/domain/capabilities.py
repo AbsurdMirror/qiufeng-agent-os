@@ -24,6 +24,10 @@ class CapabilityDescription:
     input_schema: dict[str, Any] = field(default_factory=dict)
     # 输出结果的 JSON Schema 描述，定义了调用该能力会返回什么结构的数据
     output_schema: dict[str, Any] = field(default_factory=dict)
+    # 动态生成的 Pydantic Model 类，用于运行时参数校验与对象转换
+    input_model: Any | None = None
+    # 动态生成的 Pydantic Model 类，用于返回值校验与归一化
+    output_model: Any | None = None
     # 其他附加元数据，例如供应商信息 (provider) 或内部种类 (kind)
     metadata: dict[str, Any] = field(default_factory=dict)
 

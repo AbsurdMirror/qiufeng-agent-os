@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from typing import Any
-from ..contracts.models import HotMemoryItem
+from src.domain.memory import HotMemoryItem
 
 
 def _dump_hot_memory_item(item: HotMemoryItem) -> dict[str, Any]:

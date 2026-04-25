@@ -6,6 +6,8 @@ from pydantic import BaseModel, ValidationError
 
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest
 
+from litellm import ChatCompletionMessageToolCall
+
 T = TypeVar("T", bound=BaseModel)
 
 
@@ -36,90 +38,64 @@ def parse_message_content(schema: Type[T], content_str: str) -> T:
         raise SchemaValidationError(str(exc)) from exc
 
 
-def parse_message_tool_calls(
-    tool_calls: Any,
+def convert_litellm_tool_calls(
+    tool_calls: list[ChatCompletionMessageToolCall],
     tools: tuple[CapabilityDescription, ...],
 ) -> tuple[CapabilityRequest, ...]:
     """
-    解析并校验工具调用，返回可执行的 CapabilityRequest 列表。
-
-    该函数同时完成：
-    1. tool_calls 结构解析；
-    2. capability_id 白名单校验（必须在 tools 中）；
-    3. arguments JSON Schema 校验（基于对应 CapabilityDescription.input_schema）。
+    将 LiteLLM 的工具调用对象列表转换为可执行的 CapabilityRequest 列表。
+    仅接受 List[ChatCompletionMessageToolCall] 类型，不进行兼容性检查。
     """
-    if tool_calls is None:
+    if not tool_calls:
         return ()
-    if not isinstance(tool_calls, list):
-        raise ToolCallValidationError("message_tool_calls_must_be_list")
 
     allowed = {tool.capability_id: tool for tool in tools}
     parsed_requests: list[CapabilityRequest] = []
     for item in tool_calls:
-        parsed_requests.append(_parse_and_validate_tool_call_item(item, allowed))
+        # 严格按照对象属性访问
+        function = item.function
+        capability_id = function.name.strip()
+        
+        capability = allowed.get(capability_id)
+        if capability is None:
+            raise ToolCallValidationError(
+                f"tool_not_allowed:{capability_id}, valid tools: {', '.join(allowed.keys())}"
+            )
+
+        # 提取参数并解析
+        payload = _parse_tool_arguments(function.arguments)
+        
+        # 校验参数 Schema
+        payload_error = _validate_payload_by_schema(payload, capability.input_schema)
+        if payload_error is not None:
+            raise ToolCallValidationError(
+                f"tool_args_invalid:{capability_id}:{payload_error}"
+            )
+
+        metadata: dict[str, Any] = {}
+        if item.id:
+            metadata["call_id"] = item.id
+
+        parsed_requests.append(CapabilityRequest(
+            capability_id=capability_id,
+            payload=payload,
+            metadata=metadata,
+        ))
+        
     return tuple(parsed_requests)
 
 
-def _parse_and_validate_tool_call_item(
-    item: Any,
-    allowed: dict[str, CapabilityDescription],
-) -> CapabilityRequest:
-    if not isinstance(item, Mapping):
-        raise ToolCallValidationError("tool_call_item_must_be_object")
-    function = item.get("function")
-    if not isinstance(function, Mapping):
-        raise ToolCallValidationError("tool_call_function_must_be_object")
-
-    name = function.get("name")
-    if not isinstance(name, str) or not name.strip():
-        raise ToolCallValidationError("tool_call_name_required")
-    capability_id = name.strip()
-
-    capability = allowed.get(capability_id)
-    if capability is None:
-        return CapabilityRequest(
-            capability_id=-1,
-            payload=f"tool_not_allowed:{capability_id}, valid tools: {', '.join(allowed.keys())}",
-            metadata={},
-        )
-
-    payload = _parse_tool_arguments(function.get("arguments"))
-    payload_error = _validate_payload_by_schema(payload, capability.input_schema)
-    if payload_error is not None:
-        return CapabilityRequest(
-            capability_id=-1,
-            payload=f"tool_args_invalid:{capability_id}:{payload_error}",
-            metadata={},
-        )
-
-    metadata: dict[str, Any] = {}
-    call_id = item.get("id")
-    if isinstance(call_id, str) and call_id.strip():
-        metadata["call_id"] = call_id.strip()
-    return CapabilityRequest(
-        capability_id=capability_id,
-        payload=payload,
-        metadata=metadata,
-    )
-
-
-def _parse_tool_arguments(arguments: Any) -> dict[str, Any]:
-    if isinstance(arguments, Mapping):
-        return dict(arguments)
-    if isinstance(arguments, str):
-        text = arguments.strip()
-        if not text:
-            return {}
-        try:
-            parsed = json.loads(text)
-        except json.JSONDecodeError as exc:
-            raise ToolCallValidationError("tool_call_arguments_must_be_valid_json") from exc
-        if not isinstance(parsed, Mapping):
-            raise ToolCallValidationError("tool_call_arguments_must_be_object")
-        return dict(parsed)
-    if arguments is None:
+def _parse_tool_arguments(arguments: str) -> dict[str, Any]:
+    text = arguments.strip()
+    if not text:
         return {}
-    raise ToolCallValidationError("tool_call_arguments_invalid_type")
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ToolCallValidationError("tool_call_arguments_must_be_valid_json") from exc
+    if not isinstance(parsed, Mapping):
+        raise ToolCallValidationError("tool_call_arguments_must_be_object")
+    return dict(parsed)
 
 
 def _validate_payload_by_schema(
