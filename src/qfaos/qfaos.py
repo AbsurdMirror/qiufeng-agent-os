@@ -373,8 +373,7 @@ class QFAOS:
         boot_trace_id = observability.trace_id_generator()
         observability.record(boot_trace_id, {"event": "qfaos.run.started"}, "INFO")
 
-        redis_url = memory_cfg.redis_url if memory_cfg.backend == QFAEnum.Memory.Backend.redis else None
-        storage_memory = initialize_storage_memory(redis_url=redis_url, observability=observability)
+        storage_memory = initialize_storage_memory(memory_config=memory_cfg, observability=observability)
 
         router = ModelRouter(
             clients={

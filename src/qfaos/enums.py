@@ -26,6 +26,7 @@ class MemoryBackend(str, Enum):
     """记忆后端类型枚举"""
     in_memory = "in_memory"
     redis = "redis"
+    jsonl = "jsonl"
 
 
 class SecurityPolicy(str, Enum):

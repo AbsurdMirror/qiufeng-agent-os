@@ -41,15 +41,22 @@ class _QFAModelMiniMaxConfig(BaseModel):
 class _QFAMemoryConfig(BaseModel):
     backend: Annotated[
         QFAEnum.Memory.Backend,
-        Field(description="记忆后端：in_memory 或 redis"),
+        Field(description="记忆后端：in_memory, redis 或 jsonl"),
     ]
     redis_url: Annotated[
         str | None,
         Field(
             default=None,
-            description="Redis 连接地址；为空时回退到环境变量 REDIS_URL 或默认值",
+            description="Redis 连接地址；当 backend 为 redis 且此项为空时，回退到环境变量 REDIS_URL 或默认值",
         ),
     ] = None
+    jsonl_storage_dir: Annotated[
+        str,
+        Field(
+            default=".storage",
+            description="JSONL 存储目录；当 backend 为 jsonl 或自动降级到 jsonl 时使用",
+        ),
+    ] = ".storage"
 
 
 class _QFAObservabilityLogConfig(BaseModel):

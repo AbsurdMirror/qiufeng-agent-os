@@ -10,7 +10,7 @@ import asyncio
 from .factory.create_store import create_store
 
 def initialize(
-    redis_url: str | None = None,
+    memory_config: Any | None = None,
     observability: ObservabilityHubExports | None = None,
 ) -> StorageMemoryExports:
     """
@@ -21,7 +21,7 @@ def initialize(
     从而将具体的 Store 实例封装在本层内部，不向上层泄漏。
     """
 
-    store = create_store(redis_url=redis_url)
+    store = create_store(config=memory_config)
 
     return StorageMemoryExports(
         layer="storage_memory",
