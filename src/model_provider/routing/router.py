@@ -19,9 +19,8 @@ from src.observability_hub.exports import ObservabilityHubExports
 class ModelRouter(ModelProviderClient):
     """
     模型路由分发器 (Model Routing)
-    实现 T4 阶段的 MP-P0-01 (名称匹配)
-    它就像个智能电话分机：接到请求后，根据名字呼叫确切的大模型实例。
     """
+    provider_id: str = "router"
     def __init__(self, clients: dict[str, RawModelProviderClient], observability: ObservabilityHubExports | None = None):
         """
         :param clients: A dictionary mapping model names or logical tags to specific client implementations.
@@ -33,7 +32,7 @@ class ModelRouter(ModelProviderClient):
     def add_client(self, model_name: str, client: RawModelProviderClient) -> None:
         self._clients[model_name] = client
 
-    def _build_repair_message(self, *, invalid_output: str, error_text: str, finish_reason: str) -> ModelMessage:
+    def _build_repair_message(self, *, invalid_output: str | list[str] | None, error_text: str | None, finish_reason: str | None) -> ModelMessage:
         return ModelMessage(
             role="user",
             content=(
@@ -58,7 +57,7 @@ class ModelRouter(ModelProviderClient):
         基于物理名称 (Model Name) 的直接调度匹配机制
         """
         # MP-P0-01: 路由匹配
-        client = self._clients.get(request.model_name)
+        client = self._clients.get(request.model_name or "")
         if not client:
             raise ValueError(f"No suitable model provider found for '{request.model_name}'")
 
@@ -69,6 +68,7 @@ class ModelRouter(ModelProviderClient):
         current_request = request
         attempts = 0
         while True:
+            provider_id = "unknown"
             try:
                 payload = build_litellm_completion_payload(
                     current_request,
@@ -101,12 +101,12 @@ class ModelRouter(ModelProviderClient):
                     raw,
                     request=current_request,
                     output_schema=output_schema,
-                    fallback_model_name=current_request.model_name,
+                    fallback_model_name=current_request.model_name or "unknown",
                     provider_id=provider_id,
                 )
             except Exception as exc:  # noqa: BLE001
                 fallback = ModelResponse(
-                    model_name=current_request.model_name,
+                    model_name=current_request.model_name or "unknown",
                     content="",
                     success=False,
                     finish_reason="error",
@@ -151,7 +151,7 @@ class ModelRouter(ModelProviderClient):
             )
             current_request = ModelRequest(
                 messages=current_request.messages + (repair_message,),
-                model_name=current_request.model_name,
+                model_name=current_request.model_name or "unknown",
                 model_tag=current_request.model_tag,
                 temperature=current_request.temperature,
                 top_p=current_request.top_p,

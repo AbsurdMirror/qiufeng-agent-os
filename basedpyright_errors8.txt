@@ -1,0 +1,53 @@
+  /workspace/src/domain/translators/schema_translator.py:3:44 - error: Statements must be separated by newlines or semicolons
+  /workspace/src/domain/translators/schema_translator.py:3:56 - error: "Union" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:3:63 - error: "get_args" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:3:73 - error: "get_origin" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:3:85 - error: "Type" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:3:91 - error: "TypeVar" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:9:5 - error: "TypeVar" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:29:41 - error: Cannot access attribute "func_to_output_model" for class "type[SchemaTranslator]"
+  /workspace/src/domain/translators/schema_translator.py:36:43 - error: Cannot access attribute "model_to_schema" for class "type[SchemaTranslator]"
+  /workspace/src/domain/translators/schema_translator.py:37:44 - error: Cannot access attribute "model_to_schema" for class "type[SchemaTranslator]"
+  /workspace/src/domain/translators/schema_translator.py:43:58 - error: "Type" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:56:39 - error: "_parse_annotated_contract" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:71:28 - error: "(" was not closed
+  /workspace/src/domain/translators/schema_translator.py:71:70 - error: Operator "@" not supported for types "dict[str, tuple[Any, Any]]" and "type[staticmethod[..., Unknown]]" (reportOperatorIssue)
+  /workspace/src/domain/translators/schema_translator.py:259:1 - error: Statements must be separated by newlines or semicolons
+  /workspace/src/observability_hub/cli/tailer.py:75:47 - error: "Any" is not defined (reportUndefinedVariable)
+  /workspace/src/qfaos/enums.py:66:15 - error: Type "type[ChannelType]" is not assignable to declared type "type[Channel]"
+  /workspace/src/qfaos/enums.py:74:15 - error: Type "type[ChannelType]" is not assignable to declared type "type[Channel]"
+  /workspace/src/qfaos/internal/tools.py:36:43 - error: Cannot access attribute "validate_payload" for class "type[SchemaTranslator]"
+  /workspace/src/qfaos/internal/tools.py:47:39 - error: Cannot access attribute "serialize_instance" for class "type[SchemaTranslator]"
+  /workspace/src/qfaos/qfaos.py:208:33 - error: Cannot assign to attribute "_pytool_instances" for class "ToolRegistry"
+  /workspace/src/qfaos/qfaos.py:209:29 - error: Cannot access attribute "_pytool_instances" for class "ToolRegistry"
+  /workspace/src/qfaos/qfaos.py:348:49 - error: "cast" is not defined (reportUndefinedVariable)
+  /workspace/src/qfaos/qfaos.py:379:21 - error: "cast" is not defined (reportUndefinedVariable)
+  /workspace/src/qfaos/qfaos.py:393:13 - error: Cannot access attribute "register_instance_capabilities" for class "CapabilityHub"
+  /workspace/src/qfaos/qfaos.py:397:30 - error: Argument of type "CapabilityHub" cannot be assigned to parameter "hub" of type "RegisteredCapabilityHub" in function "register_pytools"
+  /workspace/src/qfaos/qfaos.py:405:26 - error: Argument of type "CapabilityHub" cannot be assigned to parameter "hub" of type "RegisteredCapabilityHub" in function "register_pytools"
+  /workspace/src/qfaos/qfaos.py:405:31 - error: Argument of type "tuple[Any | None, ...]" cannot be assigned to parameter "pytools" of type "Iterable[PyTool]" in function "register_pytools"
+  /workspace/src/qfaos/qfaos.py:409:49 - error: Cannot access attribute "_pytool_instances" for class "ToolRegistry"
+  /workspace/src/qfaos/qfaos.py:410:21 - error: Cannot access attribute "register_instance_capabilities" for class "CapabilityHub"
+  /workspace/src/qfaos/qfaos.py:435:22 - error: Expected type arguments for generic class "Queue" (reportMissingTypeArgument)
+  /workspace/src/qfaos/qfaos.py:437:50 - error: Expected type arguments for generic class "Queue" (reportMissingTypeArgument)
+  /workspace/src/qfaos/runtime/context_facade.py:215:39 - error: Cannot access attribute "validate_payload" for class "type[SchemaTranslator]"
+  /workspace/src/qfaos/runtime/context_facade.py:297:39 - error: Cannot access attribute "validate_payload" for class "type[SchemaTranslator]"
+  /workspace/src/qfaos/runtime/contracts.py:36:21 - error: Argument of type "ChannelType" cannot be assigned to parameter "channel" of type "Channel" in function "__init__"
+  /workspace/src/skill_hub/core/capability_hub.py:92:51 - error: Cannot access attribute "validate_payload" for class "type[SchemaTranslator]"
+  /workspace/src/skill_hub/core/capability_hub.py:109:47 - error: Cannot access attribute "serialize_instance" for class "type[SchemaTranslator]"
+  /workspace/src/skill_hub/primitives/security.py:92:12 - error: Type "tuple[Any | tuple[Unknown, ...], None]" is not assignable to return type "tuple[PolicyDecision, str | None]"
+  /workspace/src/skill_hub/primitives/security.py:187:40 - error: Expected type arguments for generic class "Pattern" (reportMissingTypeArgument)
+  /workspace/src/skill_hub/primitives/security.py:188:40 - error: Expected type arguments for generic class "Pattern" (reportMissingTypeArgument)
+  /workspace/src/skill_hub/primitives/security.py:267:24 - error: "errors" is not a known attribute of module "bashlex" (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/primitives/security.py:272:38 - error: "ast" is not a known attribute of module "bashlex" (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/primitives/security.py:326:34 - error: Expected type arguments for generic class "Pattern" (reportMissingTypeArgument)
+  /workspace/src/skill_hub/primitives/security.py:327:34 - error: Expected type arguments for generic class "Pattern" (reportMissingTypeArgument)
+  /workspace/src/skill_hub/primitives/security.py:336:60 - error: Expected type arguments for generic class "Callable" (reportMissingTypeArgument)
+  /workspace/src/storage_memory/bootstrap.py:29:17 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "carrier" of type "HotMemoryCarrier" in function "__init__"
+  /workspace/src/storage_memory/bootstrap.py:30:18 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "__init__"
+  /workspace/src/storage_memory/bootstrap.py:32:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_append_hot_memory"
+  /workspace/src/storage_memory/bootstrap.py:40:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_read_hot_memory"
+  /workspace/src/storage_memory/bootstrap.py:47:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_persist_runtime_state"
+  /workspace/src/storage_memory/bootstrap.py:54:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_load_runtime_state"
+  /workspace/src/storage_memory/factory/create_store.py:8:5 - error: "HAS_REDIS" is constant (because it is uppercase) and cannot be redefined (reportConstantRedefinition)
+  /workspace/src/storage_memory/factory/create_store.py:58:26 - error: "redis" is possibly unbound (reportPossiblyUnboundVariable)

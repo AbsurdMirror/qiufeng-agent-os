@@ -61,7 +61,7 @@ class FeishuAsyncSender:
         带有内存 TTL 缓存机制，避免频繁拉取。
         """
         if self._tenant_access_token and time.time() < self._token_expire_time:
-            return self._tenant_access_token
+            return self._tenant_access_token or ""
 
         url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
         payload = {
@@ -82,7 +82,7 @@ class FeishuAsyncSender:
             expire_seconds = data.get("expire", 7200)
             self._token_expire_time = time.time() + expire_seconds - 300
             
-            return self._tenant_access_token
+            return self._tenant_access_token or ""
             
         except httpx.RequestError as e:
             logger.error(f"Network error while fetching Feishu tenant token: {e}")

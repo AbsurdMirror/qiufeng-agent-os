@@ -54,7 +54,7 @@ def convert_litellm_tool_calls(
     for item in tool_calls:
         # 严格按照对象属性访问
         function = item.function
-        capability_id = function.name.strip()
+        capability_id = (function.name or "").strip()
         
         capability = allowed.get(capability_id)
         if capability is None:

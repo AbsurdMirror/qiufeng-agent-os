@@ -63,7 +63,7 @@ def test_cg_04_factory_get_unsupported_parser():
 def test_cg_05_webhook_unsupported_message_type():
     """测试项 CG-05: Webhook异常处理：非文本类型"""
     parser = TextEventParserFactory.get("feishu", "webhook")
-    payload = get_base_payload(message_type="image")
+    payload = get_base_payload(message_type="video")
     with pytest.raises(ValueError, match="unsupported_message_type"):
         parser.parse(payload)
 

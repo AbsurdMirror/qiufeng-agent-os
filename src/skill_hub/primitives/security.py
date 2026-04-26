@@ -6,7 +6,7 @@ import uuid
 from collections.abc import Callable, Awaitable
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import bashlex
 
@@ -88,8 +88,8 @@ class PolicyDecision(Enum):
 def _normalize_policy_result(result: Any) -> tuple[PolicyDecision, str | None]:
     if isinstance(result, tuple) and len(result) == 2:
         decision, message = result
-        return decision, message
-    return result, None
+        return cast(PolicyDecision, decision), cast(str | None, message)
+    return cast(PolicyDecision, result), None
 
 def create_secure_action(
     action_func: Callable[..., Any],

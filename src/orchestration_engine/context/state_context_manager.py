@@ -25,7 +25,7 @@ class StateContextManager:
         persisted_state = await self._storage_memory.load_runtime_state(logic_id, session_id)
 
         # 加载热记忆 (转换结构为对话历史列表)
-        hot_memory_items = await self._storage_memory.read_hot_memory(logic_id, session_id, limit=10)
+        hot_memory_items = await self._storage_memory.read_hot_memory(logic_id, session_id, 10)
 
         # 将 Memory 组装
         memory_dict = {

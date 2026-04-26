@@ -22,6 +22,10 @@ class FeishuWebhookTextEventParser:
     def parse(self, payload: Mapping[str, Any]) -> UniversalEvent:
         # Webhook 模式下，事件被包裹在 header 和 event 中
         header = _require_mapping(payload, "header")
+        event_type = _require_str(header, "event_type")
+        if event_type != "im.message.receive_v1":
+            raise ValueError(f"unsupported_event_type: {event_type}")
+            
         event = _require_mapping(payload, "event")
         message = _require_mapping(event, "message")
         sender = _require_mapping(event, "sender")

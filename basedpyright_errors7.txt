@@ -1,0 +1,41 @@
+  /workspace/src/qfaos/__init__.py:4:41 - error: "ToolSecurityPrimitive" is unknown import symbol (reportAttributeAccessIssue)
+  /workspace/src/qfaos/builtins.py:2:47 - error: "ToolSecurityPrimitive" is unknown import symbol (reportAttributeAccessIssue)
+  /workspace/src/qfaos/enums.py:66:14 - error: "Any" is not defined (reportUndefinedVariable)
+  /workspace/src/qfaos/enums.py:74:14 - error: "Any" is not defined (reportUndefinedVariable)
+  /workspace/src/qfaos/qfaos.py:76:36 - error: Variable not allowed in type expression (reportInvalidTypeForm)
+  /workspace/src/qfaos/qfaos.py:348:49 - error: "cast" is not defined (reportUndefinedVariable)
+  /workspace/src/qfaos/qfaos.py:378:29 - error: "(" was not closed
+  /workspace/src/qfaos/qfaos.py:379:21 - error: "cast" is not defined (reportUndefinedVariable)
+  /workspace/src/qfaos/qfaos.py:479:1 - error: Statements must be separated by newlines or semicolons
+  /workspace/src/qfaos/registry/channel_registry.py:17:38 - error: Variable not allowed in type expression (reportInvalidTypeForm)
+  /workspace/src/qfaos/registry/channel_registry.py:22:41 - error: Variable not allowed in type expression (reportInvalidTypeForm)
+  /workspace/src/qfaos/registry/channel_registry.py:37:41 - error: Variable not allowed in type expression (reportInvalidTypeForm)
+  /workspace/src/qfaos/registry/channel_registry.py:50:45 - error: Variable not allowed in type expression (reportInvalidTypeForm)
+  /workspace/src/qfaos/runtime/context_facade.py:154:51 - error: Variable not allowed in type expression (reportInvalidTypeForm)
+  /workspace/src/qfaos/runtime/context_facade.py:215:56 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "validate_payload"
+  /workspace/src/qfaos/runtime/context_facade.py:297:56 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "validate_payload"
+  /workspace/src/qfaos/runtime/contracts.py:15:22 - error: Variable not allowed in type expression (reportInvalidTypeForm)
+  /workspace/src/qfaos/runtime/contracts.py:101:51 - error: Variable not allowed in type expression (reportInvalidTypeForm)
+  /workspace/src/skill_hub/core/capability_hub.py:17:47 - error: "with_security_policy" is unknown import symbol (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/core/capability_hub.py:17:69 - error: "default_security_policy" is unknown import symbol (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/core/capability_hub.py:92:68 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "validate_payload"
+  /workspace/src/skill_hub/core/capability_hub.py:109:66 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "serialize_instance"
+  /workspace/src/skill_hub/primitives/security.py:260:18 - error: Cannot access attribute "_execute_action" for class "SecureShell*"
+  /workspace/src/skill_hub/primitives/security.py:261:18 - error: Cannot access attribute "_execute_policy" for class "SecureShell*"
+  /workspace/src/skill_hub/primitives/security.py:267:24 - error: "errors" is not a known attribute of module "bashlex" (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/primitives/security.py:267:59 - error: Expected ":"
+  /workspace/src/skill_hub/primitives/security.py:272:29 - error: "(" was not closed
+  /workspace/src/skill_hub/primitives/security.py:272:38 - error: "ast" is not a known attribute of module "bashlex" (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/primitives/security.py:273:13 - error: Expected ":"
+  /workspace/src/skill_hub/primitives/security.py:274:17 - error: Expected expression
+  /workspace/src/skill_hub/primitives/security.py:382:1 - error: Statements must be separated by newlines or semicolons
+  /workspace/src/storage_memory/bootstrap.py:29:17 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "carrier" of type "HotMemoryCarrier" in function "__init__"
+  /workspace/src/storage_memory/bootstrap.py:30:18 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "__init__"
+  /workspace/src/storage_memory/bootstrap.py:32:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_append_hot_memory"
+  /workspace/src/storage_memory/bootstrap.py:40:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_read_hot_memory"
+  /workspace/src/storage_memory/bootstrap.py:47:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_persist_runtime_state"
+  /workspace/src/storage_memory/bootstrap.py:54:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_load_runtime_state"
+  /workspace/src/storage_memory/factory/create_store.py:8:5 - error: "HAS_REDIS" is constant (because it is uppercase) and cannot be redefined (reportConstantRedefinition)
+  /workspace/src/storage_memory/factory/create_store.py:54:56 - error: "ignore" is not defined (reportUndefinedVariable)
+  /workspace/src/storage_memory/factory/create_store.py:54:56 - error: Call expression not allowed in type expression (reportInvalidTypeForm)
+  /workspace/src/storage_memory/factory/create_store.py:58:26 - error: "redis" is possibly unbound (reportPossiblyUnboundVariable)

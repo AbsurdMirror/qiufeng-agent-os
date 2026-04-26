@@ -1,0 +1,65 @@
+  /workspace/src/channel_gateway/channels/feishu/sender.py:85:20 - error: Type "str | None" is not assignable to return type "str"
+  /workspace/src/domain/translators/schema_translator.py:24:46 - error: Expected type arguments for generic class "Callable" (reportMissingTypeArgument)
+  /workspace/src/domain/translators/schema_translator.py:43:35 - error: Expected type arguments for generic class "Callable" (reportMissingTypeArgument)
+  /workspace/src/domain/translators/schema_translator.py:71:16 - error: No overloads for "create_model" match the provided arguments (reportCallIssue)
+  /workspace/src/domain/translators/schema_translator.py:71:70 - error: Argument of type "tuple[Any, Any]" cannot be assigned to parameter "__config__" of type "ConfigDict | None" in function "create_model"
+  /workspace/src/domain/translators/schema_translator.py:71:70 - error: Argument of type "tuple[Any, Any]" cannot be assigned to parameter "__doc__" of type "str | None" in function "create_model"
+  /workspace/src/domain/translators/schema_translator.py:71:70 - error: Argument of type "tuple[Any, Any]" cannot be assigned to parameter "__module__" of type "str" in function "create_model"
+  /workspace/src/domain/translators/schema_translator.py:71:70 - error: Argument of type "tuple[Any, Any]" cannot be assigned to parameter "__validators__" of type "dict[str, (...) -> Any] | None" in function "create_model"
+  /workspace/src/domain/translators/schema_translator.py:71:70 - error: Argument of type "tuple[Any, Any]" cannot be assigned to parameter "__cls_kwargs__" of type "dict[str, Any] | None" in function "create_model"
+  /workspace/src/domain/translators/schema_translator.py:71:70 - error: Argument of type "tuple[Any, Any]" cannot be assigned to parameter "__qualname__" of type "str | None" in function "create_model"
+  /workspace/src/domain/translators/schema_translator.py:74:36 - error: Expected type arguments for generic class "Callable" (reportMissingTypeArgument)
+  /workspace/src/domain/translators/schema_translator.py:92:78 - error: Expected type arguments for generic class "Callable" (reportMissingTypeArgument)
+  /workspace/src/domain/translators/schema_translator.py:171:54 - error: Expected type arguments for generic class "Callable" (reportMissingTypeArgument)
+  /workspace/src/model_provider/bootstrap.py:20:14 - error: Cannot instantiate abstract class "ModelRouter"
+  /workspace/src/model_provider/providers/litellm_adapter.py:126:34 - error: Cannot access attribute "usage" for class "ModelResponse"
+  /workspace/src/model_provider/routing/router.py:19:7 - error: Class "ModelRouter" is implicitly a `Protocol` because it extends a `Protocol` without implementing all abstract symbols. If this is intentional, add `Protocol` or `ABC` to its base classes, or use `metaclass=ABCMeta`.
+  /workspace/src/model_provider/routing/router.py:61:36 - error: Argument of type "str | None" cannot be assigned to parameter "key" of type "str" in function "get"
+  /workspace/src/model_provider/routing/router.py:104:41 - error: Argument of type "str | None" cannot be assigned to parameter "fallback_model_name" of type "str" in function "build_model_response"
+  /workspace/src/model_provider/routing/router.py:109:32 - error: Argument of type "str | None" cannot be assigned to parameter "model_name" of type "str" in function "__init__"
+  /workspace/src/model_provider/routing/router.py:113:33 - error: "provider_id" is possibly unbound (reportPossiblyUnboundVariable)
+  /workspace/src/model_provider/routing/router.py:147:33 - error: Argument of type "list[str] | str | None" cannot be assigned to parameter "invalid_output" of type "str" in function "_build_repair_message"
+  /workspace/src/model_provider/routing/router.py:149:28 - error: Argument of type "str | None" cannot be assigned to parameter "error_text" of type "str" in function "_build_repair_message"
+  /workspace/src/model_provider/routing/router.py:150:31 - error: Argument of type "str | None" cannot be assigned to parameter "finish_reason" of type "str" in function "_build_repair_message"
+  /workspace/src/model_provider/validators/output_parser.py:57:39 - error: "strip" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /workspace/src/observability_hub/cli/tailer.py:75:37 - error: Expected type arguments for generic class "dict" (reportMissingTypeArgument)
+  /workspace/src/observability_hub/record/recording.py:119:54 - error: Argument of type "DataclassInstance | type[DataclassInstance]" cannot be assigned to parameter "obj" of type "DataclassInstance" in function "asdict"
+  /workspace/src/orchestration_engine/context/state_context_manager.py:28:99 - error: Expected 1 more positional argument (reportCallIssue)
+  /workspace/src/qfaos/enums.py:66:15 - error: Type "type[ChannelType]" is not assignable to declared type "type[Channel]"
+  /workspace/src/qfaos/enums.py:74:15 - error: Type "type[ChannelType]" is not assignable to declared type "type[Channel]"
+  /workspace/src/qfaos/internal/tools.py:36:60 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "validate_payload"
+  /workspace/src/qfaos/internal/tools.py:47:58 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "serialize_instance"
+  /workspace/src/qfaos/qfaos.py:208:33 - error: Cannot assign to attribute "_instances" for class "ToolRegistry"
+  /workspace/src/qfaos/qfaos.py:209:29 - error: Cannot access attribute "_instances" for class "ToolRegistry"
+  /workspace/src/qfaos/qfaos.py:348:49 - error: Argument of type "ChannelType" cannot be assigned to parameter "channel_type" of type "Channel" in function "get"
+  /workspace/src/qfaos/qfaos.py:378:18 - error: Cannot instantiate abstract class "ModelRouter"
+  /workspace/src/qfaos/qfaos.py:380:28 - error: Argument of type "dict[str, InMemoryModelProviderClient | MiniMaxModelProviderClient]" cannot be assigned to parameter "clients" of type "dict[str, RawModelProviderClient]" in function "__init__"
+  /workspace/src/qfaos/qfaos.py:393:13 - error: Cannot access attribute "register_instance_capabilities" for class "CapabilityHub"
+  /workspace/src/qfaos/qfaos.py:397:30 - error: Argument of type "CapabilityHub" cannot be assigned to parameter "hub" of type "RegisteredCapabilityHub" in function "register_pytools"
+  /workspace/src/qfaos/qfaos.py:405:26 - error: Argument of type "CapabilityHub" cannot be assigned to parameter "hub" of type "RegisteredCapabilityHub" in function "register_pytools"
+  /workspace/src/qfaos/qfaos.py:405:31 - error: Argument of type "tuple[Any | None, ...]" cannot be assigned to parameter "pytools" of type "Iterable[PyTool]" in function "register_pytools"
+  /workspace/src/qfaos/qfaos.py:409:49 - error: Cannot access attribute "_instances" for class "ToolRegistry"
+  /workspace/src/qfaos/qfaos.py:410:21 - error: Cannot access attribute "register_instance_capabilities" for class "CapabilityHub"
+  /workspace/src/qfaos/qfaos.py:435:22 - error: Expected type arguments for generic class "Queue" (reportMissingTypeArgument)
+  /workspace/src/qfaos/qfaos.py:437:50 - error: Expected type arguments for generic class "Queue" (reportMissingTypeArgument)
+  /workspace/src/qfaos/runtime/context_facade.py:215:56 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "validate_payload"
+  /workspace/src/qfaos/runtime/context_facade.py:297:56 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "validate_payload"
+  /workspace/src/qfaos/runtime/contracts.py:36:21 - error: Argument of type "ChannelType" cannot be assigned to parameter "channel" of type "Channel" in function "__init__"
+  /workspace/src/skill_hub/core/capability_hub.py:92:68 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "validate_payload"
+  /workspace/src/skill_hub/core/capability_hub.py:109:66 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "serialize_instance"
+  /workspace/src/skill_hub/primitives/security.py:92:12 - error: Type "tuple[Any | tuple[Unknown, ...], None]" is not assignable to return type "tuple[PolicyDecision, str | None]"
+  /workspace/src/skill_hub/primitives/security.py:187:40 - error: Expected type arguments for generic class "Pattern" (reportMissingTypeArgument)
+  /workspace/src/skill_hub/primitives/security.py:188:40 - error: Expected type arguments for generic class "Pattern" (reportMissingTypeArgument)
+  /workspace/src/skill_hub/primitives/security.py:267:24 - error: "errors" is not a known attribute of module "bashlex" (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/primitives/security.py:272:38 - error: "ast" is not a known attribute of module "bashlex" (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/primitives/security.py:326:34 - error: Expected type arguments for generic class "Pattern" (reportMissingTypeArgument)
+  /workspace/src/skill_hub/primitives/security.py:327:34 - error: Expected type arguments for generic class "Pattern" (reportMissingTypeArgument)
+  /workspace/src/skill_hub/primitives/security.py:336:60 - error: Expected type arguments for generic class "Callable" (reportMissingTypeArgument)
+  /workspace/src/storage_memory/bootstrap.py:29:17 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "carrier" of type "HotMemoryCarrier" in function "__init__"
+  /workspace/src/storage_memory/bootstrap.py:30:18 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "__init__"
+  /workspace/src/storage_memory/bootstrap.py:32:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_append_hot_memory"
+  /workspace/src/storage_memory/bootstrap.py:40:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_read_hot_memory"
+  /workspace/src/storage_memory/bootstrap.py:47:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_persist_runtime_state"
+  /workspace/src/storage_memory/bootstrap.py:54:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_load_runtime_state"
+  /workspace/src/storage_memory/factory/create_store.py:8:5 - error: "HAS_REDIS" is constant (because it is uppercase) and cannot be redefined (reportConstantRedefinition)
+  /workspace/src/storage_memory/factory/create_store.py:58:26 - error: "redis" is possibly unbound (reportPossiblyUnboundVariable)

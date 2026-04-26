@@ -1,0 +1,1614 @@
+/workspace/src/channel_gateway/__init__.py
+  /workspace/src/channel_gateway/__init__.py:3:24 - warning: Import "initialize" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/__init__.py:4:48 - warning: Import "TextEventParserFactory" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/__init__.py:5:31 - warning: Import "UniversalEvent" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/__init__.py:5:47 - warning: Import "UniversalEventContent" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/__init__.py:6:22 - warning: Import "ChannelGatewayExports" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/__init__.py:8:5 - warning: Import "FeishuLongConnectionRuntime" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/__init__.py:9:5 - warning: Import "initialize_feishu_long_connection" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/__init__.py:10:5 - warning: Import "parse_feishu_long_connection_event" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/__init__.py:11:5 - warning: Import "run_feishu_long_connection" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/__init__.py:13:38 - warning: Import "FeishuWebhookResult" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/__init__.py:13:59 - warning: Import "receive_feishu_webhook" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/__init__.py:14:35 - warning: Import "NoneBotRuntime" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/__init__.py:14:51 - warning: Import "initialize_nonebot2" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/__init__.py:15:35 - warning: Import "SessionContextController" is not accessed (reportUnusedImport)
+/workspace/src/channel_gateway/bootstrap.py
+  /workspace/src/channel_gateway/bootstrap.py:20:5 - warning: "observability" is not accessed (reportUnusedParameter)
+  /workspace/src/channel_gateway/bootstrap.py:63:39 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/channel_gateway/channels/feishu/long_connection.py
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:22:62 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:45:16 - warning: Stub file not found for "lark_oapi" (reportMissingTypeStubs)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:49:24 - warning: Type of parameter "data" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:49:30 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:60:13 - warning: Result of call expression is of type "NormalizedRecord" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:108:16 - warning: Stub file not found for "lark_oapi" (reportMissingTypeStubs)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:108:16 - warning: Import "lark_oapi" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:122:17 - warning: Type of parameter "data" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:122:23 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:122:41 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:129:21 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "map" in function "__init__"
+    Argument type is "Mapping[Unknown, object]" (reportUnknownArgumentType)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:130:26 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "getattr" (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:134:25 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "map" in function "__init__"
+    Argument type is "Mapping[Unknown, object]" (reportUnknownArgumentType)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:135:27 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "getattr" (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:139:25 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "map" in function "__init__"
+    Argument type is "Mapping[Unknown, object]" (reportUnknownArgumentType)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:140:5 - warning: Type of "as_dict" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:142:21 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "map" in function "__init__"
+    Argument type is "Mapping[Unknown, object]" (reportUnknownArgumentType)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:146:5 - warning: Return type is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:146:20 - warning: Type of parameter "data" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:146:26 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:146:34 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:149:21 - warning: Argument type is unknown
+    Argument corresponds to parameter "object" in function "__new__" (reportUnknownArgumentType)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:149:47 - warning: Type of "k" is unknown (reportUnknownVariableType)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:151:39 - warning: Type of "v" is unknown (reportUnknownVariableType)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:153:44 - warning: Type of "v" is unknown (reportUnknownVariableType)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:154:16 - warning: Argument type is Any
+    Argument corresponds to parameter "obj" in function "hasattr" (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:155:16 - warning: Return type, "dict[Unknown, Any]", is partially unknown (reportUnknownVariableType)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:157:17 - warning: Type of "key" is unknown (reportUnknownVariableType)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:157:22 - warning: Type of "value" is unknown (reportUnknownVariableType)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:157:31 - warning: Type of "items" is unknown (reportUnknownMemberType)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:157:36 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "vars" (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:158:20 - warning: Type of "startswith" is unknown (reportUnknownMemberType)
+  /workspace/src/channel_gateway/channels/feishu/long_connection.py:160:12 - warning: Return type is Any (reportAny)
+/workspace/src/channel_gateway/channels/feishu/sender.py
+  /workspace/src/channel_gateway/channels/feishu/sender.py:4:8 - warning: Import "os" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:10:34 - warning: Import "ReplyPrimitive" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:41:14 - warning: Type annotation for attribute `app_id` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:42:14 - warning: Type annotation for attribute `app_secret` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:43:14 - warning: Type annotation for attribute `mock_mode` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:46:14 - warning: Type annotation for attribute `_client` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:74:13 - warning: Result of call expression is of type "Response" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:75:13 - warning: Type of "data" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:77:16 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:78:62 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:80:41 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:82:13 - warning: Type of "expire_seconds" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:82:30 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:94:98 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:151:17 - warning: Result of call expression is of type "Response" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:152:17 - warning: Type of "data" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:154:20 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:159:61 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:170:111 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:216:13 - warning: Result of call expression is of type "Response" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:217:13 - warning: Type of "data" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:219:16 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:223:50 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:258:17 - warning: Result of call expression is of type "Response" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/channel_gateway/channels/feishu/sender.py:261:25 - warning: Result of call expression is of type "int" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+/workspace/src/channel_gateway/channels/feishu/text_event_parser.py
+  /workspace/src/channel_gateway/channels/feishu/text_event_parser.py:13:43 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/text_event_parser.py:22:43 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/text_event_parser.py:74:43 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/text_event_parser.py:156:42 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/text_event_parser.py:156:74 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/text_event_parser.py:160:12 - warning: Return type, "Mapping[Unknown, object]", is partially unknown (reportUnknownVariableType)
+  /workspace/src/channel_gateway/channels/feishu/text_event_parser.py:163:38 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/text_event_parser.py:170:39 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/text_event_parser.py:186:46 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/text_event_parser.py:193:46 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/channels/feishu/text_event_parser.py:195:9 - warning: Type of "parsed" is Any (reportAny)
+  /workspace/src/channel_gateway/channels/feishu/text_event_parser.py:200:12 - warning: Return type, "dict[Unknown, Unknown]", is partially unknown (reportUnknownVariableType)
+/workspace/src/channel_gateway/channels/feishu/webhook.py
+  /workspace/src/channel_gateway/channels/feishu/webhook.py:2:25 - warning: This type is deprecated as of Python 3.9; use "collections.abc.Mapping" instead (reportDeprecated)
+  /workspace/src/channel_gateway/channels/feishu/webhook.py:19:50 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/channel_gateway/core/nonebot_runtime.py
+  /workspace/src/channel_gateway/core/nonebot_runtime.py:22:13 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/channel_gateway/core/session/context.py
+  /workspace/src/channel_gateway/core/session/context.py:1:8 - warning: Import "hashlib" is not accessed (reportUnusedImport)
+  /workspace/src/channel_gateway/core/session/context.py:4:20 - warning: This type is deprecated as of Python 3.9; use "dict" instead (reportDeprecated)
+  /workspace/src/channel_gateway/core/session/context.py:4:26 - warning: This type is deprecated as of Python 3.10; use "| None" instead (reportDeprecated)
+  /workspace/src/channel_gateway/core/session/context.py:15:27 - warning: This type is deprecated as of Python 3.9; use "dict" instead (reportDeprecated)
+  /workspace/src/channel_gateway/core/session/context.py:17:14 - warning: Type annotation for attribute `_id_lock` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/channel_gateway/core/session/context.py:20:35 - warning: This type is deprecated as of Python 3.9; use "dict" instead (reportDeprecated)
+  /workspace/src/channel_gateway/core/session/context.py:21:14 - warning: Type annotation for attribute `_msg_lock` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/channel_gateway/core/session/context.py:22:14 - warning: Type annotation for attribute `_deduplication_window_ms` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/channel_gateway/core/session/context.py:41:67 - warning: This type is deprecated as of Python 3.10; use "| None" instead (reportDeprecated)
+/workspace/src/channel_gateway/exports.py
+  /workspace/src/channel_gateway/exports.py:20:56 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/channel_gateway/exports.py:25:47 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/domain/capabilities.py
+  /workspace/src/domain/capabilities.py:24:29 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/capabilities.py:26:30 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/capabilities.py:28:18 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/capabilities.py:30:19 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/capabilities.py:32:25 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/capabilities.py:46:24 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/capabilities.py:48:25 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/capabilities.py:65:23 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/capabilities.py:71:25 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/domain/decorators.py
+  /workspace/src/domain/decorators.py:3:37 - warning: Import "CapabilityDescription" is not accessed (reportUnusedImport)
+  /workspace/src/domain/decorators.py:5:38 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/domain/events.py
+  /workspace/src/domain/events.py:51:26 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/domain/memory.py
+  /workspace/src/domain/memory.py:27:25 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/domain/models.py
+  /workspace/src/domain/models.py:63:20 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/models.py:65:25 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/models.py:103:13 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/models.py:107:20 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/domain/responses.py
+  /workspace/src/domain/responses.py:74:34 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/domain/translators/schema_translator.py
+  /workspace/src/domain/translators/schema_translator.py:3:44 - error: Statements must be separated by newlines or semicolons
+  /workspace/src/domain/translators/schema_translator.py:3:44 - warning: Expression value is unused (reportUnusedExpression)
+  /workspace/src/domain/translators/schema_translator.py:3:56 - error: "Union" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:3:63 - error: "get_args" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:3:73 - error: "get_origin" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:3:85 - error: "Type" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:3:91 - error: "TypeVar" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:9:1 - warning: Type of "T" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:9:5 - error: "TypeVar" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:24:60 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:28:9 - warning: Type of "input_model" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:28:23 - warning: Type of "func_to_input_model" is partially unknown
+    Type of "func_to_input_model" is "(func: (...) -> Unknown) -> Unknown" (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:29:9 - warning: Type of "output_model" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:29:24 - warning: Type of "func_to_output_model" is partially unknown
+    Type of "func_to_output_model" is "(func: (...) -> Unknown) -> Unknown" (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:36:26 - warning: Type of "model_to_schema" is partially unknown
+    Type of "model_to_schema" is "(model: Unknown, is_input: bool = True, func: ((...) -> Any) | None = None) -> dict[str, Any]" (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:36:59 - warning: Argument type is unknown
+    Argument corresponds to parameter "model" in function "model_to_schema" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:37:27 - warning: Type of "model_to_schema" is partially unknown
+    Type of "model_to_schema" is "(model: Unknown, is_input: bool = True, func: ((...) -> Any) | None = None) -> dict[str, Any]" (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:37:60 - warning: Argument type is unknown
+    Argument corresponds to parameter "model" in function "model_to_schema" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:38:25 - warning: Argument type is unknown
+    Argument corresponds to parameter "input_model" in function "__init__" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:39:26 - warning: Argument type is unknown
+    Argument corresponds to parameter "output_model" in function "__init__" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:43:9 - warning: Return type is unknown (reportUnknownParameterType)
+  /workspace/src/domain/translators/schema_translator.py:43:29 - warning: Type of parameter "func" is partially unknown
+    Parameter type is "(...) -> Unknown" (reportUnknownParameterType)
+  /workspace/src/domain/translators/schema_translator.py:43:35 - error: Expected type arguments for generic class "Callable" (reportMissingTypeArgument)
+  /workspace/src/domain/translators/schema_translator.py:43:48 - error: "Type" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:49:33 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "obj" in function "signature"
+    Argument type is "(...) -> Unknown" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:50:33 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:50:38 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:56:13 - warning: Type of "annotation" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:57:28 - warning: Type of "annotation" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:58:22 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "func" in function "_parse_annotated_contract"
+    Argument type is "(...) -> Unknown" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:63:13 - warning: Type of "has_default" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:63:27 - warning: Type of "default" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:64:27 - warning: Type of "default" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:71:16 - error: No overloads for "create_model" match the provided arguments (reportCallIssue)
+  /workspace/src/domain/translators/schema_translator.py:71:16 - warning: Return type is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:71:70 - error: Argument of type "tuple[Any, Any]" cannot be assigned to parameter "__config__" of type "ConfigDict | None" in function "create_model"
+    Type "tuple[Any, Any]" is not assignable to type "ConfigDict | None"
+      "tuple[Any, Any]" is not assignable to "ConfigDict"
+      "tuple[Any, Any]" is not assignable to "None" (reportArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:71:70 - error: Argument of type "tuple[Any, Any]" cannot be assigned to parameter "__doc__" of type "str | None" in function "create_model"
+    Type "tuple[Any, Any]" is not assignable to type "str | None"
+      "tuple[Any, Any]" is not assignable to "str"
+      "tuple[Any, Any]" is not assignable to "None" (reportArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:71:70 - error: Argument of type "tuple[Any, Any]" cannot be assigned to parameter "__module__" of type "str" in function "create_model"
+    "tuple[Any, Any]" is not assignable to "str" (reportArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:71:70 - error: Argument of type "tuple[Any, Any]" cannot be assigned to parameter "__validators__" of type "dict[str, (...) -> Any] | None" in function "create_model"
+    Type "tuple[Any, Any]" is not assignable to type "dict[str, (...) -> Any] | None"
+      "tuple[Any, Any]" is not assignable to "dict[str, (...) -> Any]"
+      "tuple[Any, Any]" is not assignable to "None" (reportArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:71:70 - error: Argument of type "tuple[Any, Any]" cannot be assigned to parameter "__cls_kwargs__" of type "dict[str, Any] | None" in function "create_model"
+    Type "tuple[Any, Any]" is not assignable to type "dict[str, Any] | None"
+      "tuple[Any, Any]" is not assignable to "dict[str, Any]"
+      "tuple[Any, Any]" is not assignable to "None" (reportArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:71:70 - error: Argument of type "tuple[Any, Any]" cannot be assigned to parameter "__qualname__" of type "str | None" in function "create_model"
+    Type "tuple[Any, Any]" is not assignable to type "str | None"
+      "tuple[Any, Any]" is not assignable to "str"
+      "tuple[Any, Any]" is not assignable to "None" (reportArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:74:9 - warning: Return type is unknown (reportUnknownParameterType)
+  /workspace/src/domain/translators/schema_translator.py:74:30 - warning: Type of parameter "func" is partially unknown
+    Parameter type is "(...) -> Unknown" (reportUnknownParameterType)
+  /workspace/src/domain/translators/schema_translator.py:74:36 - error: Expected type arguments for generic class "Callable" (reportMissingTypeArgument)
+  /workspace/src/domain/translators/schema_translator.py:74:49 - error: "Type" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:79:9 - warning: Type of "annotation" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:80:24 - warning: Type of "return_annotation" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:80:42 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "obj" in function "signature"
+    Argument type is "(...) -> Unknown" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:81:18 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "func" in function "_parse_annotated_contract"
+    Argument type is "(...) -> Unknown" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:92:25 - warning: Type of parameter "model" is unknown (reportUnknownParameterType)
+  /workspace/src/domain/translators/schema_translator.py:92:32 - error: "Type" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:92:92 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:92:125 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:97:9 - warning: Type of "schema" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:97:18 - warning: Type of "model_json_schema" is unknown (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:98:9 - warning: Type of "pop" is unknown (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:112:17 - warning: Type of "_" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:113:32 - warning: Type of "annotation" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:119:17 - warning: Type of "append" is partially unknown
+    Type of "append" is "(object: Unknown, /) -> None" (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:122:60 - warning: Type of "annotation" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:123:36 - warning: Type of "default" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:125:52 - warning: Argument type is unknown
+    Argument corresponds to parameter "schema" in function "_normalize_input_schema_for_llm" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:125:60 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "parameter_specs" in function "_normalize_input_schema_for_llm"
+    Argument type is "list[Unknown]" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:128:13 - warning: Type of "properties" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:128:26 - warning: Type of "get" is unknown (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:129:13 - warning: Type of "result_schema" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:129:29 - warning: Type of "get" is unknown (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:133:21 - warning: Type of "_" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:134:36 - warning: Type of "return_annotation" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:141:69 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "field_schema" in function "_strip_top_level_nullability"
+    Argument type is "dict[Unknown, Unknown]" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:145:20 - warning: Return type is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:148:26 - warning: Type of parameter "model" is unknown (reportUnknownParameterType)
+  /workspace/src/domain/translators/schema_translator.py:148:33 - error: "Type" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:148:69 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:153:16 - warning: Type of "model_validate" is unknown (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:153:16 - warning: Return type is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:156:28 - warning: Type of parameter "model" is unknown (reportUnknownParameterType)
+  /workspace/src/domain/translators/schema_translator.py:156:35 - error: "Type" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:156:52 - warning: Type of parameter "instance" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:156:62 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:156:80 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:163:13 - warning: Type of "obj" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:163:19 - warning: Type of "model_validate" is unknown (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:165:13 - warning: Type of "obj" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:165:19 - warning: Type of "model_validate" is unknown (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:166:16 - warning: Type of "model_dump" is unknown (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:166:16 - warning: Return type is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:171:31 - warning: Type of parameter "annotation" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:171:43 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:171:68 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:171:117 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:174:9 - warning: Type of "raw_func" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:175:45 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "getsourcefile" (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:176:49 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "getsourcelines" (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:185:8 - error: "get_origin" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:188:5 - warning: Type of "args" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:188:12 - error: "get_args" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:189:5 - warning: Type of "parsed_annotation" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:191:9 - warning: Type of "metadata" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:200:12 - warning: Return type, "tuple[Unknown, str]", is partially unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:202:55 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:202:93 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:202:113 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:203:5 - warning: Type of "properties" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:206:9 - warning: Type of "name" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:207:9 - warning: Type of "field_schema" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:207:24 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:209:13 - warning: Type of "pop" is partially unknown
+    Type of "pop" is "Overload[(key: Unknown, /) -> Unknown, (key: Unknown, default: Unknown, /) -> Unknown, (key: Unknown, default: _T@pop, /) -> (Unknown | _T@pop)]" (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:210:13 - warning: Type of "pop" is partially unknown
+    Type of "pop" is "Overload[(key: Unknown, /) -> Unknown, (key: Unknown, default: Unknown, /) -> Unknown, (key: Unknown, default: _T@pop, /) -> (Unknown | _T@pop)]" (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:214:61 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "field_schema" in function "_strip_top_level_nullability"
+    Argument type is "dict[Unknown, Unknown]" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:217:13 - warning: Type of "append" is partially unknown
+    Type of "append" is "(object: Unknown, /) -> None" (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:217:36 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "append" (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:221:58 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:221:77 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:224:9 - warning: Type of "union_items" is partially unknown
+    Type of "union_items" is "Any | Unknown | None" (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:224:23 - warning: Type of "get" is partially unknown
+    Type of "get" is "Overload[(key: str, default: None = None, /) -> (Any | None), (key: str, default: Any, /) -> Any, (key: str, default: _T@get, /) -> (Any | _T@get)] | Overload[(key: Unknown, default: None = None, /) -> (Unknown | None), (key: Unknown, default: Unknown, /) -> Unknown, (key: Unknown, default: _T@get, /) -> (Unknown | _T@get)]" (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:226:13 - warning: Type of "non_null_items" is partially unknown
+    Type of "non_null_items" is "list[Unknown | dict[Unknown, Unknown]]" (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:226:40 - warning: Type of "item" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:226:95 - warning: Type of "get" is partially unknown
+    Type of "get" is "Overload[(key: Unknown, default: None = None, /) -> (Unknown | None), (key: Unknown, default: Unknown, /) -> Unknown, (key: Unknown, default: _T@get, /) -> (Unknown | _T@get)]" (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:227:20 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "obj" in function "len"
+    Argument type is "list[Unknown | dict[Unknown, Unknown]]" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:227:42 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "obj" in function "len"
+    Argument type is "list[Unknown]" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:228:24 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "obj" in function "len"
+    Argument type is "list[Unknown | dict[Unknown, Unknown]]" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:229:21 - warning: Type of "merged" is partially unknown
+    Type of "merged" is "dict[Unknown, Unknown]" (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:229:35 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "map" in function "__init__"
+    Argument type is "Unknown | dict[Unknown, Unknown]" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:230:21 - warning: Type of "update" is partially unknown
+    Type of "update" is "Overload[(m: SupportsKeysAndGetItem[Unknown, Unknown], /) -> None, (m: SupportsKeysAndGetItem[str, Unknown], /, **kwargs: Unknown) -> None, (m: Iterable[tuple[Unknown, Unknown]], /) -> None, (m: Iterable[tuple[str, Unknown]], /, **kwargs: Unknown) -> None, (**kwargs: Unknown) -> None]" (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:230:45 - warning: Type of "k" is partially unknown
+    Type of "k" is "str | Unknown" (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:230:48 - warning: Type of "v" is partially unknown
+    Type of "v" is "Any | Unknown" (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:231:21 - warning: Type of "normalized" is partially unknown
+    Type of "normalized" is "dict[Unknown, Unknown]" (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:234:5 - warning: Type of "expected_type" is partially unknown
+    Type of "expected_type" is "Any | Unknown | None" (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:234:21 - warning: Type of "get" is partially unknown
+    Type of "get" is "Overload[(key: Unknown, default: None = None, /) -> (Unknown | None), (key: Unknown, default: Unknown, /) -> Unknown, (key: Unknown, default: _T@get, /) -> (Unknown | _T@get)] | Overload[(key: str, default: None = None, /) -> (Any | None), (key: str, default: Any, /) -> Any, (key: str, default: _T@get, /) -> (Any | _T@get)]" (reportUnknownMemberType)
+  /workspace/src/domain/translators/schema_translator.py:236:9 - warning: Type of "non_null_types" is partially unknown
+    Type of "non_null_types" is "list[Unknown]" (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:236:33 - warning: Type of "t" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:237:55 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "obj" in function "len"
+    Argument type is "list[Unknown]" (reportUnknownArgumentType)
+  /workspace/src/domain/translators/schema_translator.py:238:12 - warning: Return type, "dict[Unknown, Unknown] | dict[str, Any]", is partially unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:240:29 - warning: Type of parameter "annotation" is Any (reportAny)
+  /workspace/src/domain/translators/schema_translator.py:240:41 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/domain/translators/schema_translator.py:247:8 - error: "get_origin" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:248:9 - warning: Type of "annotation" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:248:22 - error: "get_args" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:251:5 - warning: Type of "origin" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:251:14 - error: "get_origin" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:254:23 - error: "Union" is not defined (reportUndefinedVariable)
+  /workspace/src/domain/translators/schema_translator.py:258:36 - warning: Type of "arg" is unknown (reportUnknownVariableType)
+  /workspace/src/domain/translators/schema_translator.py:258:43 - error: "get_args" is not defined (reportUndefinedVariable)
+/workspace/src/model_provider/__init__.py
+  /workspace/src/model_provider/__init__.py:59:5 - warning: "parse_message_tool_calls" is specified in __all__ but is not present in module (reportUnsupportedDunderAll)
+/workspace/src/model_provider/bootstrap.py
+  /workspace/src/model_provider/bootstrap.py:3:5 - warning: "ModelRequest" is not exported from module "src.model_provider.contracts"
+    Import from "src.domain.models" instead (reportPrivateLocalImportUsage)
+  /workspace/src/model_provider/bootstrap.py:4:5 - warning: "ModelResponse" is not exported from module "src.model_provider.contracts"
+    Import from "src.domain.models" instead (reportPrivateLocalImportUsage)
+  /workspace/src/model_provider/bootstrap.py:20:14 - error: Cannot instantiate abstract class "ModelRouter"
+    "ModelProviderClient.provider_id" is not implemented (reportAbstractUsage)
+/workspace/src/model_provider/contracts.py
+  /workspace/src/model_provider/contracts.py:1:25 - warning: This type is deprecated as of Python 3.9; use "collections.abc.Mapping" instead (reportDeprecated)
+  /workspace/src/model_provider/contracts.py:1:44 - warning: This type is deprecated as of Python 3.10; use "|" instead (reportDeprecated)
+  /workspace/src/model_provider/contracts.py:8:22 - warning: This type is deprecated as of Python 3.10; use "|" instead (reportDeprecated)
+  /workspace/src/model_provider/contracts.py:31:48 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/contracts.py:41:5 - warning: Type annotation for attribute `provider_id` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+/workspace/src/model_provider/providers/litellm_adapter.py
+  /workspace/src/model_provider/providers/litellm_adapter.py:4:25 - warning: This type is deprecated as of Python 3.9; use "collections.abc.Mapping" instead (reportDeprecated)
+  /workspace/src/model_provider/providers/litellm_adapter.py:26:25 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/providers/litellm_adapter.py:28:36 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/providers/litellm_adapter.py:64:16 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/providers/litellm_adapter.py:78:24 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/providers/litellm_adapter.py:100:5 - warning: Type of "litellm_kwargs" is Any (reportAny)
+  /workspace/src/model_provider/providers/litellm_adapter.py:104:29 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "map" in function "__init__"
+    Argument type is "Mapping[Unknown, object]" (reportUnknownArgumentType)
+  /workspace/src/model_provider/providers/litellm_adapter.py:112:20 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/providers/litellm_adapter.py:113:5 - warning: "fallback_model_name" is not accessed (reportUnusedParameter)
+  /workspace/src/model_provider/providers/litellm_adapter.py:126:9 - warning: Type of "usage_obj" is unknown (reportUnknownVariableType)
+  /workspace/src/model_provider/providers/litellm_adapter.py:126:21 - warning: Type of "usage" is unknown (reportUnknownMemberType)
+  /workspace/src/model_provider/providers/litellm_adapter.py:126:34 - error: Cannot access attribute "usage" for class "ModelResponse"
+    Attribute "usage" is unknown (reportAttributeAccessIssue)
+  /workspace/src/model_provider/providers/litellm_adapter.py:135:38 - warning: Argument type is unknown
+    Argument corresponds to parameter "o" in function "getattr" (reportUnknownArgumentType)
+  /workspace/src/model_provider/providers/litellm_adapter.py:135:83 - warning: Argument type is unknown
+    Argument corresponds to parameter "o" in function "getattr" (reportUnknownArgumentType)
+  /workspace/src/model_provider/providers/litellm_adapter.py:136:39 - warning: Argument type is unknown
+    Argument corresponds to parameter "o" in function "getattr" (reportUnknownArgumentType)
+  /workspace/src/model_provider/providers/litellm_adapter.py:136:88 - warning: Argument type is unknown
+    Argument corresponds to parameter "o" in function "getattr" (reportUnknownArgumentType)
+  /workspace/src/model_provider/providers/litellm_adapter.py:137:38 - warning: Argument type is unknown
+    Argument corresponds to parameter "o" in function "getattr" (reportUnknownArgumentType)
+  /workspace/src/model_provider/providers/litellm_adapter.py:183:21 - warning: Type of "parsed" is Any (reportAny)
+  /workspace/src/model_provider/providers/litellm_adapter.py:183:52 - warning: Argument type is Any
+    Argument corresponds to parameter "schema" in function "parse_message_content" (reportAny)
+  /workspace/src/model_provider/providers/litellm_adapter.py:271:64 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/model_provider/providers/minimax.py
+  /workspace/src/model_provider/providers/minimax.py:2:25 - warning: This type is deprecated as of Python 3.9; use "collections.abc.Mapping" instead (reportDeprecated)
+  /workspace/src/model_provider/providers/minimax.py:4:27 - warning: Type of "trim_messages" is partially unknown
+    Type of "trim_messages" is "(messages: Unknown, model: str | None = None, trim_ratio: float = DEFAULT_TRIM_RATIO, return_response_tokens: bool = False, max_tokens: Unknown | None = None) -> (Unknown | list[dict[Unknown, Unknown]] | tuple[Unknown | list[dict[Unknown, Unknown]] | list[Unknown], Unknown | int] | list[Unknown])" (reportUnknownVariableType)
+  /workspace/src/model_provider/providers/minimax.py:23:25 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/providers/minimax.py:25:36 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/providers/minimax.py:55:14 - warning: Type annotation for attribute `provider_id` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/model_provider/providers/minimax.py:56:14 - warning: Type annotation for attribute `_api_key` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/model_provider/providers/minimax.py:57:14 - warning: Type annotation for attribute `_model_name` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/model_provider/providers/minimax.py:58:14 - warning: Type annotation for attribute `_base_url` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/model_provider/providers/minimax.py:88:9 - warning: Method "completion" is not marked as override but is overriding a method in class "RawModelProviderClient" (reportImplicitOverride)
+  /workspace/src/model_provider/providers/minimax.py:88:48 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/providers/minimax.py:106:9 - warning: Type of "raw_messages" is Any (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:110:17 - warning: Type of "msg" is Any (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:111:20 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:112:21 - warning: Type of "content" is Any (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:112:31 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:114:25 - warning: Type of "append" is partially unknown
+    Type of "append" is "(object: Unknown, /) -> None" (reportUnknownMemberType)
+  /workspace/src/model_provider/providers/minimax.py:114:52 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:116:21 - warning: Type of "append" is partially unknown
+    Type of "append" is "(object: Unknown, /) -> None" (reportUnknownMemberType)
+  /workspace/src/model_provider/providers/minimax.py:116:43 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "append" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:120:17 - warning: Type of "append" is partially unknown
+    Type of "append" is "(object: Unknown, /) -> None" (reportUnknownMemberType)
+  /workspace/src/model_provider/providers/minimax.py:122:44 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "iterable" in function "join"
+    Argument type is "list[Unknown]" (reportUnknownArgumentType)
+  /workspace/src/model_provider/providers/minimax.py:124:13 - warning: Type of "extend" is partially unknown
+    Type of "extend" is "(iterable: Iterable[Unknown], /) -> None" (reportUnknownMemberType)
+  /workspace/src/model_provider/providers/minimax.py:144:13 - warning: Type of "model_cost" is partially unknown
+    Type of "model_cost" is "dict[Unknown, Unknown]" (reportUnknownMemberType)
+  /workspace/src/model_provider/providers/minimax.py:145:13 - warning: Type of "model_cost" is partially unknown
+    Type of "model_cost" is "dict[Unknown, Unknown]" (reportUnknownMemberType)
+  /workspace/src/model_provider/providers/minimax.py:146:13 - warning: Type of "model_cost" is partially unknown
+    Type of "model_cost" is "dict[Unknown, Unknown]" (reportUnknownMemberType)
+  /workspace/src/model_provider/providers/minimax.py:149:24 - warning: Type of "completion" is partially unknown
+    Type of "completion" is "(model: str, messages: List[Unknown] = [], timeout: float | str | Timeout | None = None, temperature: float | None = None, top_p: float | None = None, n: int | None = None, stream: bool | None = None, stream_options: dict[Unknown, Unknown] | None = None, stop: Unknown | None = None, max_completion_tokens: int | None = None, max_tokens: int | None = None, modalities: List[Literal['text', 'audio']] | None = None, prediction: ChatCompletionPredictionContentParam | None = None, audio: ChatCompletionAudioParam | None = None, presence_penalty: float | None = None, frequency_penalty: float | None = None, logit_bias: dict[Unknown, Unknown] | None = None, user: str | None = None, reasoning_effort: Literal['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'default'] | None = None, verbosity: Literal['low', 'medium', 'high'] | None = None, response_format: dict[Unknown, Unknown] | type[BaseModel] | None = None, seed: int | None = None, tools: List[Unknown] | None = None, tool_choice: str | dict[Unknown, Unknown] | None = None, logprobs: bool | None = None, top_logprobs: int | None = None, parallel_tool_calls: bool | None = None, web_search_options: OpenAIWebSearchOptions | None = None, deployment_id: Unknown | None = None, extra_headers: dict[Unknown, Unknown] | None = None, safety_identifier: str | None = None, service_tier: str | None = None, functions: List[Unknown] | None = None, function_call: str | None = None, base_url: str | None = None, api_version: str | None = None, api_key: str | None = None, model_list: list[Unknown] | None = None, thinking: AnthropicThinkingParam | None = None, shared_session: ClientSession | None = None, enable_json_schema_validation: bool | None = None, **kwargs: Unknown) -> (ModelResponse | CustomStreamWrapper)" (reportUnknownMemberType)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "kwargs" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "model" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "messages" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "timeout" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "temperature" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "top_p" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "n" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "stream" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "stream_options" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "stop" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "max_completion_tokens" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "max_tokens" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "modalities" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "prediction" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "audio" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "presence_penalty" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "frequency_penalty" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "logit_bias" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "user" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "reasoning_effort" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "verbosity" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "response_format" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "seed" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "tools" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "tool_choice" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "logprobs" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "top_logprobs" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "parallel_tool_calls" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "web_search_options" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "deployment_id" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "extra_headers" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "safety_identifier" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "service_tier" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "functions" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "function_call" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "base_url" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "api_version" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "api_key" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "model_list" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "thinking" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "shared_session" in function "completion" (reportAny)
+  /workspace/src/model_provider/providers/minimax.py:149:45 - warning: Argument type is Any
+    Argument corresponds to parameter "enable_json_schema_validation" in function "completion" (reportAny)
+/workspace/src/model_provider/routing/router.py
+  /workspace/src/model_provider/routing/router.py:1:20 - warning: Import "Any" is not accessed (reportUnusedImport)
+  /workspace/src/model_provider/routing/router.py:15:8 - warning: Import "os" is not accessed (reportUnusedImport)
+  /workspace/src/model_provider/routing/router.py:19:7 - error: Class "ModelRouter" is implicitly a `Protocol` because it extends a `Protocol` without implementing all abstract symbols. If this is intentional, add `Protocol` or `ABC` to its base classes, or use `metaclass=ABCMeta`.
+    "ModelProviderClient.provider_id" is not implemented (reportImplicitAbstractClass)
+  /workspace/src/model_provider/routing/router.py:30:14 - warning: Type annotation for attribute `_clients` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/model_provider/routing/router.py:31:14 - warning: Type annotation for attribute `_observability` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/model_provider/routing/router.py:40:17 - warning: Implicit string concatenation not allowed (reportImplicitStringConcatenation)
+  /workspace/src/model_provider/routing/router.py:41:73 - warning: Implicit string concatenation not allowed (reportImplicitStringConcatenation)
+  /workspace/src/model_provider/routing/router.py:45:73 - warning: Implicit string concatenation not allowed (reportImplicitStringConcatenation)
+  /workspace/src/model_provider/routing/router.py:52:9 - warning: Method "completion" is not marked as override but is overriding a method in class "ModelProviderClient" (reportImplicitOverride)
+  /workspace/src/model_provider/routing/router.py:61:36 - error: Argument of type "str | None" cannot be assigned to parameter "key" of type "str" in function "get"
+    Type "str | None" is not assignable to type "str"
+      "None" is not assignable to "str" (reportArgumentType)
+  /workspace/src/model_provider/routing/router.py:65:9 - warning: Type of "trace_id" is Any (reportAny)
+  /workspace/src/model_provider/routing/router.py:80:21 - warning: Result of call expression is of type "NormalizedRecord" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/model_provider/routing/router.py:81:25 - warning: Argument type is Any
+    Argument corresponds to parameter "__p0" (reportAny)
+  /workspace/src/model_provider/routing/router.py:91:21 - warning: Result of call expression is of type "NormalizedRecord" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/model_provider/routing/router.py:92:25 - warning: Argument type is Any
+    Argument corresponds to parameter "__p0" (reportAny)
+  /workspace/src/model_provider/routing/router.py:104:41 - error: Argument of type "str | None" cannot be assigned to parameter "fallback_model_name" of type "str" in function "build_model_response"
+    Type "str | None" is not assignable to type "str"
+      "None" is not assignable to "str" (reportArgumentType)
+  /workspace/src/model_provider/routing/router.py:105:33 - error: Argument of type "str | None" cannot be assigned to parameter "provider_id" of type "str" in function "build_model_response"
+    Type "str | None" is not assignable to type "str"
+      "None" is not assignable to "str" (reportArgumentType)
+  /workspace/src/model_provider/routing/router.py:109:32 - error: Argument of type "str | None" cannot be assigned to parameter "model_name" of type "str" in function "__init__"
+    Type "str | None" is not assignable to type "str"
+      "None" is not assignable to "str" (reportArgumentType)
+  /workspace/src/model_provider/routing/router.py:113:33 - error: "provider_id" is possibly unbound (reportPossiblyUnboundVariable)
+  /workspace/src/model_provider/routing/router.py:118:38 - warning: Type of "format_exc" is Any (reportAny)
+  /workspace/src/model_provider/routing/router.py:138:28 - warning: Type of "parsed" is Any (reportAny)
+  /workspace/src/model_provider/routing/router.py:147:33 - error: Argument of type "list[str] | str | None" cannot be assigned to parameter "invalid_output" of type "str" in function "_build_repair_message"
+    Type "list[str] | str | None" is not assignable to type "str"
+      "list[str]" is not assignable to "str" (reportArgumentType)
+  /workspace/src/model_provider/routing/router.py:149:28 - error: Argument of type "str | None" cannot be assigned to parameter "error_text" of type "str" in function "_build_repair_message"
+    Type "str | None" is not assignable to type "str"
+      "None" is not assignable to "str" (reportArgumentType)
+  /workspace/src/model_provider/routing/router.py:150:31 - error: Argument of type "str | None" cannot be assigned to parameter "finish_reason" of type "str" in function "_build_repair_message"
+    Type "str | None" is not assignable to type "str"
+      "None" is not assignable to "str" (reportArgumentType)
+/workspace/src/model_provider/validators/output_parser.py
+  /workspace/src/model_provider/validators/output_parser.py:1:25 - warning: This type is deprecated as of Python 3.9; use "collections.abc.Mapping" instead (reportDeprecated)
+  /workspace/src/model_provider/validators/output_parser.py:1:34 - warning: This type is deprecated as of Python 3.9; use "type" instead (reportDeprecated)
+  /workspace/src/model_provider/validators/output_parser.py:22:35 - warning: This type is deprecated as of Python 3.9; use "type" instead (reportDeprecated)
+  /workspace/src/model_provider/validators/output_parser.py:30:12 - warning: Unnecessary isinstance call; "str" is always an instance of "str" (reportUnnecessaryIsInstance)
+  /workspace/src/model_provider/validators/output_parser.py:31:9 - warning: Code is unreachable (reportUnreachable)
+  /workspace/src/model_provider/validators/output_parser.py:35:9 - warning: Type of "parsed" is Any (reportAny)
+  /workspace/src/model_provider/validators/output_parser.py:57:39 - error: "strip" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /workspace/src/model_provider/validators/output_parser.py:75:29 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/validators/output_parser.py:88:56 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/validators/output_parser.py:93:9 - warning: Type of "parsed" is Any (reportAny)
+  /workspace/src/model_provider/validators/output_parser.py:98:17 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "map" in function "__init__"
+    Argument type is "Mapping[Unknown, object]" (reportUnknownArgumentType)
+  /workspace/src/model_provider/validators/output_parser.py:102:24 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/validators/output_parser.py:103:23 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/validators/output_parser.py:105:12 - warning: Unnecessary isinstance call; "dict[str, Any]" is always an instance of "dict[Unknown, Unknown]" (reportUnnecessaryIsInstance)
+  /workspace/src/model_provider/validators/output_parser.py:106:9 - warning: Code is unreachable (reportUnreachable)
+  /workspace/src/model_provider/validators/output_parser.py:109:13 - warning: Type of "key" is unknown (reportUnknownVariableType)
+  /workspace/src/model_provider/validators/output_parser.py:114:13 - warning: Type of "key" is unknown (reportUnknownVariableType)
+  /workspace/src/model_provider/validators/output_parser.py:114:18 - warning: Type of "prop" is unknown (reportUnknownVariableType)
+  /workspace/src/model_provider/validators/output_parser.py:119:13 - warning: Type of "expected" is partially unknown
+    Type of "expected" is "Unknown | None" (reportUnknownVariableType)
+  /workspace/src/model_provider/validators/output_parser.py:119:24 - warning: Type of "get" is partially unknown
+    Type of "get" is "Overload[(key: Unknown, default: None = None, /) -> (Unknown | None), (key: Unknown, default: Unknown, /) -> Unknown, (key: Unknown, default: _T@get, /) -> (Unknown | _T@get)]" (reportUnknownMemberType)
+  /workspace/src/model_provider/validators/output_parser.py:127:24 - warning: Type of parameter "value" is Any (reportAny)
+  /workspace/src/model_provider/validators/output_parser.py:127:31 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/validators/output_parser.py:127:36 - warning: Type of parameter "expected_type" is Any (reportAny)
+  /workspace/src/model_provider/validators/output_parser.py:127:51 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/model_provider/validators/output_parser.py:129:56 - warning: Type of "item" is unknown (reportUnknownVariableType)
+/workspace/src/observability_hub/bootstrap.py
+  /workspace/src/observability_hub/bootstrap.py:36:28 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/bootstrap.py:36:41 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/observability_hub/cli/tailer.py
+  /workspace/src/observability_hub/cli/tailer.py:27:14 - warning: Type annotation for attribute `log_file` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/observability_hub/cli/tailer.py:48:17 - warning: Result of call expression is of type "int" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/observability_hub/cli/tailer.py:64:25 - warning: Type of "record" is Any (reportAny)
+  /workspace/src/observability_hub/cli/tailer.py:65:55 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/observability_hub/cli/tailer.py:66:29 - warning: Type of "_print_record" is partially unknown
+    Type of "_print_record" is "(record: dict[Unknown, Unknown]) -> None" (reportUnknownMemberType)
+  /workspace/src/observability_hub/cli/tailer.py:66:48 - warning: Argument type is Any
+    Argument corresponds to parameter "record" in function "_print_record" (reportAny)
+  /workspace/src/observability_hub/cli/tailer.py:75:29 - warning: Type of parameter "record" is partially unknown
+    Parameter type is "dict[Unknown, Unknown]" (reportUnknownParameterType)
+  /workspace/src/observability_hub/cli/tailer.py:75:37 - error: Expected type arguments for generic class "dict" (reportMissingTypeArgument)
+  /workspace/src/observability_hub/cli/tailer.py:77:71 - warning: Type of "get" is partially unknown
+    Type of "get" is "Overload[(key: Unknown, default: None = None, /) -> (Unknown | None), (key: Unknown, default: Unknown, /) -> Unknown, (key: Unknown, default: _T@get, /) -> (Unknown | _T@get)]" (reportUnknownMemberType)
+  /workspace/src/observability_hub/cli/tailer.py:77:71 - warning: Argument type is unknown
+    Argument corresponds to parameter "seconds" in function "localtime" (reportUnknownArgumentType)
+  /workspace/src/observability_hub/cli/tailer.py:78:9 - warning: Type of "level" is unknown (reportUnknownVariableType)
+  /workspace/src/observability_hub/cli/tailer.py:78:17 - warning: Type of "get" is partially unknown
+    Type of "get" is "Overload[(key: Unknown, default: None = None, /) -> (Unknown | None), (key: Unknown, default: Unknown, /) -> Unknown, (key: Unknown, default: _T@get, /) -> (Unknown | _T@get)]" (reportUnknownMemberType)
+  /workspace/src/observability_hub/cli/tailer.py:79:9 - warning: Type of "trace_id" is unknown (reportUnknownVariableType)
+  /workspace/src/observability_hub/cli/tailer.py:79:20 - warning: Type of "get" is partially unknown
+    Type of "get" is "Overload[(key: Unknown, default: None = None, /) -> (Unknown | None), (key: Unknown, default: Unknown, /) -> Unknown, (key: Unknown, default: _T@get, /) -> (Unknown | _T@get)]" (reportUnknownMemberType)
+  /workspace/src/observability_hub/cli/tailer.py:80:30 - warning: Type of "get" is partially unknown
+    Type of "get" is "Overload[(key: Unknown, default: None = None, /) -> (Unknown | None), (key: Unknown, default: Unknown, /) -> Unknown, (key: Unknown, default: _T@get, /) -> (Unknown | _T@get)]" (reportUnknownMemberType)
+  /workspace/src/observability_hub/cli/tailer.py:87:5 - warning: Result of call expression is of type "Action" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/observability_hub/cli/tailer.py:88:5 - warning: Result of call expression is of type "Action" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/observability_hub/cli/tailer.py:91:36 - warning: Type of "log_file" is Any (reportAny)
+  /workspace/src/observability_hub/cli/tailer.py:91:36 - warning: Argument type is Any
+    Argument corresponds to parameter "log_file" in function "__init__" (reportAny)
+  /workspace/src/observability_hub/cli/tailer.py:92:32 - warning: Type of "log_file" is Any (reportAny)
+  /workspace/src/observability_hub/cli/tailer.py:92:65 - warning: Type of "trace_id" is Any (reportAny)
+  /workspace/src/observability_hub/cli/tailer.py:93:33 - warning: Type of "trace_id" is Any (reportAny)
+  /workspace/src/observability_hub/cli/tailer.py:93:33 - warning: Argument type is Any
+    Argument corresponds to parameter "target_trace_id" in function "tail" (reportAny)
+/workspace/src/observability_hub/coloring/request_coloring.py
+  /workspace/src/observability_hub/coloring/request_coloring.py:5:39 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/coloring/request_coloring.py:44:5 - warning: Type of "debug_value" is Any (reportAny)
+  /workspace/src/observability_hub/coloring/request_coloring.py:47:5 - warning: Type of "trace_id" is Any (reportAny)
+  /workspace/src/observability_hub/coloring/request_coloring.py:48:5 - warning: Type of "session_id" is Any (reportAny)
+  /workspace/src/observability_hub/coloring/request_coloring.py:72:5 - warning: Return type is Any (reportAny)
+  /workspace/src/observability_hub/coloring/request_coloring.py:72:65 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/coloring/request_coloring.py:76:20 - warning: Return type is Any (reportAny)
+  /workspace/src/observability_hub/coloring/request_coloring.py:80:16 - warning: Type of parameter "value" is Any (reportAny)
+  /workspace/src/observability_hub/coloring/request_coloring.py:80:23 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/observability_hub/exports.py
+  /workspace/src/observability_hub/exports.py:16:41 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/exports.py:16:54 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/observability_hub/jsonl/storage.py
+  /workspace/src/observability_hub/jsonl/storage.py:37:14 - warning: Type annotation for attribute `log_dir` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/observability_hub/jsonl/storage.py:41:14 - warning: Type annotation for attribute `log_file` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/observability_hub/jsonl/storage.py:42:14 - warning: Type annotation for attribute `max_bytes` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/observability_hub/jsonl/storage.py:43:14 - warning: Type annotation for attribute `backup_count` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/observability_hub/jsonl/storage.py:44:14 - warning: Type annotation for attribute `_lock` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/observability_hub/jsonl/storage.py:75:21 - warning: Result of call expression is of type "int" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+/workspace/src/observability_hub/record/recording.py
+  /workspace/src/observability_hub/record/recording.py:30:24 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/record/recording.py:37:24 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/record/recording.py:37:37 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/record/recording.py:62:40 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/record/recording.py:62:53 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/record/recording.py:62:77 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/record/recording.py:65:33 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "data" in function "_flatten_mapping"
+    Argument type is "Mapping[str, Any] | Mapping[Unknown, Unknown]" (reportUnknownArgumentType)
+  /workspace/src/observability_hub/record/recording.py:74:29 - warning: Type of parameter "data" is Any (reportAny)
+  /workspace/src/observability_hub/record/recording.py:74:35 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/record/recording.py:78:39 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "getattr" (reportAny)
+  /workspace/src/observability_hub/record/recording.py:79:33 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "getattr" (reportAny)
+  /workspace/src/observability_hub/record/recording.py:83:27 - warning: Type of parameter "data" is Any (reportAny)
+  /workspace/src/observability_hub/record/recording.py:83:33 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/record/recording.py:83:51 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/record/recording.py:85:26 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "getattr" (reportAny)
+  /workspace/src/observability_hub/record/recording.py:89:31 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "getattr" (reportAny)
+  /workspace/src/observability_hub/record/recording.py:96:17 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "map" in function "__init__"
+    Argument type is "Mapping[Unknown, object]" (reportUnknownArgumentType)
+  /workspace/src/observability_hub/record/recording.py:100:24 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/record/recording.py:102:16 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/record/recording.py:109:26 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/observability_hub/record/recording.py:110:14 - warning: Type of "value" is Any (reportAny)
+  /workspace/src/observability_hub/record/recording.py:116:47 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "data" in function "_flatten_mapping"
+    Argument type is "Mapping[Unknown, object]" (reportUnknownArgumentType)
+  /workspace/src/observability_hub/record/recording.py:117:27 - warning: Argument type is Any
+    Argument corresponds to parameter "obj" in function "is_dataclass" (reportAny)
+  /workspace/src/observability_hub/record/recording.py:119:54 - error: Argument of type "DataclassInstance | type[DataclassInstance]" cannot be assigned to parameter "obj" of type "DataclassInstance" in function "asdict"
+    Type "DataclassInstance | type[DataclassInstance]" is not assignable to type "DataclassInstance"
+      "__dataclass_fields__" is defined as a ClassVar in protocol (reportArgumentType)
+/workspace/src/observability_hub/trace/id_generator.py
+  /workspace/src/observability_hub/trace/id_generator.py:14:14 - warning: Type annotation for attribute `_prefix` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/observability_hub/trace/id_generator.py:15:14 - warning: Type annotation for attribute `_lock` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/observability_hub/trace/id_generator.py:16:14 - warning: Type annotation for attribute `_last_timestamp_ms` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/observability_hub/trace/id_generator.py:17:14 - warning: Type annotation for attribute `_sequence` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+/workspace/src/orchestration_engine/__init__.py
+  /workspace/src/orchestration_engine/__init__.py:17:5 - warning: "CapabilityDescription" is not exported from module ".contracts"
+    Import from "src.domain.capabilities" instead (reportPrivateLocalImportUsage)
+  /workspace/src/orchestration_engine/__init__.py:19:5 - warning: "CapabilityRequest" is not exported from module ".contracts"
+    Import from "src.domain.capabilities" instead (reportPrivateLocalImportUsage)
+  /workspace/src/orchestration_engine/__init__.py:20:5 - warning: "CapabilityResult" is not exported from module ".contracts"
+    Import from "src.domain.capabilities" instead (reportPrivateLocalImportUsage)
+/workspace/src/orchestration_engine/bootstrap.py
+  /workspace/src/orchestration_engine/bootstrap.py:14:5 - warning: "observability" is not accessed (reportUnusedParameter)
+/workspace/src/orchestration_engine/context/runtime_context.py
+  /workspace/src/orchestration_engine/context/runtime_context.py:23:23 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/orchestration_engine/context/runtime_context.py:24:22 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/orchestration_engine/context/runtime_context.py:26:9 - warning: Return type is Any (reportAny)
+  /workspace/src/orchestration_engine/context/runtime_context.py:26:35 - warning: Type of parameter "default" is Any (reportAny)
+  /workspace/src/orchestration_engine/context/runtime_context.py:26:44 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/orchestration_engine/context/runtime_context.py:26:59 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/orchestration_engine/context/runtime_context.py:28:16 - warning: Return type is Any (reportAny)
+  /workspace/src/orchestration_engine/context/runtime_context.py:28:36 - warning: Argument type is Any
+    Argument corresponds to parameter "default" in function "get" (reportAny)
+  /workspace/src/orchestration_engine/context/runtime_context.py:30:35 - warning: Type of parameter "value" is Any (reportAny)
+  /workspace/src/orchestration_engine/context/runtime_context.py:30:42 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/orchestration_engine/context/runtime_context.py:34:37 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/orchestration_engine/context/state_context_manager.py
+  /workspace/src/orchestration_engine/context/state_context_manager.py:3:25 - warning: This type is deprecated as of Python 3.9; use "collections.abc.Mapping" instead (reportDeprecated)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:15:14 - warning: Type annotation for attribute `_storage_memory` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:28:9 - warning: Type of "hot_memory_items" is unknown (reportUnknownVariableType)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:28:99 - error: Expected 1 more positional argument (reportCallIssue)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:31:9 - warning: Type of "memory_dict" is partially unknown
+    Type of "memory_dict" is "dict[str, list[dict[str, Unknown]]]" (reportUnknownVariableType)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:34:32 - warning: Type of "role" is unknown (reportUnknownMemberType)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:34:54 - warning: Type of "content" is unknown (reportUnknownMemberType)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:35:39 - warning: Type of "tool_calls" is unknown (reportUnknownMemberType)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:35:59 - warning: Type of "tool_calls" is unknown (reportUnknownMemberType)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:37:21 - warning: Type of "item" is unknown (reportUnknownVariableType)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:46:20 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "memory" in function "__init__"
+    Argument type is "dict[str, list[dict[str, Unknown]]]" (reportUnknownArgumentType)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:51:73 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:56:18 - warning: Type of "value" is Any (reportAny)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:67:9 - warning: Type of "state_to_persist" is Any (reportAny)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:67:42 - warning: Argument type is Any
+    Argument corresponds to parameter "x" in function "deepcopy" (reportAny)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:70:13 - warning: Result of call expression is of type "dict[str, Any]" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/orchestration_engine/context/state_context_manager.py:73:17 - warning: Argument type is Any
+    Argument corresponds to parameter "__p2" (reportAny)
+/workspace/src/orchestration_engine/contracts.py
+  /workspace/src/orchestration_engine/contracts.py:44:14 - warning: Type annotation for attribute `_capabilities` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+/workspace/src/orchestration_engine/exports.py
+  /workspace/src/orchestration_engine/exports.py:6:24 - warning: "CapabilityDescription" is not exported from module ".contracts"
+    Import from "src.domain.capabilities" instead (reportPrivateLocalImportUsage)
+  /workspace/src/orchestration_engine/exports.py:6:62 - warning: "CapabilityRequest" is not exported from module ".contracts"
+    Import from "src.domain.capabilities" instead (reportPrivateLocalImportUsage)
+  /workspace/src/orchestration_engine/exports.py:6:81 - warning: "CapabilityResult" is not exported from module ".contracts"
+    Import from "src.domain.capabilities" instead (reportPrivateLocalImportUsage)
+  /workspace/src/orchestration_engine/exports.py:26:22 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/orchestration_engine/registry/agent_registry.py
+  /workspace/src/orchestration_engine/registry/agent_registry.py:38:25 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/orchestration_engine/registry/agent_registry.py:41:23 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/orchestration_engine/runtime/langgraph_runtime.py
+  /workspace/src/orchestration_engine/runtime/langgraph_runtime.py:17:21 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/qfaos/__init__.py
+  /workspace/src/qfaos/__init__.py:4:41 - error: "ToolSecurityPrimitive" is unknown import symbol (reportAttributeAccessIssue)
+  /workspace/src/qfaos/__init__.py:4:41 - warning: Type of "ToolSecurityPrimitive" is unknown (reportUnknownVariableType)
+  /workspace/src/qfaos/__init__.py:6:63 - warning: Import "QFASessionContext" is not accessed (reportUnusedImport)
+  /workspace/src/qfaos/__init__.py:31:5 - warning: "QASessionContext" is specified in __all__ but is not present in module (reportUnsupportedDunderAll)
+/workspace/src/qfaos/builtins.py
+  /workspace/src/qfaos/builtins.py:2:47 - error: "ToolSecurityPrimitive" is unknown import symbol (reportAttributeAccessIssue)
+  /workspace/src/qfaos/builtins.py:2:47 - warning: Type of "ToolSecurityPrimitive" is unknown (reportUnknownVariableType)
+/workspace/src/qfaos/config.py
+  /workspace/src/qfaos/config.py:1:31 - warning: This type is deprecated as of Python 3.10; use "|" instead (reportDeprecated)
+  /workspace/src/qfaos/config.py:90:5 - warning: Type annotation for attribute `BuiltinTools` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/config.py:94:9 - warning: Type annotation for attribute `Feishu` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/config.py:97:5 - warning: Type annotation for attribute `ChannelConfigUnion` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/config.py:97:26 - warning: This type is deprecated as of Python 3.10; use "|" instead (reportDeprecated)
+  /workspace/src/qfaos/config.py:101:9 - warning: Type annotation for attribute `MiniMax` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/config.py:104:5 - warning: Type annotation for attribute `ModelConfigUnion` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/config.py:104:24 - warning: This type is deprecated as of Python 3.10; use "|" instead (reportDeprecated)
+  /workspace/src/qfaos/config.py:107:5 - warning: Type annotation for attribute `Memory` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/config.py:111:9 - warning: Type annotation for attribute `Log` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+/workspace/src/qfaos/enums.py
+  /workspace/src/qfaos/enums.py:49:9 - warning: Type annotation for attribute `Type` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/enums.py:51:9 - warning: Type annotation for attribute `Feishu` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/enums.py:54:13 - warning: Type annotation for attribute `Mode` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/enums.py:61:9 - warning: Type annotation for attribute `Feishu` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/enums.py:64:9 - warning: Type annotation for attribute `Mode` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/enums.py:66:15 - error: Type "type[ChannelType]" is not assignable to declared type "type[Channel]"
+    "type[ChannelType]" is not assignable to "type[Channel]"
+    Type "type[ChannelType]" is not assignable to type "type[Channel]" (reportAssignmentType)
+  /workspace/src/qfaos/enums.py:74:15 - error: Type "type[ChannelType]" is not assignable to declared type "type[Channel]"
+    "type[ChannelType]" is not assignable to "type[Channel]"
+    Type "type[ChannelType]" is not assignable to type "type[Channel]" (reportAssignmentType)
+  /workspace/src/qfaos/enums.py:75:5 - warning: Type annotation for attribute `Event` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/enums.py:76:5 - warning: Type annotation for attribute `Model` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/enums.py:79:9 - warning: Type annotation for attribute `Backend` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/enums.py:82:9 - warning: Type annotation for attribute `Policy` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/enums.py:86:9 - warning: Type annotation for attribute `Mode` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+/workspace/src/qfaos/errors.py
+  /workspace/src/qfaos/errors.py:31:14 - warning: Type annotation for attribute `ticket_id` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+/workspace/src/qfaos/internal/primitives.py
+  /workspace/src/qfaos/internal/primitives.py:4:36 - warning: This type is deprecated as of Python 3.9; use "tuple" instead (reportDeprecated)
+  /workspace/src/qfaos/internal/primitives.py:4:43 - warning: This type is deprecated as of Python 3.10; use "|" instead (reportDeprecated)
+  /workspace/src/qfaos/internal/primitives.py:40:23 - warning: Type of parameter "value" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:40:30 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:54:24 - warning: Type of parameter "policy_result" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:54:39 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:54:47 - warning: This type is deprecated as of Python 3.10; use "|" instead (reportDeprecated)
+  /workspace/src/qfaos/internal/primitives.py:54:69 - warning: This type is deprecated as of Python 3.9; use "tuple" instead (reportDeprecated)
+  /workspace/src/qfaos/internal/primitives.py:54:91 - warning: This type is deprecated as of Python 3.10; use "|" instead (reportDeprecated)
+  /workspace/src/qfaos/internal/primitives.py:59:16 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "obj" in function "len"
+    Argument type is "tuple[Unknown, ...]" (reportUnknownArgumentType)
+  /workspace/src/qfaos/internal/primitives.py:62:9 - warning: Type of "message" is unknown (reportUnknownVariableType)
+  /workspace/src/qfaos/internal/primitives.py:63:16 - warning: Return type, "tuple[PolicyDecision, Unknown]", is partially unknown (reportUnknownVariableType)
+  /workspace/src/qfaos/internal/primitives.py:69:37 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:70:37 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:71:20 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:77:9 - warning: Return type is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:77:25 - warning: Type of parameter "args" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:77:31 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:77:38 - warning: Type of parameter "kwargs" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:77:46 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:77:54 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:79:20 - warning: Return type is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:82:20 - warning: Return type is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:85:19 - warning: Function declaration "mapped_policy" is obscured by a declaration of the same name (reportRedeclaration)
+  /workspace/src/qfaos/internal/primitives.py:85:34 - warning: Type of parameter "args" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:85:40 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:85:47 - warning: Type of parameter "kwargs" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:85:55 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:86:13 - warning: Type of "raw" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:87:36 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "isawaitable" (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:88:17 - warning: Type of "raw" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:91:28 - warning: Type of parameter "args" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:91:34 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:91:41 - warning: Type of parameter "kwargs" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:91:49 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:92:13 - warning: Type of "raw" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:98:19 - warning: Return type is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:98:19 - warning: Function declaration "wrapped" is obscured by a declaration of the same name (reportRedeclaration)
+  /workspace/src/qfaos/internal/primitives.py:98:28 - warning: Type of parameter "args" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:98:34 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:98:41 - warning: Type of parameter "kwargs" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:98:49 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:98:57 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:100:24 - warning: Return type is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:106:13 - warning: Return type is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:106:22 - warning: Type of parameter "args" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:106:28 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:106:35 - warning: Type of parameter "kwargs" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:106:43 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:106:51 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:108:24 - warning: Return type is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:131:14 - warning: Type annotation for attribute `_registry` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/internal/primitives.py:133:55 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:141:13 - warning: Return type is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:141:23 - warning: Type of parameter "args" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:141:29 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:141:36 - warning: Type of parameter "kwargs" is Any (reportAny)
+  /workspace/src/qfaos/internal/primitives.py:141:44 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/primitives.py:141:52 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/qfaos/internal/tools.py
+  /workspace/src/qfaos/internal/tools.py:7:37 - warning: Import "CapabilityDescription" is not accessed (reportUnusedImport)
+  /workspace/src/qfaos/internal/tools.py:23:39 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/internal/tools.py:25:14 - warning: Type annotation for attribute `_func` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/internal/tools.py:27:14 - warning: Type annotation for attribute `capability` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/internal/tools.py:36:26 - warning: Type of "validate_payload" is partially unknown
+    Type of "validate_payload" is "(model: Unknown, payload: dict[str, Any]) -> BaseModel" (reportUnknownMemberType)
+  /workspace/src/qfaos/internal/tools.py:42:13 - warning: Type of "result" is Any (reportAny)
+  /workspace/src/qfaos/internal/tools.py:43:36 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "isawaitable" (reportAny)
+  /workspace/src/qfaos/internal/tools.py:44:17 - warning: Type of "result" is Any (reportAny)
+  /workspace/src/qfaos/internal/tools.py:47:22 - warning: Type of "serialize_instance" is partially unknown
+    Type of "serialize_instance" is "(model: Unknown, instance: Any) -> dict[str, Any]" (reportUnknownMemberType)
+/workspace/src/qfaos/qfaos.py
+  /workspace/src/qfaos/qfaos.py:12:54 - warning: Import "SchemaTranslator" is not accessed (reportUnusedImport)
+  /workspace/src/qfaos/qfaos.py:56:14 - warning: Type annotation for attribute `_channel_registry` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/qfaos.py:57:14 - warning: Type annotation for attribute `_model_registry` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/qfaos.py:58:14 - warning: Type annotation for attribute `_primitive_registry` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/qfaos.py:59:14 - warning: Type annotation for attribute `_tool_registry` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/qfaos.py:60:14 - warning: Type annotation for attribute `_memory_registry` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/qfaos.py:61:14 - warning: Type annotation for attribute `_observability_registry` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/qfaos.py:62:14 - warning: Type annotation for attribute `_primitive_accessor` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/qfaos.py:63:74 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:93:12 - warning: Condition will always evaluate to True since the types "Channel" and "Literal['feishu']" have no overlap (reportUnnecessaryComparison)
+  /workspace/src/qfaos/qfaos.py:97:12 - warning: Condition will always evaluate to False since the types "Channel" and "Literal['feishu']" have no overlap (reportUnnecessaryComparison)
+  /workspace/src/qfaos/qfaos.py:97:54 - warning: Unnecessary isinstance call; "ChannelConfigUnion" is always an instance of "Feishu" (reportUnnecessaryIsInstance)
+  /workspace/src/qfaos/qfaos.py:98:13 - warning: Code is unreachable (reportUnreachable)
+  /workspace/src/qfaos/qfaos.py:127:13 - warning: Code is unreachable (reportUnreachable)
+  /workspace/src/qfaos/qfaos.py:130:51 - warning: Unnecessary isinstance call; "ModelConfigUnion" is always an instance of "MiniMax" (reportUnnecessaryIsInstance)
+  /workspace/src/qfaos/qfaos.py:131:13 - warning: Code is unreachable (reportUnreachable)
+  /workspace/src/qfaos/qfaos.py:142:41 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:143:41 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:169:34 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:169:55 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:181:43 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:181:66 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:194:9 - warning: Type of parameter "instance" is Any (reportAny)
+  /workspace/src/qfaos/qfaos.py:194:29 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:208:33 - error: Cannot assign to attribute "_instances" for class "ToolRegistry"
+    Attribute "_instances" is unknown (reportAttributeAccessIssue)
+  /workspace/src/qfaos/qfaos.py:209:9 - warning: Type of "_instances" is partially unknown
+    Type of "_instances" is "Unknown | list[Unknown]" (reportUnknownMemberType)
+  /workspace/src/qfaos/qfaos.py:209:9 - warning: Type of "append" is partially unknown
+    Type of "append" is "Unknown | ((object: Unknown, /) -> None)" (reportUnknownMemberType)
+  /workspace/src/qfaos/qfaos.py:209:9 - warning: Result of call expression is of type "Unknown | None" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/qfaos/qfaos.py:209:29 - error: Cannot access attribute "_instances" for class "ToolRegistry"
+    Attribute "_instances" is unknown (reportAttributeAccessIssue)
+  /workspace/src/qfaos/qfaos.py:209:47 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "append" (reportAny)
+  /workspace/src/qfaos/qfaos.py:214:39 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:232:9 - warning: Type of "desc" is Any (reportAny)
+  /workspace/src/qfaos/qfaos.py:233:9 - warning: Type of "tool_id" is Any (reportAny)
+  /workspace/src/qfaos/qfaos.py:233:19 - warning: Type of "capability_id" is Any (reportAny)
+  /workspace/src/qfaos/qfaos.py:235:38 - warning: Argument type is Any
+    Argument corresponds to parameter "tool_id" in function "register" (reportAny)
+  /workspace/src/qfaos/qfaos.py:235:62 - warning: Argument type is Any
+    Argument corresponds to parameter "tool_id" in function "__init__" (reportAny)
+  /workspace/src/qfaos/qfaos.py:267:55 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:270:52 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:339:76 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:348:49 - error: Argument of type "ChannelType" cannot be assigned to parameter "channel_type" of type "Channel" in function "get"
+    "ChannelType" is not assignable to "Channel" (reportArgumentType)
+  /workspace/src/qfaos/qfaos.py:351:16 - warning: Unnecessary isinstance call; "ChannelConfigUnion" is always an instance of "Feishu" (reportUnnecessaryIsInstance)
+  /workspace/src/qfaos/qfaos.py:365:16 - warning: Unnecessary isinstance call; "ModelConfigUnion" is always an instance of "MiniMax" (reportUnnecessaryIsInstance)
+  /workspace/src/qfaos/qfaos.py:374:9 - warning: Result of call expression is of type "NormalizedRecord" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/qfaos/qfaos.py:378:18 - error: Cannot instantiate abstract class "ModelRouter"
+    "ModelProviderClient.provider_id" is not implemented (reportAbstractUsage)
+  /workspace/src/qfaos/qfaos.py:380:28 - error: Argument of type "dict[str, InMemoryModelProviderClient | MiniMaxModelProviderClient]" cannot be assigned to parameter "clients" of type "dict[str, RawModelProviderClient]" in function "__init__"
+    "InMemoryModelProviderClient" is incompatible with protocol "RawModelProviderClient"
+      "completion" is an incompatible type
+        Type "(request: ModelRequest) -> ModelResponse" is not assignable to type "(payload: Mapping[str, Any]) -> LiteLLMRawResponse"
+          Parameter name mismatch: "payload" versus "request"
+          Parameter 1: type "Mapping[str, Any]" is incompatible with type "ModelRequest"
+            "Mapping[str, Any]" is not assignable to "ModelRequest" (reportArgumentType)
+  /workspace/src/qfaos/qfaos.py:393:9 - warning: Type of "register_instance_capabilities" is unknown (reportUnknownMemberType)
+  /workspace/src/qfaos/qfaos.py:393:13 - error: Cannot access attribute "register_instance_capabilities" for class "CapabilityHub"
+    Attribute "register_instance_capabilities" is unknown (reportAttributeAccessIssue)
+  /workspace/src/qfaos/qfaos.py:397:30 - error: Argument of type "CapabilityHub" cannot be assigned to parameter "hub" of type "RegisteredCapabilityHub" in function "register_pytools"
+    "CapabilityHub" is not assignable to "RegisteredCapabilityHub" (reportArgumentType)
+  /workspace/src/qfaos/qfaos.py:405:26 - error: Argument of type "CapabilityHub" cannot be assigned to parameter "hub" of type "RegisteredCapabilityHub" in function "register_pytools"
+    "CapabilityHub" is not assignable to "RegisteredCapabilityHub" (reportArgumentType)
+  /workspace/src/qfaos/qfaos.py:405:31 - error: Argument of type "tuple[Any | None, ...]" cannot be assigned to parameter "pytools" of type "Iterable[PyTool]" in function "register_pytools"
+    "tuple[Any | None, ...]" is not assignable to "Iterable[PyTool]"
+      Type parameter "_T_co@Iterable" is covariant, but "Any | None" is not a subtype of "PyTool"
+        Type "Any | None" is not assignable to type "PyTool"
+          "None" is incompatible with protocol "PyTool"
+            "capability" is not present
+            "invoke" is not present (reportArgumentType)
+  /workspace/src/qfaos/qfaos.py:409:17 - warning: Type of "instance" is unknown (reportUnknownVariableType)
+  /workspace/src/qfaos/qfaos.py:409:29 - warning: Type of "_instances" is unknown (reportUnknownMemberType)
+  /workspace/src/qfaos/qfaos.py:409:49 - error: Cannot access attribute "_instances" for class "ToolRegistry"
+    Attribute "_instances" is unknown (reportAttributeAccessIssue)
+  /workspace/src/qfaos/qfaos.py:410:17 - warning: Type of "register_instance_capabilities" is unknown (reportUnknownMemberType)
+  /workspace/src/qfaos/qfaos.py:410:21 - error: Cannot access attribute "register_instance_capabilities" for class "CapabilityHub"
+    Attribute "register_instance_capabilities" is unknown (reportAttributeAccessIssue)
+  /workspace/src/qfaos/qfaos.py:417:12 - warning: Type of "context_manager" is Any (reportAny)
+  /workspace/src/qfaos/qfaos.py:435:22 - error: Expected type arguments for generic class "Queue" (reportMissingTypeArgument)
+  /workspace/src/qfaos/qfaos.py:435:42 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:437:41 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:437:47 - warning: Type of parameter "q" is partially unknown
+    Parameter type is "Queue[Unknown]" (reportUnknownParameterType)
+  /workspace/src/qfaos/qfaos.py:437:50 - error: Expected type arguments for generic class "Queue" (reportMissingTypeArgument)
+  /workspace/src/qfaos/qfaos.py:437:84 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:438:46 - warning: Argument type is Any
+    Argument corresponds to parameter "app_id" in function "__init__" (reportAny)
+  /workspace/src/qfaos/qfaos.py:438:46 - warning: Argument type is Any
+    Argument corresponds to parameter "app_secret" in function "__init__" (reportAny)
+  /workspace/src/qfaos/qfaos.py:438:46 - warning: Argument type is Any
+    Argument corresponds to parameter "mode" in function "__init__" (reportAny)
+  /workspace/src/qfaos/qfaos.py:438:46 - warning: Argument type is Any
+    Argument corresponds to parameter "verify_token" in function "__init__" (reportAny)
+  /workspace/src/qfaos/qfaos.py:438:46 - warning: Argument type is Any
+    Argument corresponds to parameter "encrypt_key" in function "__init__" (reportAny)
+  /workspace/src/qfaos/qfaos.py:444:31 - warning: Argument type is Any
+    Argument corresponds to parameter "jsonl_log_dir" in function "initialize" (reportAny)
+  /workspace/src/qfaos/qfaos.py:445:33 - warning: Argument type is Any
+    Argument corresponds to parameter "jsonl_max_bytes" in function "initialize" (reportAny)
+  /workspace/src/qfaos/qfaos.py:446:36 - warning: Argument type is Any
+    Argument corresponds to parameter "jsonl_backup_count" in function "initialize" (reportAny)
+  /workspace/src/qfaos/qfaos.py:449:32 - warning: Type of parameter "event" is Any (reportAny)
+  /workspace/src/qfaos/qfaos.py:449:39 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/qfaos.py:450:17 - warning: Type of "put" is partially unknown
+    Type of "put" is "(obj: Unknown, block: bool = True, timeout: float | None = None) -> None" (reportUnknownMemberType)
+  /workspace/src/qfaos/qfaos.py:450:23 - warning: Argument type is Any
+    Argument corresponds to parameter "obj" in function "put" (reportAny)
+  /workspace/src/qfaos/qfaos.py:455:20 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "target" in function "__init__"
+    Argument type is "(settings: dict[str, Any], q: Queue[Unknown], log_cfg_dict: dict[str, Any]) -> None" (reportUnknownArgumentType)
+  /workspace/src/qfaos/qfaos.py:456:18 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "args" in function "__init__"
+    Argument type is "tuple[dict[str, Any], Queue[Unknown], dict[str, Any]]" (reportUnknownArgumentType)
+  /workspace/src/qfaos/qfaos.py:463:17 - warning: Type of "event" is unknown (reportUnknownVariableType)
+  /workspace/src/qfaos/qfaos.py:465:38 - warning: Argument type is unknown
+    Argument corresponds to parameter "o" in function "getattr" (reportUnknownArgumentType)
+  /workspace/src/qfaos/qfaos.py:465:77 - warning: Argument type is unknown
+    Argument corresponds to parameter "o" in function "getattr" (reportUnknownArgumentType)
+  /workspace/src/qfaos/qfaos.py:466:17 - warning: Type of "ctx" is Any (reportAny)
+  /workspace/src/qfaos/qfaos.py:466:29 - warning: Type of "context_manager" is Any (reportAny)
+  /workspace/src/qfaos/qfaos.py:466:29 - warning: Type of "initialize_context" is Any (reportAny)
+  /workspace/src/qfaos/qfaos.py:467:54 - warning: Argument type is unknown
+    Argument corresponds to parameter "event" in function "execute" (reportUnknownArgumentType)
+  /workspace/src/qfaos/qfaos.py:467:61 - warning: Argument type is Any
+    Argument corresponds to parameter "ctx" in function "execute" (reportAny)
+  /workspace/src/qfaos/qfaos.py:468:17 - warning: Type of "context_manager" is Any (reportAny)
+  /workspace/src/qfaos/qfaos.py:468:17 - warning: Type of "update_context" is Any (reportAny)
+  /workspace/src/qfaos/qfaos.py:469:23 - warning: Type of "context_manager" is Any (reportAny)
+  /workspace/src/qfaos/qfaos.py:469:23 - warning: Type of "persist_context" is Any (reportAny)
+/workspace/src/qfaos/registry/channel_registry.py
+  /workspace/src/qfaos/registry/channel_registry.py:1:20 - warning: This type is deprecated as of Python 3.9; use "dict" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/channel_registry.py:1:26 - warning: This type is deprecated as of Python 3.9; use "list" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/channel_registry.py:17:25 - warning: This type is deprecated as of Python 3.9; use "dict" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/channel_registry.py:50:32 - warning: This type is deprecated as of Python 3.9; use "list" instead (reportDeprecated)
+/workspace/src/qfaos/registry/memory_registry.py
+  /workspace/src/qfaos/registry/memory_registry.py:1:31 - warning: This type is deprecated as of Python 3.10; use "| None" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/memory_registry.py:17:23 - warning: This type is deprecated as of Python 3.10; use "| None" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/memory_registry.py:32:22 - warning: This type is deprecated as of Python 3.10; use "| None" instead (reportDeprecated)
+/workspace/src/qfaos/registry/model_registry.py
+  /workspace/src/qfaos/registry/model_registry.py:1:20 - warning: This type is deprecated as of Python 3.9; use "dict" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/model_registry.py:1:26 - warning: This type is deprecated as of Python 3.9; use "list" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/model_registry.py:17:23 - warning: This type is deprecated as of Python 3.9; use "dict" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/model_registry.py:50:30 - warning: This type is deprecated as of Python 3.9; use "list" instead (reportDeprecated)
+/workspace/src/qfaos/registry/observability_registry.py
+  /workspace/src/qfaos/registry/observability_registry.py:1:31 - warning: This type is deprecated as of Python 3.10; use "| None" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/observability_registry.py:17:27 - warning: This type is deprecated as of Python 3.10; use "| None" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/observability_registry.py:32:26 - warning: This type is deprecated as of Python 3.10; use "| None" instead (reportDeprecated)
+/workspace/src/qfaos/registry/primitive_registry.py
+  /workspace/src/qfaos/registry/primitive_registry.py:1:41 - warning: This type is deprecated as of Python 3.9; use "dict" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/primitive_registry.py:1:47 - warning: This type is deprecated as of Python 3.9; use "tuple" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/primitive_registry.py:14:27 - warning: This type is deprecated as of Python 3.9; use "dict" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/primitive_registry.py:47:34 - warning: This type is deprecated as of Python 3.9; use "tuple" instead (reportDeprecated)
+/workspace/src/qfaos/registry/tool_registry.py
+  /workspace/src/qfaos/registry/tool_registry.py:1:31 - warning: This type is deprecated as of Python 3.9; use "dict" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/tool_registry.py:1:37 - warning: This type is deprecated as of Python 3.9; use "tuple" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/tool_registry.py:14:22 - warning: This type is deprecated as of Python 3.9; use "dict" instead (reportDeprecated)
+  /workspace/src/qfaos/registry/tool_registry.py:14:32 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/registry/tool_registry.py:20:9 - warning: Type of parameter "tool" is Any (reportAny)
+  /workspace/src/qfaos/registry/tool_registry.py:20:25 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/registry/tool_registry.py:35:10 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/registry/tool_registry.py:47:29 - warning: This type is deprecated as of Python 3.9; use "tuple" instead (reportDeprecated)
+/workspace/src/qfaos/runtime/context_facade.py
+  /workspace/src/qfaos/runtime/context_facade.py:42:14 - warning: Type annotation for attribute `_runtime_context` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/context_facade.py:43:14 - warning: Type annotation for attribute `_capability_hub` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/context_facade.py:44:14 - warning: Type annotation for attribute `_storage_memory` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/context_facade.py:45:14 - warning: Type annotation for attribute `_logic_id` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/context_facade.py:46:14 - warning: Type annotation for attribute `_event` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/context_facade.py:47:14 - warning: Type annotation for attribute `_channel_gateway` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/context_facade.py:48:14 - warning: Type annotation for attribute `_observability` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/context_facade.py:51:9 - warning: Method "state" is not marked as override but is overriding a method in class "QFASessionContext" (reportImplicitOverride)
+  /workspace/src/qfaos/runtime/context_facade.py:51:34 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/context_facade.py:54:15 - warning: Method "get_memory" is not marked as override but is overriding a method in class "QFASessionContext" (reportImplicitOverride)
+  /workspace/src/qfaos/runtime/context_facade.py:54:50 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/context_facade.py:55:9 - warning: Type of "history" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:56:32 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/context_facade.py:57:13 - warning: Type of "item" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:58:28 - warning: Argument type is Any
+    Argument corresponds to parameter "map" in function "__init__" (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:59:45 - warning: Argument type is Any
+    Argument corresponds to parameter "obj" in function "asdict" (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:59:55 - warning: Type of "call" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:63:15 - warning: Method "add_memory" is not marked as override but is overriding a method in class "QFASessionContext" (reportImplicitOverride)
+  /workspace/src/qfaos/runtime/context_facade.py:75:9 - warning: Result of call expression is of type "tuple[HotMemoryItem, ...]" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/qfaos/runtime/context_facade.py:81:9 - warning: Type of "dialogue" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:82:9 - warning: Type of "append" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:90:15 - warning: Method "model_ask" is not marked as override but is overriding a method in class "QFASessionContext" (reportImplicitOverride)
+  /workspace/src/qfaos/runtime/context_facade.py:126:15 - warning: Method "call_pytool" is not marked as override but is overriding a method in class "QFASessionContext" (reportImplicitOverride)
+  /workspace/src/qfaos/runtime/context_facade.py:128:30 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/context_facade.py:134:9 - warning: Type of "tool_args" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:137:9 - warning: Type of "tool_metadata" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:145:29 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "payload" in function "__init__"
+    Argument type is "dict[Unknown, Unknown]" (reportUnknownArgumentType)
+  /workspace/src/qfaos/runtime/context_facade.py:152:52 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "tool_args" in function "_to_tool_result"
+    Argument type is "dict[Unknown, Unknown]" (reportUnknownArgumentType)
+  /workspace/src/qfaos/runtime/context_facade.py:154:15 - warning: Method "send_message" is not marked as override but is overriding a method in class "QFASessionContext" (reportImplicitOverride)
+  /workspace/src/qfaos/runtime/context_facade.py:155:12 - warning: Condition will always evaluate to True since the types "Channel" and "Literal['feishu']" have no overlap (reportUnnecessaryComparison)
+  /workspace/src/qfaos/runtime/context_facade.py:159:9 - warning: Result of call expression is of type "dict[str, Any]" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/qfaos/runtime/context_facade.py:164:15 - warning: Method "send_feishu_card_message" is not marked as override but is overriding a method in class "QFASessionContext" (reportImplicitOverride)
+  /workspace/src/qfaos/runtime/context_facade.py:167:38 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/context_facade.py:172:9 - warning: Result of call expression is of type "dict[str, Any]" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/qfaos/runtime/context_facade.py:190:9 - warning: Method "record" is not marked as override but is overriding a method in class "QFASessionContext" (reportImplicitOverride)
+  /workspace/src/qfaos/runtime/context_facade.py:190:58 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/context_facade.py:193:9 - warning: Result of call expression is of type "NormalizedRecord" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/qfaos/runtime/context_facade.py:215:22 - warning: Type of "validate_payload" is partially unknown
+    Type of "validate_payload" is "(model: Unknown, payload: dict[str, Any]) -> BaseModel" (reportUnknownMemberType)
+  /workspace/src/qfaos/runtime/context_facade.py:218:9 - warning: Type of "output" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:252:30 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/context_facade.py:265:32 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:297:22 - warning: Type of "validate_payload" is partially unknown
+    Type of "validate_payload" is "(model: Unknown, payload: dict[str, Any]) -> BaseModel" (reportUnknownMemberType)
+  /workspace/src/qfaos/runtime/context_facade.py:300:9 - warning: Type of "raw_output" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:303:20 - warning: Argument type is Any
+    Argument corresponds to parameter "obj" in function "hasattr" (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:304:13 - warning: Type of "final_output" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:304:28 - warning: Type of "model_dump" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:305:22 - warning: Argument type is Any
+    Argument corresponds to parameter "obj" in function "hasattr" (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:306:33 - warning: Argument type is Any
+    Argument corresponds to parameter "map" in function "__init__" (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:320:9 - warning: Type of "history" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:323:22 - warning: Argument type is Any
+    Argument corresponds to parameter "role" in function "__init__" (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:324:25 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:324:25 - warning: Argument type is Any
+    Argument corresponds to parameter "content" in function "__init__" (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:325:28 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:325:28 - warning: Argument type is Any
+    Argument corresponds to parameter "tool_calls" in function "__init__" (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:327:17 - warning: Type of "item" is Any (reportAny)
+  /workspace/src/qfaos/runtime/context_facade.py:342:14 - warning: Type annotation for attribute `_session_ctx` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/context_facade.py:343:14 - warning: Type annotation for attribute `_capability_hub` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/context_facade.py:345:9 - warning: Method "get_session_ctx" is not marked as override but is overriding a method in class "QFAExecutionContext" (reportImplicitOverride)
+  /workspace/src/qfaos/runtime/context_facade.py:349:9 - warning: Method "get_all_tools" is not marked as override but is overriding a method in class "QFAExecutionContext" (reportImplicitOverride)
+  /workspace/src/qfaos/runtime/context_facade.py:349:47 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/context_facade.py:350:31 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/qfaos/runtime/contracts.py
+  /workspace/src/qfaos/runtime/contracts.py:19:26 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/contracts.py:36:21 - error: Argument of type "ChannelType" cannot be assigned to parameter "channel" of type "Channel" in function "__init__"
+    "ChannelType" is not assignable to "Channel" (reportArgumentType)
+  /workspace/src/qfaos/runtime/contracts.py:49:26 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/contracts.py:63:26 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/contracts.py:64:23 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/contracts.py:71:34 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/contracts.py:74:50 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/contracts.py:96:30 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/contracts.py:107:38 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/contracts.py:112:58 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/qfaos/runtime/contracts.py:122:47 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/qfaos/runtime/custom_orchestrator.py
+  /workspace/src/qfaos/runtime/custom_orchestrator.py:2:20 - warning: Import "Any" is not accessed (reportUnusedImport)
+  /workspace/src/qfaos/runtime/custom_orchestrator.py:27:14 - warning: Type annotation for attribute `_execute_handler` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/custom_orchestrator.py:28:14 - warning: Type annotation for attribute `_storage_memory` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/custom_orchestrator.py:29:14 - warning: Type annotation for attribute `_logic_id` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/custom_orchestrator.py:30:14 - warning: Type annotation for attribute `_channel_gateway` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/custom_orchestrator.py:31:14 - warning: Type annotation for attribute `_observability` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/qfaos/runtime/custom_orchestrator.py:33:15 - warning: Method "execute" is not marked as override but is overriding a method in class "BaseOrchestrator" (reportImplicitOverride)
+  /workspace/src/qfaos/runtime/custom_orchestrator.py:57:17 - warning: Result of call expression is of type "NormalizedRecord" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+/workspace/src/skill_hub/__init__.py
+  /workspace/src/skill_hub/__init__.py:11:54 - warning: Import "SchemaTranslator" is not accessed (reportUnusedImport)
+/workspace/src/skill_hub/builtin_tools/browser_use.py
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:10:71 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:23:25 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:46:14 - warning: Type annotation for attribute `capability` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:126:27 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:127:25 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:128:9 - warning: Type of "browser_type" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:133:34 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:139:37 - warning: Argument type is Any
+    Argument corresponds to parameter "x" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:143:46 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:146:40 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:148:29 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:149:28 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:150:30 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:279:36 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:286:21 - warning: Result of call expression is of type "Response | None" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:291:21 - warning: Result of call expression is of type "bytes" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:294:21 - warning: Type of "page" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:376:20 - warning: Type of parameter "raw_url" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:376:29 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:379:16 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:382:20 - warning: Type of parameter "value" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:382:27 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:384:22 - warning: Argument type is Any
+    Argument corresponds to parameter "x" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:392:24 - warning: Type of parameter "value" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:392:31 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:392:54 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:395:32 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:396:9 - warning: Type of "item" is unknown (reportUnknownVariableType)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:398:36 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "map" in function "__init__"
+    Argument type is "dict[Unknown, Unknown]" (reportUnknownArgumentType)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:402:24 - warning: Type of parameter "page" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:402:30 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:402:59 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:404:27 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:408:23 - warning: Type of "goto" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:413:23 - warning: Type of "click" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:413:38 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:419:23 - warning: Type of "fill" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:419:37 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:419:76 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:427:23 - warning: Type of "keyboard" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:427:23 - warning: Type of "press" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:427:47 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:429:23 - warning: Type of "press" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:429:38 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:429:53 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:434:23 - warning: Type of "wait_for_timeout" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:438:80 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:439:19 - warning: Type of "screenshot" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:443:27 - warning: Type of parameter "page" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:443:33 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:445:16 - warning: Return type is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:445:22 - warning: Type of "inner_text" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:450:29 - warning: Type of parameter "page" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:450:35 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:452:16 - warning: Return type is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:452:22 - warning: Type of "content" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:457:23 - warning: Type of parameter "page" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:457:29 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:461:9 - warning: Type of "result" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:461:24 - warning: Type of "eval_on_selector_all" is Any (reportAny)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:471:9 - warning: Type of "item" is unknown (reportUnknownVariableType)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:474:9 - warning: Type of "href" is partially unknown
+    Type of "href" is "Unknown | None" (reportUnknownVariableType)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:474:16 - warning: Type of "get" is partially unknown
+    Type of "get" is "Overload[(key: Unknown, default: None = None, /) -> (Unknown | None), (key: Unknown, default: Unknown, /) -> Unknown, (key: Unknown, default: _T@get, /) -> (Unknown | _T@get)]" (reportUnknownMemberType)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:475:9 - warning: Type of "text" is partially unknown
+    Type of "text" is "Unknown | None" (reportUnknownVariableType)
+  /workspace/src/skill_hub/builtin_tools/browser_use.py:475:16 - warning: Type of "get" is partially unknown
+    Type of "get" is "Overload[(key: Unknown, default: None = None, /) -> (Unknown | None), (key: Unknown, default: Unknown, /) -> Unknown, (key: Unknown, default: _T@get, /) -> (Unknown | _T@get)]" (reportUnknownMemberType)
+/workspace/src/skill_hub/contracts.py
+  /workspace/src/skill_hub/contracts.py:10:25 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/skill_hub/core/__init__.py
+  /workspace/src/skill_hub/core/__init__.py:11:54 - warning: Import "SchemaTranslator" is not accessed (reportUnusedImport)
+/workspace/src/skill_hub/core/capability_hub.py
+  /workspace/src/skill_hub/core/capability_hub.py:1:21 - warning: Import "to_thread" is not accessed (reportUnusedImport)
+  /workspace/src/skill_hub/core/capability_hub.py:3:25 - warning: Import "Annotated" is not accessed (reportUnusedImport)
+  /workspace/src/skill_hub/core/capability_hub.py:6:22 - warning: Import "Field" is not accessed (reportUnusedImport)
+  /workspace/src/skill_hub/core/capability_hub.py:10:5 - warning: Import "ModelMessage" is not accessed (reportUnusedImport)
+  /workspace/src/skill_hub/core/capability_hub.py:11:5 - warning: Import "ModelRequest" is not accessed (reportUnusedImport)
+  /workspace/src/skill_hub/core/capability_hub.py:12:5 - warning: Import "ModelResponse" is not accessed (reportUnusedImport)
+  /workspace/src/skill_hub/core/capability_hub.py:13:5 - warning: Import "ModelUsage" is not accessed (reportUnusedImport)
+  /workspace/src/skill_hub/core/capability_hub.py:15:42 - warning: Import "ModelProviderClient" is not accessed (reportUnusedImport)
+  /workspace/src/skill_hub/core/capability_hub.py:17:47 - error: "with_security_policy" is unknown import symbol (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/core/capability_hub.py:17:47 - warning: Type of "with_security_policy" is unknown (reportUnknownVariableType)
+  /workspace/src/skill_hub/core/capability_hub.py:17:69 - error: "default_security_policy" is unknown import symbol (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/core/capability_hub.py:17:69 - warning: Type of "default_security_policy" is unknown (reportUnknownVariableType)
+  /workspace/src/skill_hub/core/capability_hub.py:47:14 - warning: Type annotation for attribute `_observability` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/skill_hub/core/capability_hub.py:67:13 - warning: Type of "safe_handler" is unknown (reportUnknownVariableType)
+  /workspace/src/skill_hub/core/capability_hub.py:73:46 - warning: Type of parameter "instance" is Any (reportAny)
+  /workspace/src/skill_hub/core/capability_hub.py:73:56 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/core/capability_hub.py:82:13 - warning: Variable "name" is not accessed (reportUnusedVariable)
+  /workspace/src/skill_hub/core/capability_hub.py:82:48 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "getmembers" (reportAny)
+  /workspace/src/skill_hub/core/capability_hub.py:89:64 - warning: Type annotation is missing for parameter "_method" (reportMissingParameterType)
+  /workspace/src/skill_hub/core/capability_hub.py:89:80 - warning: Type annotation is missing for parameter "_desc" (reportMissingParameterType)
+  /workspace/src/skill_hub/core/capability_hub.py:92:34 - warning: Type of "validate_payload" is partially unknown
+    Type of "validate_payload" is "(model: Unknown, payload: dict[str, Any]) -> BaseModel" (reportUnknownMemberType)
+  /workspace/src/skill_hub/core/capability_hub.py:100:44 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "m" in function "update"
+    Argument type is "dict[Unknown, Unknown]" (reportUnknownArgumentType)
+  /workspace/src/skill_hub/core/capability_hub.py:104:21 - warning: Type of "result" is Any (reportAny)
+  /workspace/src/skill_hub/core/capability_hub.py:105:44 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "isawaitable" (reportAny)
+  /workspace/src/skill_hub/core/capability_hub.py:106:25 - warning: Type of "result" is Any (reportAny)
+  /workspace/src/skill_hub/core/capability_hub.py:109:30 - warning: Type of "serialize_instance" is partially unknown
+    Type of "serialize_instance" is "(model: Unknown, instance: Any) -> dict[str, Any]" (reportUnknownMemberType)
+  /workspace/src/skill_hub/core/capability_hub.py:125:13 - warning: Result of call expression is of type "CapabilityDescription" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/skill_hub/core/capability_hub.py:126:13 - warning: Type of "append" is partially unknown
+    Type of "append" is "(object: Unknown, /) -> None" (reportUnknownMemberType)
+  /workspace/src/skill_hub/core/capability_hub.py:127:16 - warning: Return type, "list[Unknown]", is partially unknown (reportUnknownVariableType)
+  /workspace/src/skill_hub/core/capability_hub.py:151:9 - warning: Type of "trace_id" is Any (reportAny)
+  /workspace/src/skill_hub/core/capability_hub.py:153:13 - warning: Result of call expression is of type "NormalizedRecord" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/skill_hub/core/capability_hub.py:154:17 - warning: Argument type is Any
+    Argument corresponds to parameter "__p0" (reportAny)
+  /workspace/src/skill_hub/core/capability_hub.py:170:17 - warning: Result of call expression is of type "NormalizedRecord" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/skill_hub/core/capability_hub.py:171:21 - warning: Argument type is Any
+    Argument corresponds to parameter "__p0" (reportAny)
+  /workspace/src/skill_hub/core/capability_hub.py:189:13 - warning: Result of call expression is of type "NormalizedRecord" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/skill_hub/core/capability_hub.py:190:17 - warning: Argument type is Any
+    Argument corresponds to parameter "__p0" (reportAny)
+  /workspace/src/skill_hub/core/capability_hub.py:218:9 - warning: Result of call expression is of type "CapabilityDescription" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+/workspace/src/skill_hub/primitives/security.py
+  /workspace/src/skill_hub/primitives/security.py:4:8 - warning: Import "subprocess" is not accessed (reportUnusedImport)
+  /workspace/src/skill_hub/primitives/security.py:6:39 - warning: Import "Awaitable" is not accessed (reportUnusedImport)
+  /workspace/src/skill_hub/primitives/security.py:11:8 - warning: Stub file not found for "bashlex" (reportMissingTypeStubs)
+  /workspace/src/skill_hub/primitives/security.py:13:37 - warning: Import "CapabilityRequest" is not accessed (reportUnusedImport)
+  /workspace/src/skill_hub/primitives/security.py:13:56 - warning: Import "CapabilityResult" is not accessed (reportUnusedImport)
+  /workspace/src/skill_hub/primitives/security.py:37:14 - warning: Type annotation for attribute `ticket_id` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/skill_hub/primitives/security.py:49:14 - warning: Type annotation for attribute `ttl_seconds` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/skill_hub/primitives/security.py:78:9 - warning: Result of call expression is of type "float | None" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/skill_hub/primitives/security.py:88:30 - warning: Type of parameter "result" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:88:38 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:88:52 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:89:42 - warning: Argument type is partially unknown
+    Argument corresponds to parameter "obj" in function "len"
+    Argument type is "tuple[Unknown, ...]" (reportUnknownArgumentType)
+  /workspace/src/skill_hub/primitives/security.py:90:9 - warning: Type of "decision" is unknown (reportUnknownVariableType)
+  /workspace/src/skill_hub/primitives/security.py:90:19 - warning: Type of "message" is unknown (reportUnknownVariableType)
+  /workspace/src/skill_hub/primitives/security.py:91:16 - warning: Return type, "tuple[Unknown, Unknown]", is partially unknown (reportUnknownVariableType)
+  /workspace/src/skill_hub/primitives/security.py:92:12 - warning: Return type, "tuple[Any | tuple[Unknown, ...], None]", is partially unknown (reportUnknownVariableType)
+  /workspace/src/skill_hub/primitives/security.py:95:32 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:96:32 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:99:20 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:106:19 - warning: Return type is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:106:57 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:106:65 - warning: Type of parameter "kwargs" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:106:73 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:106:81 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:107:13 - warning: Type of "value" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:108:36 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "isawaitable" (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:109:24 - warning: Return type is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:110:20 - warning: Return type is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:113:19 - warning: Return type is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:113:19 - warning: Function declaration "wrapper" is obscured by a declaration of the same name (reportRedeclaration)
+  /workspace/src/skill_hub/primitives/security.py:113:28 - warning: Type of parameter "args" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:113:34 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:113:80 - warning: Type of parameter "kwargs" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:113:88 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:113:96 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:118:13 - warning: Type of "decision_raw" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:119:13 - warning: Type of "decision" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:122:24 - warning: Return type is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:129:28 - warning: Return type is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:136:13 - warning: Return type is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:136:22 - warning: Type of parameter "args" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:136:28 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:136:74 - warning: Type of parameter "kwargs" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:136:82 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:136:90 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/skill_hub/primitives/security.py:141:13 - warning: Type of "decision_raw" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:142:36 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "isawaitable" (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:144:13 - warning: Type of "decision" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:147:17 - warning: Type of "value" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:148:40 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "isawaitable" (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:150:24 - warning: Return type is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:157:21 - warning: Type of "value" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:158:44 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "isawaitable" (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:160:28 - warning: Return type is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:174:98 - warning: Type of "return_annotation" is Any (reportAny)
+  /workspace/src/skill_hub/primitives/security.py:190:14 - warning: Type annotation for attribute `working_dir` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/skill_hub/primitives/security.py:192:14 - warning: Type annotation for attribute `blacklist_patterns` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/skill_hub/primitives/security.py:195:17 - warning: Type of "blacklist_patterns" is partially unknown
+    Type of "blacklist_patterns" is "list[Unknown]" (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:195:17 - warning: Type of "append" is partially unknown
+    Type of "append" is "(object: Unknown, /) -> None" (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:197:14 - warning: Type annotation for attribute `whitelist_patterns` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/skill_hub/primitives/security.py:200:17 - warning: Type of "whitelist_patterns" is partially unknown
+    Type of "whitelist_patterns" is "list[Unknown]" (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:200:17 - warning: Type of "append" is partially unknown
+    Type of "append" is "(object: Unknown, /) -> None" (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:202:14 - warning: Type annotation for attribute `read_text` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/skill_hub/primitives/security.py:206:14 - warning: Type annotation for attribute `write_text` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/skill_hub/primitives/security.py:219:13 - warning: Type of "pattern" is unknown (reportUnknownVariableType)
+  /workspace/src/skill_hub/primitives/security.py:219:24 - warning: Type of "blacklist_patterns" is partially unknown
+    Type of "blacklist_patterns" is "list[Unknown]" (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:220:16 - warning: Type of "match" is unknown (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:222:13 - warning: Type of "pattern" is unknown (reportUnknownVariableType)
+  /workspace/src/skill_hub/primitives/security.py:222:24 - warning: Type of "whitelist_patterns" is partially unknown
+    Type of "whitelist_patterns" is "list[Unknown]" (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:223:16 - warning: Type of "match" is unknown (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:235:52 - warning: "content" is not accessed (reportUnusedParameter)
+  /workspace/src/skill_hub/primitives/security.py:242:9 - warning: Result of call expression is of type "int" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/skill_hub/primitives/security.py:256:14 - warning: Type annotation for attribute `working_dir` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/skill_hub/primitives/security.py:257:9 - warning: Type of "blacklist_cmds" is partially unknown
+    Type of "blacklist_cmds" is "set[str] | set[Unknown]" (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:257:14 - warning: Type annotation for attribute `blacklist_cmds` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/skill_hub/primitives/security.py:258:9 - warning: Type of "whitelist_cmds" is partially unknown
+    Type of "whitelist_cmds" is "set[str] | set[Unknown]" (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:258:14 - warning: Type annotation for attribute `whitelist_cmds` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/skill_hub/primitives/security.py:259:14 - warning: Type annotation for attribute `execute` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/skill_hub/primitives/security.py:260:13 - warning: Type of "_execute_action" is unknown (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:260:13 - warning: Argument type is unknown
+    Argument corresponds to parameter "action_func" in function "create_secure_action" (reportUnknownArgumentType)
+  /workspace/src/skill_hub/primitives/security.py:260:18 - error: Cannot access attribute "_execute_action" for class "SecureShell*"
+    Attribute "_execute_action" is unknown (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/primitives/security.py:261:13 - warning: Type of "_execute_policy" is unknown (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:261:13 - warning: Argument type is unknown
+    Argument corresponds to parameter "policy_func" in function "create_secure_action" (reportUnknownArgumentType)
+  /workspace/src/skill_hub/primitives/security.py:261:18 - error: Cannot access attribute "_execute_policy" for class "SecureShell*"
+    Attribute "_execute_policy" is unknown (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/primitives/security.py:266:13 - warning: Type of "parts" is partially unknown
+    Type of "parts" is "list[Unknown]" (reportUnknownVariableType)
+  /workspace/src/skill_hub/primitives/security.py:266:13 - warning: Variable "parts" is not accessed (reportUnusedVariable)
+  /workspace/src/skill_hub/primitives/security.py:266:21 - warning: Type of "parse" is partially unknown
+    Type of "parse" is "(s: Unknown, strictmode: bool = True, expansionlimit: Unknown | None = None, convertpos: bool = False) -> list[Unknown]" (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:267:16 - warning: Type of "errors" is unknown (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:267:24 - error: "errors" is not a known attribute of module "bashlex" (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/primitives/security.py:267:59 - error: Expected ":"
+  /workspace/src/skill_hub/primitives/security.py:271:9 - warning: Variable "cmds" is not accessed (reportUnusedVariable)
+  /workspace/src/skill_hub/primitives/security.py:272:15 - warning: Class "CommandVisitor" is not accessed (reportUnusedClass)
+  /workspace/src/skill_hub/primitives/security.py:272:29 - error: "(" was not closed
+  /workspace/src/skill_hub/primitives/security.py:272:30 - warning: Type of "ast" is unknown (reportUnknownMemberType)
+  /workspace/src/skill_hub/primitives/security.py:272:30 - warning: Base class type is unknown, obscuring type of derived class (reportUntypedBaseClass)
+  /workspace/src/skill_hub/primitives/security.py:272:38 - error: "ast" is not a known attribute of module "bashlex" (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/primitives/security.py:273:13 - error: Expected ":"
+  /workspace/src/skill_hub/primitives/security.py:274:17 - error: Expected expression
+  /workspace/src/skill_hub/primitives/security.py:382:1 - error: Statements must be separated by newlines or semicolons
+/workspace/src/storage_memory/backends/in_memory.py
+  /workspace/src/storage_memory/backends/in_memory.py:5:29 - warning: "_build_hot_key" is private and used outside of the module in which it is declared (reportPrivateUsage)
+  /workspace/src/storage_memory/backends/in_memory.py:5:45 - warning: "_build_state_key" is private and used outside of the module in which it is declared (reportPrivateUsage)
+  /workspace/src/storage_memory/backends/in_memory.py:6:31 - warning: "_dump_hot_memory_item" is private and used outside of the module in which it is declared (reportPrivateUsage)
+  /workspace/src/storage_memory/backends/in_memory.py:6:54 - warning: "_load_hot_memory_item" is private and used outside of the module in which it is declared (reportPrivateUsage)
+  /workspace/src/storage_memory/backends/in_memory.py:15:52 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/in_memory.py:16:51 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/in_memory.py:18:15 - warning: Method "rpush" is not marked as override but is overriding a method in class "HotMemoryCarrier" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/in_memory.py:18:57 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/in_memory.py:23:15 - warning: Method "lpush" is not marked as override but is overriding a method in class "HotMemoryCarrier" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/in_memory.py:23:57 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/in_memory.py:28:15 - warning: Method "lrange" is not marked as override but is overriding a method in class "HotMemoryCarrier" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/in_memory.py:28:80 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/in_memory.py:35:15 - warning: Method "ltrim" is not marked as override but is overriding a method in class "HotMemoryCarrier" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/in_memory.py:45:15 - warning: Method "append_hot_memory" is not marked as override but is overriding a method in class "StorageAccessProtocol" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/in_memory.py:53:9 - warning: Result of call expression is of type "int" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/storage_memory/backends/in_memory.py:57:15 - warning: Method "read_hot_memory" is not marked as override but is overriding a method in class "StorageAccessProtocol" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/in_memory.py:67:15 - warning: Method "persist_runtime_state" is not marked as override but is overriding a method in class "StorageAccessProtocol" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/in_memory.py:71:29 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/in_memory.py:72:20 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/in_memory.py:78:15 - warning: Method "load_runtime_state" is not marked as override but is overriding a method in class "StorageAccessProtocol" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/in_memory.py:78:85 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/storage_memory/backends/jsonl_store.py
+  /workspace/src/storage_memory/backends/jsonl_store.py:2:8 - warning: Import "os" is not accessed (reportUnusedImport)
+  /workspace/src/storage_memory/backends/jsonl_store.py:10:29 - warning: "_build_hot_key" is private and used outside of the module in which it is declared (reportPrivateUsage)
+  /workspace/src/storage_memory/backends/jsonl_store.py:10:45 - warning: "_build_state_key" is private and used outside of the module in which it is declared (reportPrivateUsage)
+  /workspace/src/storage_memory/backends/jsonl_store.py:11:31 - warning: "_dump_hot_memory_item" is private and used outside of the module in which it is declared (reportPrivateUsage)
+  /workspace/src/storage_memory/backends/jsonl_store.py:11:54 - warning: "_load_hot_memory_item" is private and used outside of the module in which it is declared (reportPrivateUsage)
+  /workspace/src/storage_memory/backends/jsonl_store.py:21:14 - warning: Type annotation for attribute `base_dir` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/storage_memory/backends/jsonl_store.py:39:15 - warning: Method "rpush" is not marked as override but is overriding a method in class "HotMemoryCarrier" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/jsonl_store.py:39:57 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/jsonl_store.py:44:17 - warning: Result of call expression is of type "int" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/storage_memory/backends/jsonl_store.py:51:15 - warning: Method "lpush" is not marked as override but is overriding a method in class "HotMemoryCarrier" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/jsonl_store.py:51:57 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/jsonl_store.py:68:15 - warning: Method "lrange" is not marked as override but is overriding a method in class "HotMemoryCarrier" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/jsonl_store.py:68:80 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/jsonl_store.py:88:15 - warning: Method "ltrim" is not marked as override but is overriding a method in class "HotMemoryCarrier" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/jsonl_store.py:109:15 - warning: Method "append_hot_memory" is not marked as override but is overriding a method in class "StorageAccessProtocol" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/jsonl_store.py:117:9 - warning: Result of call expression is of type "int" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/storage_memory/backends/jsonl_store.py:121:15 - warning: Method "read_hot_memory" is not marked as override but is overriding a method in class "StorageAccessProtocol" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/jsonl_store.py:131:15 - warning: Method "persist_runtime_state" is not marked as override but is overriding a method in class "StorageAccessProtocol" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/jsonl_store.py:135:29 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/jsonl_store.py:136:20 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/jsonl_store.py:151:15 - warning: Method "load_runtime_state" is not marked as override but is overriding a method in class "StorageAccessProtocol" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/jsonl_store.py:151:85 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/jsonl_store.py:156:13 - warning: Return type, "dict[Unknown, Unknown] | Any", is partially unknown (reportUnknownParameterType)
+  /workspace/src/storage_memory/backends/jsonl_store.py:158:24 - warning: Return type, "dict[Unknown, Unknown]", is partially unknown (reportUnknownVariableType)
+  /workspace/src/storage_memory/backends/jsonl_store.py:160:24 - warning: Return type is Any (reportAny)
+  /workspace/src/storage_memory/backends/jsonl_store.py:162:16 - warning: Return type, "dict[Unknown, Unknown] | Any", is partially unknown (reportUnknownVariableType)
+/workspace/src/storage_memory/backends/redis_store.py
+  /workspace/src/storage_memory/backends/redis_store.py:7:29 - warning: "_build_hot_key" is private and used outside of the module in which it is declared (reportPrivateUsage)
+  /workspace/src/storage_memory/backends/redis_store.py:7:45 - warning: "_build_state_key" is private and used outside of the module in which it is declared (reportPrivateUsage)
+  /workspace/src/storage_memory/backends/redis_store.py:8:31 - warning: "_dump_hot_memory_item" is private and used outside of the module in which it is declared (reportPrivateUsage)
+  /workspace/src/storage_memory/backends/redis_store.py:8:54 - warning: "_load_hot_memory_item" is private and used outside of the module in which it is declared (reportPrivateUsage)
+  /workspace/src/storage_memory/backends/redis_store.py:18:24 - warning: Type of parameter "redis_client" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:18:38 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/redis_store.py:19:9 - warning: Type of "_redis" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:19:14 - warning: Type annotation for attribute `_redis` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /workspace/src/storage_memory/backends/redis_store.py:21:15 - warning: Method "rpush" is not marked as override but is overriding a method in class "HotMemoryCarrier" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/redis_store.py:21:57 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/redis_store.py:23:16 - warning: Return type is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:23:22 - warning: Type of "_redis" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:23:22 - warning: Type of "rpush" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:25:15 - warning: Method "lpush" is not marked as override but is overriding a method in class "HotMemoryCarrier" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/redis_store.py:25:57 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/redis_store.py:27:16 - warning: Return type is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:27:22 - warning: Type of "_redis" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:27:22 - warning: Type of "lpush" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:29:15 - warning: Method "lrange" is not marked as override but is overriding a method in class "HotMemoryCarrier" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/redis_store.py:29:80 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/redis_store.py:30:9 - warning: Type of "raw_items" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:30:27 - warning: Type of "_redis" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:30:27 - warning: Type of "lrange" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:31:33 - warning: Argument type is Any
+    Argument corresponds to parameter "s" in function "loads" (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:31:43 - warning: Type of "item" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:33:15 - warning: Method "ltrim" is not marked as override but is overriding a method in class "HotMemoryCarrier" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/redis_store.py:34:15 - warning: Type of "_redis" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:34:15 - warning: Type of "ltrim" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:36:15 - warning: Method "append_hot_memory" is not marked as override but is overriding a method in class "StorageAccessProtocol" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/redis_store.py:45:9 - warning: Result of call expression is of type "int" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/storage_memory/backends/redis_store.py:49:15 - warning: Method "read_hot_memory" is not marked as override but is overriding a method in class "StorageAccessProtocol" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/redis_store.py:60:15 - warning: Method "persist_runtime_state" is not marked as override but is overriding a method in class "StorageAccessProtocol" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/redis_store.py:64:29 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/redis_store.py:65:20 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/redis_store.py:69:15 - warning: Type of "_redis" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:69:15 - warning: Type of "set" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:72:15 - warning: Method "load_runtime_state" is not marked as override but is overriding a method in class "StorageAccessProtocol" (reportImplicitOverride)
+  /workspace/src/storage_memory/backends/redis_store.py:72:85 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/backends/redis_store.py:74:9 - warning: Type of "raw_state" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:74:27 - warning: Type of "_redis" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:74:27 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:76:20 - warning: Return type is Any (reportAny)
+  /workspace/src/storage_memory/backends/redis_store.py:76:31 - warning: Argument type is Any
+    Argument corresponds to parameter "s" in function "loads" (reportAny)
+/workspace/src/storage_memory/bootstrap.py
+  /workspace/src/storage_memory/bootstrap.py:9:8 - warning: Import "asyncio" is not accessed (reportUnusedImport)
+  /workspace/src/storage_memory/bootstrap.py:13:20 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/bootstrap.py:29:17 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "carrier" of type "HotMemoryCarrier" in function "__init__"
+    Type "HotMemoryCarrier | StorageAccessProtocol" is not assignable to type "HotMemoryCarrier"
+      "StorageAccessProtocol" is incompatible with protocol "HotMemoryCarrier"
+        "rpush" is not present
+        "lpush" is not present
+        "lrange" is not present
+        "ltrim" is not present (reportArgumentType)
+  /workspace/src/storage_memory/bootstrap.py:30:18 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "__init__"
+    Type "HotMemoryCarrier | StorageAccessProtocol" is not assignable to type "StorageAccessProtocol"
+      "HotMemoryCarrier" is incompatible with protocol "StorageAccessProtocol"
+        "append_hot_memory" is not present
+        "read_hot_memory" is not present
+        "persist_runtime_state" is not present
+        "load_runtime_state" is not present (reportArgumentType)
+  /workspace/src/storage_memory/bootstrap.py:32:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_append_hot_memory"
+    Type "HotMemoryCarrier | StorageAccessProtocol" is not assignable to type "StorageAccessProtocol"
+      "HotMemoryCarrier" is incompatible with protocol "StorageAccessProtocol"
+        "append_hot_memory" is not present
+        "read_hot_memory" is not present
+        "persist_runtime_state" is not present
+        "load_runtime_state" is not present (reportArgumentType)
+  /workspace/src/storage_memory/bootstrap.py:40:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_read_hot_memory"
+    Type "HotMemoryCarrier | StorageAccessProtocol" is not assignable to type "StorageAccessProtocol"
+      "HotMemoryCarrier" is incompatible with protocol "StorageAccessProtocol"
+        "append_hot_memory" is not present
+        "read_hot_memory" is not present
+        "persist_runtime_state" is not present
+        "load_runtime_state" is not present (reportArgumentType)
+  /workspace/src/storage_memory/bootstrap.py:47:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_persist_runtime_state"
+    Type "HotMemoryCarrier | StorageAccessProtocol" is not assignable to type "StorageAccessProtocol"
+      "HotMemoryCarrier" is incompatible with protocol "StorageAccessProtocol"
+        "append_hot_memory" is not present
+        "read_hot_memory" is not present
+        "persist_runtime_state" is not present
+        "load_runtime_state" is not present (reportArgumentType)
+  /workspace/src/storage_memory/bootstrap.py:54:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_load_runtime_state"
+    Type "HotMemoryCarrier | StorageAccessProtocol" is not assignable to type "StorageAccessProtocol"
+      "HotMemoryCarrier" is incompatible with protocol "StorageAccessProtocol"
+        "append_hot_memory" is not present
+        "read_hot_memory" is not present
+        "persist_runtime_state" is not present
+        "load_runtime_state" is not present (reportArgumentType)
+  /workspace/src/storage_memory/bootstrap.py:72:9 - warning: Result of call expression is of type "NormalizedRecord" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/storage_memory/bootstrap.py:96:5 - warning: "observability" is not accessed (reportUnusedParameter)
+  /workspace/src/storage_memory/bootstrap.py:107:25 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/bootstrap.py:109:16 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/bootstrap.py:114:12 - warning: Unnecessary isinstance call; "Mapping[str, Any]" is always an instance of "Mapping[Unknown, Unknown]" (reportUnnecessaryIsInstance)
+  /workspace/src/storage_memory/bootstrap.py:115:28 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/storage_memory/bootstrap.py:117:9 - warning: Result of call expression is of type "NormalizedRecord" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+  /workspace/src/storage_memory/bootstrap.py:137:5 - warning: "observability" is not accessed (reportUnusedParameter)
+  /workspace/src/storage_memory/bootstrap.py:138:16 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/storage_memory/contracts/protocols.py
+  /workspace/src/storage_memory/contracts/protocols.py:11:57 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/contracts/protocols.py:15:57 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/contracts/protocols.py:19:80 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/contracts/protocols.py:56:29 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/contracts/protocols.py:57:20 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/contracts/protocols.py:61:85 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/storage_memory/exports.py
+  /workspace/src/storage_memory/exports.py:25:61 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/exports.py:25:88 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/exports.py:26:66 - warning: Type `Any` is not allowed (reportExplicitAny)
+/workspace/src/storage_memory/factory/create_store.py
+  /workspace/src/storage_memory/factory/create_store.py:8:5 - error: "HAS_REDIS" is constant (because it is uppercase) and cannot be redefined (reportConstantRedefinition)
+  /workspace/src/storage_memory/factory/create_store.py:16:18 - warning: Type of parameter "config" is Any (reportAny)
+  /workspace/src/storage_memory/factory/create_store.py:16:26 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/factory/create_store.py:32:27 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "getattr" (reportAny)
+  /workspace/src/storage_memory/factory/create_store.py:33:29 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "getattr" (reportAny)
+  /workspace/src/storage_memory/factory/create_store.py:34:29 - warning: Argument type is Any
+    Argument corresponds to parameter "o" in function "getattr" (reportAny)
+  /workspace/src/storage_memory/factory/create_store.py:54:56 - error: "ignore" is not defined (reportUndefinedVariable)
+  /workspace/src/storage_memory/factory/create_store.py:54:56 - warning: Type of "from_url" is unknown (reportUnknownMemberType)
+  /workspace/src/storage_memory/factory/create_store.py:54:56 - error: Call expression not allowed in type expression (reportInvalidTypeForm)
+  /workspace/src/storage_memory/factory/create_store.py:54:56 - warning: Use of type comments is deprecated; use type annotation instead (reportTypeCommentUsage)
+  /workspace/src/storage_memory/factory/create_store.py:55:17 - warning: Type of "ping" is unknown (reportUnknownMemberType)
+  /workspace/src/storage_memory/factory/create_store.py:56:17 - warning: Type of "close" is unknown (reportUnknownMemberType)
+  /workspace/src/storage_memory/factory/create_store.py:58:26 - error: "redis" is possibly unbound (reportPossiblyUnboundVariable)
+/workspace/src/storage_memory/internal/codecs.py
+  /workspace/src/storage_memory/internal/codecs.py:8:5 - warning: Function "_dump_hot_memory_item" is not accessed (reportUnusedFunction)
+  /workspace/src/storage_memory/internal/codecs.py:8:61 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/internal/codecs.py:19:5 - warning: Function "_load_hot_memory_item" is not accessed (reportUnusedFunction)
+  /workspace/src/storage_memory/internal/codecs.py:19:49 - warning: Type `Any` is not allowed (reportExplicitAny)
+  /workspace/src/storage_memory/internal/codecs.py:21:5 - warning: Type of "content" is Any (reportAny)
+  /workspace/src/storage_memory/internal/codecs.py:25:16 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/storage_memory/internal/codecs.py:25:16 - warning: Argument type is Any
+    Argument corresponds to parameter "id" in function "__init__" (reportAny)
+  /workspace/src/storage_memory/internal/codecs.py:27:22 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/storage_memory/internal/codecs.py:27:22 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/storage_memory/internal/codecs.py:27:22 - warning: Argument type is Any
+    Argument corresponds to parameter "name" in function "__init__" (reportAny)
+  /workspace/src/storage_memory/internal/codecs.py:28:27 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/storage_memory/internal/codecs.py:28:27 - warning: Type of "get" is Any (reportAny)
+  /workspace/src/storage_memory/internal/codecs.py:28:27 - warning: Argument type is Any
+    Argument corresponds to parameter "arguments" in function "__init__" (reportAny)
+  /workspace/src/storage_memory/internal/codecs.py:32:13 - warning: Type of "item" is Any (reportAny)
+  /workspace/src/storage_memory/internal/codecs.py:36:22 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/storage_memory/internal/codecs.py:37:18 - warning: Argument type is Any
+    Argument corresponds to parameter "object" in function "__new__" (reportAny)
+  /workspace/src/storage_memory/internal/codecs.py:38:17 - warning: Argument type is Any
+    Argument corresponds to parameter "content" in function "__init__" (reportAny)
+  /workspace/src/storage_memory/internal/codecs.py:40:23 - warning: Argument type is Any
+    Argument corresponds to parameter "map" in function "__init__" (reportAny)
+/workspace/src/storage_memory/internal/keys.py
+  /workspace/src/storage_memory/internal/keys.py:1:5 - warning: Function "_build_hot_key" is not accessed (reportUnusedFunction)
+  /workspace/src/storage_memory/internal/keys.py:6:5 - warning: Function "_build_state_key" is not accessed (reportUnusedFunction)
+82 errors, 1080 warnings, 0 notes

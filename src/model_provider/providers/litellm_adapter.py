@@ -110,8 +110,8 @@ def build_model_response(
     *,
     request: ModelRequest,
     output_schema: Any | None,
-    fallback_model_name: str,
-    provider_id: str,
+    fallback_model_name: str | None,
+    provider_id: str | None,
 ) -> ModelResponse:
     """
     统一构造 ModelResponse：
@@ -123,7 +123,7 @@ def build_model_response(
     elif isinstance(response_raw, litellm.ModelResponse):
         first_choice = response_raw.choices[0]
         message_obj = first_choice.message
-        usage_obj = response_raw.usage
+        usage_obj = getattr(response_raw, "usage", None)
         model_name = response_raw.model
         finish_reason = first_choice.finish_reason
         content = message_obj.content

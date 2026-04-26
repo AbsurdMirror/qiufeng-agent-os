@@ -1,0 +1,33 @@
+  /workspace/src/observability_hub/cli/tailer.py:64:43 - error: "Any" is not defined (reportUndefinedVariable)
+  /workspace/src/observability_hub/cli/tailer.py:75:47 - error: "Any" is not defined (reportUndefinedVariable)
+  /workspace/src/qfaos/enums.py:66:15 - error: Type "type[ChannelType]" is not assignable to declared type "type[Channel]"
+  /workspace/src/qfaos/enums.py:74:15 - error: Type "type[ChannelType]" is not assignable to declared type "type[Channel]"
+  /workspace/src/qfaos/qfaos.py:348:49 - error: "cast" is not defined (reportUndefinedVariable)
+  /workspace/src/qfaos/qfaos.py:380:28 - error: Argument of type "dict[str, InMemoryModelProviderClient | MiniMaxModelProviderClient]" cannot be assigned to parameter "clients" of type "dict[str, RawModelProviderClient]" in function "__init__"
+  /workspace/src/qfaos/qfaos.py:393:13 - error: Cannot access attribute "register_instance_capabilities" for class "CapabilityHub"
+  /workspace/src/qfaos/qfaos.py:397:30 - error: Argument of type "CapabilityHub" cannot be assigned to parameter "hub" of type "RegisteredCapabilityHub" in function "register_pytools"
+  /workspace/src/qfaos/qfaos.py:405:26 - error: Argument of type "CapabilityHub" cannot be assigned to parameter "hub" of type "RegisteredCapabilityHub" in function "register_pytools"
+  /workspace/src/qfaos/qfaos.py:405:31 - error: Argument of type "tuple[Any | None, ...]" cannot be assigned to parameter "pytools" of type "Iterable[PyTool]" in function "register_pytools"
+  /workspace/src/qfaos/qfaos.py:435:22 - error: Expected type arguments for generic class "Queue" (reportMissingTypeArgument)
+  /workspace/src/qfaos/qfaos.py:437:50 - error: Expected type arguments for generic class "Queue" (reportMissingTypeArgument)
+  /workspace/src/qfaos/runtime/context_facade.py:215:56 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "validate_payload"
+  /workspace/src/qfaos/runtime/context_facade.py:297:56 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "validate_payload"
+  /workspace/src/qfaos/runtime/contracts.py:36:21 - error: Argument of type "ChannelType" cannot be assigned to parameter "channel" of type "Channel" in function "__init__"
+  /workspace/src/skill_hub/core/capability_hub.py:92:68 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "validate_payload"
+  /workspace/src/skill_hub/core/capability_hub.py:109:66 - error: Argument of type "Any | None" cannot be assigned to parameter "model" of type "type[BaseModel]" in function "serialize_instance"
+  /workspace/src/skill_hub/primitives/security.py:92:12 - error: Type "tuple[Any | tuple[Unknown, ...], None]" is not assignable to return type "tuple[PolicyDecision, str | None]"
+  /workspace/src/skill_hub/primitives/security.py:187:40 - error: Expected type arguments for generic class "Pattern" (reportMissingTypeArgument)
+  /workspace/src/skill_hub/primitives/security.py:188:40 - error: Expected type arguments for generic class "Pattern" (reportMissingTypeArgument)
+  /workspace/src/skill_hub/primitives/security.py:267:24 - error: "errors" is not a known attribute of module "bashlex" (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/primitives/security.py:272:38 - error: "ast" is not a known attribute of module "bashlex" (reportAttributeAccessIssue)
+  /workspace/src/skill_hub/primitives/security.py:326:34 - error: Expected type arguments for generic class "Pattern" (reportMissingTypeArgument)
+  /workspace/src/skill_hub/primitives/security.py:327:34 - error: Expected type arguments for generic class "Pattern" (reportMissingTypeArgument)
+  /workspace/src/skill_hub/primitives/security.py:336:60 - error: Expected type arguments for generic class "Callable" (reportMissingTypeArgument)
+  /workspace/src/storage_memory/bootstrap.py:29:17 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "carrier" of type "HotMemoryCarrier" in function "__init__"
+  /workspace/src/storage_memory/bootstrap.py:30:18 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "__init__"
+  /workspace/src/storage_memory/bootstrap.py:32:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_append_hot_memory"
+  /workspace/src/storage_memory/bootstrap.py:40:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_read_hot_memory"
+  /workspace/src/storage_memory/bootstrap.py:47:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_persist_runtime_state"
+  /workspace/src/storage_memory/bootstrap.py:54:22 - error: Argument of type "HotMemoryCarrier | StorageAccessProtocol" cannot be assigned to parameter "protocol" of type "StorageAccessProtocol" in function "_load_runtime_state"
+  /workspace/src/storage_memory/factory/create_store.py:8:5 - error: "HAS_REDIS" is constant (because it is uppercase) and cannot be redefined (reportConstantRedefinition)
+  /workspace/src/storage_memory/factory/create_store.py:58:26 - error: "redis" is possibly unbound (reportPossiblyUnboundVariable)
