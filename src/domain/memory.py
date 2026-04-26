@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Any
 
+from src.domain.models import ToolInvocation
+
 
 @dataclass(frozen=True)
 class HotMemoryItem:
@@ -15,10 +17,11 @@ class HotMemoryItem:
         trace_id: 产生此条记忆的请求链路 ID。
         role: 角色标识（如 user, assistant, system）。
         content: 记忆的文本内容。
+        tool_calls: 工具调用列表（当 role 为 assistant 且模型发起工具调用时存在），遵循 OpenAI/LiteLLM messages 格式。
         metadata: 附加元数据（如 Token 消耗、时间戳等）。
     """
     trace_id: str
     role: str
-    content: str
+    content: str | None
+    tool_calls: tuple[ToolInvocation, ...] = ()
     metadata: dict[str, Any] = field(default_factory=dict)
-

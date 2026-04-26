@@ -3,6 +3,7 @@ from typing import Any, Literal, Protocol
 
 from src.domain.events import UniversalEvent
 from src.domain.capabilities import CapabilityDescription
+from src.domain.models import ToolInvocation
 from src.qfaos.config import QFAConfig
 from src.qfaos.enums import QFAEnum
 
@@ -37,7 +38,7 @@ class QFAModelOutput:
 
     is_pytool_call: bool
     tool_call: dict[str, Any] | None
-    tool_call_str: str | None
+    tool_invocations: tuple[ToolInvocation, ...]
     is_answer: bool
     response: str | None
 
@@ -64,7 +65,12 @@ class QFASessionContext(Protocol):
     async def get_memory(self) -> list[dict[str, Any]]:
         raise NotImplementedError
 
-    async def add_memory(self, content: str, role: str = "assistant") -> None:
+    async def add_memory(
+        self,
+        content: str | None,
+        role: str = "assistant",
+        tool_invocations: tuple[ToolInvocation, ...] = (),
+    ) -> None:
         raise NotImplementedError
 
     async def model_ask(

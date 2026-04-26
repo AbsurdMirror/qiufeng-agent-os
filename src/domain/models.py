@@ -1,7 +1,33 @@
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest
+
+
+@dataclass(frozen=True)
+class ToolCallFunction:
+    name: str | None
+    arguments: str | None
+
+
+@dataclass(frozen=True)
+class ToolInvocation:
+    id: str | None
+    function: ToolCallFunction
+    type: Literal["function"] = "function"
+
+    def to_str(self) -> str:
+        """将 ToolInvocation 转换为字符串表示"""
+        import json
+        json_dict = {
+            "id": self.id,
+            "type": self.type,
+            "function": {
+                "name": self.function.name,
+                "arguments": self.function.arguments,
+            },
+        }
+        return json.dumps(json_dict, ensure_ascii=False)
 
 
 @dataclass(frozen=True)
@@ -14,7 +40,8 @@ class ModelMessage:
         content: 消息内容载荷。
     """
     role: str
-    content: str
+    content: str | None
+    tool_calls: tuple[ToolInvocation, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -68,14 +95,13 @@ class ModelResponse:
         raw: 供应商返回的原始 JSON 数据，用于 Debug 和兜底。
     """
     model_name: str
-    content: str
+    content: str | None
     success: bool = True
     finish_reason: str | None = None
     provider_id: str | None = None
     usage: ModelUsage | None = None
     parsed: Any = None
     tool_calls: tuple[CapabilityRequest, ...] = ()
-    tool_call_str: str | None = None
+    tool_invocations: tuple[ToolInvocation, ...] = ()
     repair_reason: str | None = None
     raw: dict[str, Any] = field(default_factory=dict)
-

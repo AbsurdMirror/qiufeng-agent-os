@@ -1,9 +1,9 @@
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from importlib.metadata import PackageNotFoundError, version
 from importlib.util import find_spec
 from typing import Any, Mapping
 
-from src.domain.models import ModelRequest, ModelResponse, ModelUsage
+from src.domain.models import ModelMessage, ModelRequest, ModelResponse, ModelUsage, ToolCallFunction, ToolInvocation
 from src.model_provider.contracts import LiteLLMRawResponse
 
 import litellm
@@ -77,10 +77,7 @@ def build_litellm_completion_payload(
 
     payload: dict[str, Any] = {
         "model": request.model_name,
-        "messages": tuple(
-            {"role": message.role, "content": message.content}
-            for message in request.messages
-        ),
+        "messages": tuple(_to_litellm_message(message) for message in request.messages),
     }
     if request.temperature is not None:
         payload["temperature"] = request.temperature
@@ -140,37 +137,34 @@ def build_model_response(
                 total_tokens=getattr(usage_obj, "total_tokens", None),
             )
 
-        # 2. 校验 content 类型
-        if not isinstance(content, str):
-            return ModelResponse(
-                success=False,
-                model_name=str(model_name),
-                content="",
-                finish_reason="error",
-                provider_id=provider_id,
-                usage=usage,
-                repair_reason="model_message_content_must_be_string",
-                raw={"response_raw": str(response_raw), "reason": "content_not_string"},
-            )
+        content_effective = "" if content is None else content.strip()
 
-        content_effective = content.strip()
         parsed = None
         schema_error: str | None = None
 
         # 3. 解析 Tool Calls
         tool_calls = ()
-        tool_call_str = None
+        tool_invocations: tuple[ToolInvocation, ...] = ()
         if message_obj.tool_calls:
             try:
                 tool_calls = convert_litellm_tool_calls(message_obj.tool_calls, request.tools)
-                # 记录原始工具调用的字符串表示，用于上层透传
-                tool_call_str = str(message_obj.tool_calls)
+                tool_invocations = tuple(
+                    ToolInvocation(
+                        id=call.id,
+                        type="function",
+                        function=ToolCallFunction(
+                            name=call.function.name,
+                            arguments=call.function.arguments,
+                        ),
+                    )
+                    for call in message_obj.tool_calls
+                )
             except ToolCallValidationError as exc:
                 return ModelResponse(
                     success=False,
                     model_name=str(model_name),
                     content=content,
-                    finish_reason="error",
+                    finish_reason="ToolCallValidationError",
                     provider_id=provider_id,
                     usage=usage,
                     repair_reason=str(exc),
@@ -206,7 +200,7 @@ def build_model_response(
                 usage=usage,
                 parsed=parsed,
                 tool_calls=tool_calls,
-                tool_call_str=tool_call_str,
+                tool_invocations=tool_invocations,
                 raw={"response_raw": str(response_raw)},
             )
 
@@ -220,6 +214,7 @@ def build_model_response(
                 usage=usage,
                 parsed=parsed,
                 tool_calls=tool_calls,
+                tool_invocations=tool_invocations,
                 raw={"response_raw": str(response_raw)},
             )
 
@@ -239,7 +234,7 @@ def build_model_response(
             return ModelResponse(
                 success=False,
                 model_name=str(model_name),
-                content=content,
+                content=content or "",
                 finish_reason="error",
                 provider_id=provider_id,
                 usage=usage,
@@ -256,10 +251,21 @@ def build_model_response(
             usage=usage,
             parsed=parsed,
             tool_calls=tool_calls,
+            tool_invocations=tool_invocations,
             raw={"response_raw": str(response_raw)},
         )
     else:
         raise NotImplementedError(f"Unsupported response type: {type(response_raw)}")
+
+
+def _to_litellm_message(message: ModelMessage) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "role": message.role,
+        "content": message.content,
+    }
+    if message.tool_calls:
+        payload["tool_calls"] = [asdict(call) for call in message.tool_calls]
+    return payload
 
 
 def _to_litellm_tool(tool: CapabilityDescription) -> dict[str, Any]:

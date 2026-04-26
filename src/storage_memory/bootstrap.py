@@ -76,7 +76,7 @@ async def _append_hot_memory(
                 "logic_id": logic_id,
                 "session_id": session_id,
                 "role": item.role,
-                "content_preview": item.content[:100],
+                "content_preview": item.content[:100] if item.content else "",
             },
             "DEBUG",
         )

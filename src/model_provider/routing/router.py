@@ -52,13 +52,17 @@ class ModelRouter(ModelProviderClient):
     def add_client(self, model_name: str, client: RawModelProviderClient) -> None:
         self._clients[model_name] = client
 
-    def _build_repair_message(self, *, invalid_output: str, error_text: str) -> ModelMessage:
+    def _build_repair_message(self, *, invalid_output: str, error_text: str, finish_reason: str) -> ModelMessage:
         return ModelMessage(
             role="user",
             content=(
-                "你的上一次输出在解析阶段出错，请严格按照本轮规范重新输出。\n"
+                "你的上一次"
+                "工具调用" if finish_reason == "SchemaValidationError" else "输出"
+                "在解析阶段出错，请严格按照本轮规范重新输出。\n"
                 "要求：只输出符合规范的结果，不要附加解释文本。\n"
-                f"上一次输出: {invalid_output}\n"
+                "上一次"
+                "工具调用" if finish_reason == "SchemaValidationError" else "输出"
+                f"为: {invalid_output}\n"
                 f"解析错误: {error_text}"
             ),
         )
@@ -117,7 +121,8 @@ class ModelRouter(ModelProviderClient):
         基于物理名称 (Model Name) 的直接调度匹配机制
         """
         # MP-P0-02: 自动裁剪
-        trimmed_messages = self._trim_messages(request.messages, request.model_name)
+        # trimmed_messages = self._trim_messages(request.messages, request.model_name)
+        trimmed_messages = request.messages
 
         # 构建新的请求对象
         trimmed_request = ModelRequest(
@@ -201,8 +206,8 @@ class ModelRouter(ModelProviderClient):
 
             if attempts >= max_retries:
                 exhausted_raw = dict(response.raw)
-                exhausted_raw.setdefault("reason", "model_response_parse_failed")
-                exhausted_raw.setdefault("message", "response parsing failed after retries")
+                exhausted_raw["reason"] = "model_response_parse_failed"
+                exhausted_raw["message"] += ". response parsing failed after retries"
                 exhausted_raw["retry_count"] = attempts
                 return ModelResponse(
                     model_name=response.model_name,
@@ -213,15 +218,17 @@ class ModelRouter(ModelProviderClient):
                     usage=response.usage,
                     parsed=response.parsed,
                     tool_calls=response.tool_calls,
-                    tool_call_str=response.tool_call_str,
+                    tool_invocations=response.tool_invocations,
                     repair_reason=response.repair_reason,
                     raw=exhausted_raw,
                 )
             attempts += 1
-            repair_reason = response.repair_reason or "model_response_parse_failed"
+            repair_reason = response.repair_reason
             repair_message = self._build_repair_message(
-                invalid_output=response.content,
+                invalid_output= [tool_invocation.to_str() for tool_invocation in response.tool_invocations] \
+                                if response.finish_reason == "SchemaValidationError" else response.content,
                 error_text=repair_reason,
+                finish_reason=response.finish_reason,
             )
             current_request = ModelRequest(
                 messages=current_request.messages + (repair_message,),

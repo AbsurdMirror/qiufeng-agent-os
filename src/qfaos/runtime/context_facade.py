@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from typing import Any, Literal
 
 from src.domain.events import UniversalEvent
@@ -5,7 +6,7 @@ from src.domain.responses import ReplyText, FeishuReplyCard
 from src.channel_gateway.exports import ChannelGatewayExports
 from src.observability_hub.exports import ObservabilityHubExports
 from src.orchestration_engine.context.runtime_context import RuntimeContext
-from src.domain.models import ModelMessage, ModelResponse
+from src.domain.models import ModelMessage, ModelResponse, ToolInvocation
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.domain.translators.schema_translator import SchemaTranslator
 from src.orchestration_engine.contracts import CapabilityHub
@@ -52,15 +53,24 @@ class DefaultQFASessionContext(QFASessionContext):
 
     async def get_memory(self) -> list[dict[str, Any]]:
         history = self._runtime_context.memory.get("dialogue_history", [])
-        if not isinstance(history, list):
-            return []
-        return [dict(item) for item in history if isinstance(item, dict)]
+        result: list[dict[str, Any]] = []
+        for item in history:
+            message = dict(item)
+            message["tool_calls"] = [asdict(call) for call in message.get("tool_calls", ())]
+            result.append(message)
+        return result
 
-    async def add_memory(self, content: str, role: str = "assistant") -> None:
+    async def add_memory(
+        self,
+        content: str | None,
+        role: str = "assistant",
+        tool_invocations: tuple[ToolInvocation, ...] = (),
+    ) -> None:
         item = HotMemoryItem(
             trace_id=self._runtime_context.trace_id,
             role=role,
             content=content,
+            tool_calls=tool_invocations,
         )
         await self._storage_memory.append_hot_memory(
             self._logic_id,
@@ -69,8 +79,13 @@ class DefaultQFASessionContext(QFASessionContext):
             10,
         )
         dialogue = self._runtime_context.memory.setdefault("dialogue_history", [])
-        if isinstance(dialogue, list):
-            dialogue.append({"role": role, "content": content})
+        dialogue.append(
+            {
+                "role": role,
+                "content": content,
+                "tool_calls": tool_invocations,
+            }
+        )
 
     async def model_ask(
         self,
@@ -176,7 +191,7 @@ class DefaultQFASessionContext(QFASessionContext):
             return QFAModelOutput(
                 is_pytool_call=False,
                 tool_call=None,
-                tool_call_str=None,
+                tool_invocations=(),
                 is_answer=True,
                 response=result.error_message or "",
             )
@@ -207,7 +222,7 @@ class DefaultQFASessionContext(QFASessionContext):
             return QFAModelOutput(
                 is_pytool_call=True,
                 tool_call=tool_call_dict,
-                tool_call_str=output.tool_call_str,
+                tool_invocations=output.tool_invocations,
                 is_answer=False,
                 response=None,
             )
@@ -216,7 +231,7 @@ class DefaultQFASessionContext(QFASessionContext):
         return QFAModelOutput(
             is_pytool_call=False,
             tool_call=None,
-            tool_call_str=None,
+            tool_invocations=output.tool_invocations,
             is_answer=True,
             response=output.content or "",
         )
@@ -293,15 +308,14 @@ class DefaultQFASessionContext(QFASessionContext):
 
     def _build_messages(self, prompt: str) -> tuple[ModelMessage, ...]:
         history = self._runtime_context.memory.get("dialogue_history", [])
-        messages: list[ModelMessage] = []
-        if isinstance(history, list):
-            for item in history:
-                if not isinstance(item, dict):
-                    continue
-                role = item.get("role")
-                content = item.get("content")
-                if isinstance(role, str) and isinstance(content, str):
-                    messages.append(ModelMessage(role=role, content=content))
+        messages = [
+            ModelMessage(
+                role=item["role"],
+                content=item.get("content"),
+                tool_calls=item.get("tool_calls", ()),
+            )
+            for item in history
+        ]
         messages.append(ModelMessage(role="user", content=prompt))
         return tuple(messages)
 

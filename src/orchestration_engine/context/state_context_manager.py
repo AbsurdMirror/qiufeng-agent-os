@@ -30,7 +30,10 @@ class StateContextManager:
         # 将 Memory 组装
         memory_dict = {
             "dialogue_history": [
-                {"role": item.role, "content": item.content}
+                {
+                    **{"role": item.role, "content": item.content},
+                    **({"tool_calls": item.tool_calls} if item.tool_calls else {}),
+                }
                 for item in hot_memory_items
             ]
         }
