@@ -14,6 +14,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from pydantic import Field
 from src.qfaos import QFAConfig, QFAEnum, QFAOS, qfaos_pytool, QFAEvent, QFAExecutionContext, QFASessionContext
 from src.observability_hub.cli.tailer import CLILogTailer
+from pytools.baidu_ocr_tool import BaiduOCRTool
 
 
 def _tool_success(data: Any = None, message: str = "ok") -> Dict[str, Any]:
@@ -303,6 +304,11 @@ _current_session_ctx: ContextVar[Optional[Any]] = ContextVar("_current_session_c
 
 # 4. 账单管理工具实例化
 bill_manager = BillManager(db_path=str(base_dir / "bills.db"))
+
+# 5. 百度 OCR 工具实例化
+baidu_api_key = (base_dir / "baidu_ocr_api_key").read_text(encoding="utf-8").strip()
+baidu_secret_key = (base_dir / "baidu_ocr_secret_key").read_text(encoding="utf-8").strip()
+ocr_tool = BaiduOCRTool(api_key=baidu_api_key, secret_key=baidu_secret_key)
 
 async def _send_tool_card(tool_name: str, tool_desc: str, tool_msg: str) -> None:
     """发送工具调用的飞书卡片消息。"""
@@ -628,11 +634,47 @@ async def _do_execute(event:QFAEvent, session_ctx: QFASessionContext) -> None:
         level="INFO",
     )
 
-    if event.channel != QFAEnum.Channel.Feishu or event.type != QFAEnum.Event.TextMessage:
-        session_ctx.record("bill.event.ignored", {"reason": "not_text_message"}, level="DEBUG")
+    if event.channel != QFAEnum.Channel.Feishu:
+        session_ctx.record("bill.event.ignored", {"reason": "unsupported_channel"}, level="DEBUG")
         return
 
-    user_input = event.payload.strip()
+    # --- 处理图片消息 (ImageMessage) ---
+    if event.type == QFAEnum.Event.ImageMessage:
+        image_key = event.payload
+        session_ctx.record("bill.event.image", {"image_key": image_key}, level="INFO")
+        
+        await session_ctx.send_message(QFAEnum.Channel.Feishu, "收到图片，正在识别中...")
+        
+        try:
+            # 1. 下载图片
+            local_path = await session_ctx.download_image(image_key)
+            
+            # 2. 调用 OCR 识别文字
+            ocr_res = ocr_tool.recognize_text(image_path=local_path)
+            
+            if not ocr_res.get("success"):
+                await session_ctx.send_message(QFAEnum.Channel.Feishu, f"图片识别失败: {ocr_res.get('error_msg')}")
+                return
+            
+            words = [w.get("words", "") for w in ocr_res.get("words_result", [])]
+            ocr_text = "\n".join(words)
+            
+            session_ctx.record("bill.ocr.success", {"text_len": len(ocr_text)}, level="INFO")
+            
+            # 3. 将 OCR 结果拼接成用户提示词
+            user_input = f"我上传了一张图片，根据图片内容处理一下。以下是 OCR 识别出的文字内容：\n\n{ocr_text}"
+            
+        except Exception as e:
+            session_ctx.record("bill.ocr.error", {"error": str(e)}, level="ERROR")
+            await session_ctx.send_message(QFAEnum.Channel.Feishu, f"处理图片时发生错误: {str(e)}")
+            return
+
+    # --- 处理文本消息 (TextMessage) ---
+    elif event.type == QFAEnum.Event.TextMessage:
+        user_input = event.payload.strip()
+    else:
+        session_ctx.record("bill.event.ignored", {"reason": "not_text_or_image_message"}, level="DEBUG")
+        return
     
     # --- 命令行模式 (/开头) ---
     if user_input.startswith("/"):
@@ -709,7 +751,7 @@ async def _do_execute(event:QFAEvent, session_ctx: QFASessionContext) -> None:
 
     # --- AI 模型模式 ---
     session_ctx.record("bill.mode.ai", {"input": user_input}, level="INFO")
-    MAX_ROUND = 10
+    MAX_ROUND = 30
 
     prompt = user_input
     for i in range(MAX_ROUND):
