@@ -7,6 +7,23 @@ from src.skill_hub import initialize
 from src.skill_hub.builtin_tools.browser_use import BrowserUsePyTool
 from src.skill_hub.core.capability_hub import register_pytools
 from src.model_provider.routing.router import ModelRouter
+from unittest.mock import MagicMock
+import litellm
+
+
+def _mock_litellm_response(*, model: str, content: str, finish_reason: str = "stop") -> litellm.ModelResponse:
+    response = MagicMock(spec=litellm.ModelResponse)
+    choice = MagicMock()
+    choice.finish_reason = finish_reason
+    choice.message = MagicMock()
+    choice.message.content = content
+    choice.message.role = "assistant"
+    choice.message.tool_calls = None
+    choice.message.function_call = None
+    response.choices = [choice]
+    response.usage = None
+    response.model = model
+    return response
 
 
 def test_sh_01_initialize_exposes_browser_pytool_exports():
@@ -82,23 +99,14 @@ def test_sh_04_capability_hub_routes_model_capability_to_model_domain():
 
     class FakeModelProviderClient:
         provider_id = "fake"
-        def completion(self, request) -> dict[str, Any]:
+        def completion(self, request) -> litellm.ModelResponse:
             assert request["model"] == "abab6.5s-chat"
             assert request["metadata"]["trace_id"] == "trace-sh-05"
-            return {
-                "model": "abab6.5s-chat",
-                "choices": [
-                    {
-                        "message": {"role": "assistant", "content": "模型路由成功"},
-                        "finish_reason": "stop"
-                    }
-                ],
-                "usage": {"total_tokens": 0}
-            }
+            return _mock_litellm_response(model="abab6.5s-chat", content="模型路由成功")
 
     exports = initialize()
     hub = exports.capability_hub
-    router = ModelRouter(clients={"default": FakeModelProviderClient()})
+    router = ModelRouter(clients={"abab6.5s-chat": FakeModelProviderClient()})
     hub.register_instance_capabilities(router)
 
     result = asyncio.run(

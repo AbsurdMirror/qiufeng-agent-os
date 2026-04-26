@@ -1,10 +1,26 @@
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
+import litellm
 
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.skill_hub.core.capability_hub import RegisteredCapabilityHub
 from src.model_provider.routing.router import ModelRouter
 from src.domain.models import ModelMessage, ModelResponse
+
+
+def _mock_litellm_response(*, model: str, content: str, finish_reason: str = "stop") -> litellm.ModelResponse:
+    response = MagicMock(spec=litellm.ModelResponse)
+    choice = MagicMock()
+    choice.finish_reason = finish_reason
+    choice.message = MagicMock()
+    choice.message.content = content
+    choice.message.role = "assistant"
+    choice.message.tool_calls = None
+    choice.message.function_call = None
+    response.choices = [choice]
+    response.usage = None
+    response.model = model
+    return response
 
 
 @pytest.fixture
@@ -85,8 +101,8 @@ async def test_mr_01_02_build_model_request(hub: RegisteredCapabilityHub):
     """MR-01 & MR-02: payload 解析与验证（通过 Hub 的新机制）"""
     class _Client:
         provider_id = "stub"
-        def completion(self, request):
-            return ModelResponse(model_name="test", content="ok", success=True)
+        def completion(self, payload):
+            return _mock_litellm_response(model=str(payload.get("model")), content="ok")
             
     router = ModelRouter(clients={"default": _Client()})
     hub.register_instance_capabilities(router)
@@ -94,7 +110,7 @@ async def test_mr_01_02_build_model_request(hub: RegisteredCapabilityHub):
     # 正常解析：messages 必须是 tuple[ModelMessage, ...]
     req1 = CapabilityRequest(
         capability_id="model.completion",
-        payload={"request": {"messages": (ModelMessage(role="user", content="hello world"),)}},
+        payload={"request": {"messages": (ModelMessage(role="user", content="hello world"),), "model_name": "default"}},
         metadata={}
     )
     res1 = await hub.invoke(req1)
@@ -116,23 +132,15 @@ async def test_mr_03_route_to_default_client(hub: RegisteredCapabilityHub):
     """MR-03: 路由到默认客户端 (default)"""
     class _Client:
         provider_id = "stub"
-        def completion(self, request):
-            return {
-                "model": "default",
-                "choices": [
-                    {
-                        "message": {"role": "assistant", "content": "from default"},
-                        "finish_reason": "stop"
-                    }
-                ]
-            }
+        def completion(self, payload):
+            return _mock_litellm_response(model=str(payload.get("model")), content="from default")
             
     router = ModelRouter(clients={"default": _Client()})
     hub.register_instance_capabilities(router)
     
     req = CapabilityRequest(
         capability_id="model.completion",
-        payload={"request": {"messages": (ModelMessage(role="user", content="hi"),)}},
+        payload={"request": {"messages": (ModelMessage(role="user", content="hi"),), "model_name": "default"}},
         metadata={}
     )
     res = await hub.invoke(req)
@@ -152,15 +160,7 @@ async def test_mr_04_forced_provider_routing(hub: RegisteredCapabilityHub):
             # request 是 dict
             assert request["metadata"]["trace_id"] == "trace-1"
             assert request["metadata"]["x"] == "y"
-            return {
-                "model": "demo",
-                "choices": [
-                    {
-                        "finish_reason": "stop",
-                        "message": {"role": "assistant", "content": "mock"},
-                    }
-                ],
-            }
+            return _mock_litellm_response(model=str(request.get("model")), content="mock")
             
     router = ModelRouter(clients={"demo": _Client()})
     hub.register_instance_capabilities(router)

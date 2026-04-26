@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+import litellm
 from src.model_provider import (
     MiniMaxModelProviderClient,
     ModelMessage,
@@ -9,7 +11,37 @@ from src.model_provider import (
 )
 
 
-def test_mp_03_litellm_payload_mapping_keeps_standard_fields():
+def _mock_litellm_response(
+    *,
+    model: str,
+    content: str,
+    finish_reason: str = "stop",
+    prompt_tokens: int | None = None,
+    completion_tokens: int | None = None,
+    total_tokens: int | None = None,
+) -> litellm.ModelResponse:
+    response = MagicMock(spec=litellm.ModelResponse)
+    choice = MagicMock()
+    choice.finish_reason = finish_reason
+    choice.message = MagicMock()
+    choice.message.content = content
+    choice.message.role = "assistant"
+    choice.message.tool_calls = None
+    choice.message.function_call = None
+    response.choices = [choice]
+    if prompt_tokens is None and completion_tokens is None and total_tokens is None:
+        response.usage = None
+    else:
+        usage = MagicMock()
+        usage.prompt_tokens = prompt_tokens
+        usage.completion_tokens = completion_tokens
+        usage.total_tokens = total_tokens
+        response.usage = usage
+    response.model = model
+    return response
+
+
+
     """测试项 MP-03: LiteLLM 请求映射保持统一字段对齐"""
     request = ModelRequest(
         messages=(
@@ -53,22 +85,14 @@ def test_mp_04_litellm_response_mapping_normalizes_usage_and_content():
         model_name="abab6.5s-chat",
     )
     response = build_model_response(
-        {
-            "model": "abab6.5s-chat",
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {
-                        "content": "你好，我是 MiniMax。",
-                    },
-                }
-            ],
-            "usage": {
-                "prompt_tokens": 12,
-                "completion_tokens": 7,
-                "total_tokens": 19,
-            },
-        },
+        _mock_litellm_response(
+            model="abab6.5s-chat",
+            content="你好，我是 MiniMax。",
+            finish_reason="stop",
+            prompt_tokens=12,
+            completion_tokens=7,
+            total_tokens=19,
+        ),
         request=request,
         output_schema=None,
         fallback_model_name="abab6.5s-chat",
@@ -94,11 +118,12 @@ def test_mp_05_minimax_completion_degrades_without_litellm(monkeypatch):
     )
 
     client = MiniMaxModelProviderClient(api_key="secret", model_name="abab6.5s-chat")
-    raw = client.completion({"model": "abab6.5s-chat", "messages": ()})
+    response = client.completion({"model": "abab6.5s-chat", "messages": ()})
 
-    assert raw["status"] == "degraded"
-    assert raw["reason"] == "litellm_dependency_missing"
-    assert raw["runtime"]["litellm_installed"] is False
+    assert response.success is False
+    assert response.raw["status"] == "degraded"
+    assert response.raw["reason"] == "litellm_dependency_missing"
+    assert response.raw["runtime"]["litellm_installed"] is False
 
 
 def test_mp_06_minimax_client_returns_degraded_response_when_runtime_unavailable(monkeypatch):
@@ -110,32 +135,27 @@ def test_mp_06_minimax_client_returns_degraded_response_when_runtime_unavailable
     )
     client = MiniMaxModelProviderClient(api_key="secret", model_name="abab6.5s-chat")
 
-    raw = client.completion({"model": "abab6.5s-chat", "messages": ()})
+    response = client.completion({"model": "abab6.5s-chat", "messages": ()})
 
-    assert raw["status"] == "degraded"
-    assert raw["reason"] == "litellm_dependency_missing"
+    assert response.success is False
+    assert response.raw["status"] == "degraded"
+    assert response.raw["reason"] == "litellm_dependency_missing"
 
 
 def test_mp_07_minimax_client_uses_litellm_mapping_when_runtime_ready(monkeypatch):
     """测试项 MP-07: MiniMax 客户端在可用时通过 LiteLLM 适配调用"""
     captured_payload: dict[str, object] = {}
 
-    def fake_completion(**kwargs: object) -> dict[str, object]:
+    def fake_completion(**kwargs: object) -> litellm.ModelResponse:
         captured_payload.update(kwargs)
-        return {
-            "model": kwargs["model"],
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {"content": "MiniMax 调用成功"},
-                }
-            ],
-            "usage": {
-                "prompt_tokens": 10,
-                "completion_tokens": 4,
-                "total_tokens": 14,
-            },
-        }
+        return _mock_litellm_response(
+            model=str(kwargs["model"]),
+            content="MiniMax 调用成功",
+            finish_reason="stop",
+            prompt_tokens=10,
+            completion_tokens=4,
+            total_tokens=14,
+        )
 
     monkeypatch.setattr(
         "src.model_provider.providers.minimax.probe_litellm_runtime",
@@ -189,17 +209,9 @@ def test_mp_08_initialize_routes_minimax_requests_to_specialized_client(monkeypa
     class _StubClient:
         provider_id = "minimax"
 
-        def completion(self, payload: dict[str, object]) -> dict[str, object]:
+        def completion(self, payload: dict[str, object]) -> litellm.ModelResponse:
             captured.update(payload)
-            return {
-                "model": str(payload.get("model")),
-                "choices": [
-                    {
-                        "finish_reason": "stop",
-                        "message": {"content": "ok"},
-                    }
-                ],
-            }
+            return _mock_litellm_response(model=str(payload.get("model")), content="ok")
 
     exports = initialize()
     router = exports.client

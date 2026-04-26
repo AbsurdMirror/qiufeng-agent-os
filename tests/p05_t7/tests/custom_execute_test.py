@@ -1,8 +1,13 @@
 import pytest
+from pydantic import BaseModel
+from typing import Any
 
 from src.domain.events import UniversalEvent, UniversalEventContent
 from src.orchestration_engine.context.runtime_context import RuntimeContext
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
+from src.domain.models import ModelResponse
+from src.domain.translators.schema_translator import SchemaTranslator
+from src.model_provider.routing.router import ModelRouter
 from src.qfaos import QFAConfig, QFAEnum, QFAOS
 from src.qfaos.runtime.context_facade import DefaultQFAExecutionContext, DefaultQFASessionContext
 from src.skill_hub.core.capability_hub import RegisteredCapabilityHub
@@ -36,21 +41,29 @@ def _build_runtime_ctx() -> RuntimeContext:
 
 def _build_capability_hub() -> RegisteredCapabilityHub:
     hub = RegisteredCapabilityHub()
+    output_model = SchemaTranslator.func_to_output_model(ModelRouter.completion)
+    class _ToolOutputModel(BaseModel):
+        result: Any
 
     async def model_handler(_request: CapabilityRequest) -> CapabilityResult:
-        return CapabilityResult(
-            capability_id="model.chat.default",
+        model_response = ModelResponse(
             success=True,
-            output={
-                "content": "",
-                "tool_calls": (
-                    {
-                        "capability_id": "tool.calc",
-                        "payload": {"a": 1, "b": 2},
-                        "metadata": {},
-                    },
+            model_name="minimax-text-01",
+            content="",
+            finish_reason="tool_calls",
+            provider_id="stub",
+            tool_calls=(
+                CapabilityRequest(
+                    capability_id="tool.calc",
+                    payload={"a": 1, "b": 2},
+                    metadata={},
                 ),
-            },
+            ),
+        )
+        return CapabilityResult(
+            capability_id="model.completion",
+            success=True,
+            output=SchemaTranslator.serialize_instance(output_model, model_response),
         )
 
     async def tool_handler(request: CapabilityRequest) -> CapabilityResult:
@@ -75,6 +88,7 @@ def _build_capability_hub() -> RegisteredCapabilityHub:
             domain="model",
             name="model_minimax_chat",
             description="minimax",
+            output_model=output_model,
         ),
         model_handler,
     )
@@ -84,6 +98,7 @@ def _build_capability_hub() -> RegisteredCapabilityHub:
             domain="tool",
             name="calc",
             description="计算工具",
+            output_model=_ToolOutputModel,
         ),
         tool_handler,
     )
@@ -93,6 +108,7 @@ def _build_capability_hub() -> RegisteredCapabilityHub:
             domain="tool",
             name="need_ticket",
             description="审批工具",
+            output_model=_ToolOutputModel,
         ),
         tool_handler,
     )
@@ -101,7 +117,7 @@ def _build_capability_hub() -> RegisteredCapabilityHub:
 
 @pytest.mark.asyncio
 async def test_session_state_and_structured_outputs():
-    storage = initialize_storage_memory(redis_url=None)
+    storage = initialize_storage_memory(memory_config=None)
     hub = _build_capability_hub()
     event = _build_event()
     runtime_ctx = _build_runtime_ctx()

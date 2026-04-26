@@ -1,12 +1,29 @@
 from pydantic import BaseModel
+from unittest.mock import MagicMock
+import litellm
 
-from src.domain.models import ModelMessage, ModelRequest
+from src.domain.models import ModelMessage, ModelRequest, ModelResponse
 from src.model_provider import ModelRouter
 
 
 class _DemoSchema(BaseModel):
     title: str
     score: int
+
+
+def _mock_litellm_response(*, model: str, content: str, finish_reason: str = "stop") -> litellm.ModelResponse:
+    response = MagicMock(spec=litellm.ModelResponse)
+    choice = MagicMock()
+    choice.finish_reason = finish_reason
+    choice.message = MagicMock()
+    choice.message.content = content
+    choice.message.role = "assistant"
+    choice.message.tool_calls = None
+    choice.message.function_call = None
+    response.choices = [choice]
+    response.usage = None
+    response.model = model
+    return response
 
 
 def test_mp_t5_01_router_retries_and_strips_json_code_fence():
@@ -20,24 +37,16 @@ def test_mp_t5_01_router_retries_and_strips_json_code_fence():
             calls["n"] += 1
             calls["messages"].append(payload.get("messages"))
             if calls["n"] == 1:
-                return {
-                    "model": payload.get("model"),
-                    "choices": [
-                        {
-                            "finish_reason": "stop",
-                            "message": {"content": '```json\n{"title":"x"}\n```'},
-                        }
-                    ],
-                }
-            return {
-                "model": payload.get("model"),
-                "choices": [
-                    {
-                        "finish_reason": "stop",
-                        "message": {"content": '```json\n{"title":"ok","score":1}\n```'},
-                    }
-                ],
-            }
+                return _mock_litellm_response(
+                    model=str(payload.get("model")),
+                    content='```json\n{"title":"x"}\n```',
+                    finish_reason="stop",
+                )
+            return _mock_litellm_response(
+                model=str(payload.get("model")),
+                content='```json\n{"title":"ok","score":1}\n```',
+                finish_reason="stop",
+            )
 
     router = ModelRouter(clients={"demo": _Client()})
     response = router.completion(
@@ -58,7 +67,7 @@ def test_mp_t5_01_router_retries_and_strips_json_code_fence():
         and any(
             isinstance(item, dict)
             and item.get("role") == "user"
-            and "你的上一次输出在解析阶段出错" in str(item.get("content", ""))
+            and "解析错误:" in str(item.get("content", ""))
             for item in batch
         )
         for batch in calls["messages"]
@@ -74,15 +83,15 @@ def test_mp_t5_02_router_exhausts_retries_and_returns_error_response():
 
         def completion(self, payload):
             calls["n"] += 1
-            return {
-                "model": payload.get("model"),
-                "choices": [
-                    {
-                        "finish_reason": "stop",
-                        "message": {"content": '{"title":"x"}'},
-                    }
-                ],
-            }
+            return ModelResponse(
+                success=False,
+                model_name=str(payload.get("model")),
+                content='{"title":"x"}',
+                finish_reason="error",
+                provider_id=self.provider_id,
+                repair_reason="schema_validation_failed",
+                raw={"message": "schema_validation_failed"},
+            )
 
     router = ModelRouter(clients={"demo": _Client()})
     response = router.completion(
