@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Mapping
 import litellm
+from litellm.utils import trim_messages
 
 from src.domain.models import ModelResponse
 from src.model_provider.contracts import RawModelProviderClient, LiteLLMRawResponse
@@ -123,6 +124,14 @@ class MiniMaxModelProviderClient(RawModelProviderClient):
             merged_messages.extend(other_messages)
             
             payload_dict["messages"] = merged_messages
+
+        # 调用 litellm 的消息裁剪功能
+        if payload_dict.get("messages"):
+            payload_dict["messages"] = trim_messages(
+                payload_dict["messages"],
+                model=self._model_name or "gpt-3.5-turbo",
+                trim_ratio=0.75,
+            )
 
         try:
             fake_model_cost = {

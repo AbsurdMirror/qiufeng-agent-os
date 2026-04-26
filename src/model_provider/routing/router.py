@@ -13,21 +13,14 @@ from src.model_provider.providers.litellm_adapter import (
 )
 
 import os
-import tempfile
-
-try:
-    import tiktoken
-    HAS_TIKTOKEN = True
-except ImportError:
-    HAS_TIKTOKEN = False
 
 from src.observability_hub.exports import ObservabilityHubExports
 
 class ModelRouter(ModelProviderClient):
     """
     模型路由分发器 (Model Routing)
-    实现 T4 阶段的 MP-P0-01 (名称匹配) 和 MP-P0-02 (自动裁剪)
-    它就像个智能电话分机：接到请求后，先拿着"剪刀"把超长对话剪短，再根据名字呼叫确切的大模型实例。
+    实现 T4 阶段的 MP-P0-01 (名称匹配)
+    它就像个智能电话分机：接到请求后，根据名字呼叫确切的大模型实例。
     """
     def __init__(self, clients: dict[str, RawModelProviderClient], observability: ObservabilityHubExports | None = None):
         """
@@ -36,18 +29,6 @@ class ModelRouter(ModelProviderClient):
         """
         self._clients = clients
         self._observability = observability
-        if not os.environ.get("TIKTOKEN_CACHE_DIR"):
-            os.environ["TIKTOKEN_CACHE_DIR"] = os.path.join(
-                tempfile.gettempdir(),
-                "tiktoken_cache",
-            )
-        # 默认上下文窗口限制
-        self._context_windows = {
-            "gpt-3.5-turbo": 4096,
-            "gpt-4": 8192,
-            "minimax": 32000,
-            "default": 4096
-        }
 
     def add_client(self, model_name: str, client: RawModelProviderClient) -> None:
         self._clients[model_name] = client
@@ -67,50 +48,6 @@ class ModelRouter(ModelProviderClient):
             ),
         )
 
-    def _trim_messages(self, messages: tuple[ModelMessage, ...], model_name: str) -> tuple[ModelMessage, ...]:
-        """
-        MP-P0-02: 自动裁剪 (Auto Trimming)
-        基于目标模型的上下文窗口对输入消息进行裁剪，由于上下文可能突破界限，
-        这里采用强制保留 System 提示词，并从最新的（尾部）对话开始倒推凑配额。
-        """
-        max_tokens = self._context_windows.get(model_name, self._context_windows["default"])
-
-        def estimate_tokens(text: str) -> int:
-            if HAS_TIKTOKEN:
-                try:
-                    encoding = tiktoken.encoding_for_model(model_name)
-                except KeyError:
-                    encoding = tiktoken.get_encoding("cl100k_base")
-                return len(encoding.encode(text))
-            else:
-                # 粗暴但稳妥的降级：如果没有 tiktoken 包，干脆按英文字符长度除以 4 凑合算一下
-                return len(text) // 4
-
-        total_tokens = 0
-        trimmed_messages = []
-
-        # 永远保留 system message 如果有的话
-        system_messages = [m for m in messages if m.role == "system"]
-        for msg in system_messages:
-            total_tokens += estimate_tokens(msg.content)
-
-        # 倒序遍历剩下的消息，直到填满上下文窗口
-        other_messages = [m for m in messages if m.role != "system"]
-
-        # 预留 500 tokens 给模型回答
-        available_tokens = max_tokens - total_tokens - 500
-
-        for msg in reversed(other_messages):
-            msg_tokens = estimate_tokens(msg.content)
-            if available_tokens - msg_tokens > 0:
-                trimmed_messages.append(msg)
-                available_tokens -= msg_tokens
-            else:
-                break
-
-        # 组合 system messages 和裁剪后的其他消息
-        return tuple(system_messages + trimmed_messages[::-1])
-
     @qfaos_pytool(id="model.completion", domain="model")
     def completion(
         self,
@@ -120,34 +57,16 @@ class ModelRouter(ModelProviderClient):
         MP-P0-01: 显式名称匹配 (Explicit Name Matching)
         基于物理名称 (Model Name) 的直接调度匹配机制
         """
-        # MP-P0-02: 自动裁剪
-        # trimmed_messages = self._trim_messages(request.messages, request.model_name)
-        trimmed_messages = request.messages
-
-        # 构建新的请求对象
-        trimmed_request = ModelRequest(
-            messages=trimmed_messages,
-            model_name=request.model_name,
-            model_tag=request.model_tag,
-            temperature=request.temperature,
-            top_p=request.top_p,
-            max_tokens=request.max_tokens,
-            tools=request.tools,
-            output_schema=request.output_schema,
-            max_retries=request.max_retries,
-            metadata=request.metadata
-        )
-
         # MP-P0-01: 路由匹配
-        client = self._clients.get(trimmed_request.model_name)
+        client = self._clients.get(request.model_name)
         if not client:
-            raise ValueError(f"No suitable model provider found for '{trimmed_request.model_name}'")
+            raise ValueError(f"No suitable model provider found for '{request.model_name}'")
 
-        trace_id = trimmed_request.metadata.get("trace_id", "unknown")
+        trace_id = request.metadata.get("trace_id", "unknown")
 
-        max_retries = trimmed_request.max_retries
-        output_schema = trimmed_request.output_schema
-        current_request = trimmed_request
+        max_retries = request.max_retries
+        output_schema = request.output_schema
+        current_request = request
         attempts = 0
         while True:
             try:
