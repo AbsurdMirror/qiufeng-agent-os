@@ -21,13 +21,22 @@ class QFAEvent:
     @classmethod
     def from_universal(cls, event: UniversalEvent) -> "QFAEvent":
         channel = QFAEnum.Channel.Feishu
-        event_type = QFAEnum.Event.TextMessage
+        
+        # 识别消息类型
+        first_content = event.contents[0] if event.contents else None
+        if first_content and first_content.type == "image":
+            event_type = QFAEnum.Event.ImageMessage
+            payload = first_content.file_id or ""
+        else:
+            event_type = QFAEnum.Event.TextMessage
+            payload = event.text
+            
         session_id = event.logical_uid or event.user_id
         return cls(
             channel=channel,
             type=event_type,
             session_id=session_id,
-            payload=event.text,
+            payload=payload,
             raw_event=dict(event.raw_event),
         )
 

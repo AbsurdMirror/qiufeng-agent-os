@@ -53,16 +53,15 @@ class BaiduOCRTool:
         use_textline_orientation: Annotated[bool, Field(description="是否开启文本行方向识别")] = False
     ) -> Annotated[Dict[str, Any], Field(description="包含识别结果的字典，主要字段为 words_result")]:
         """
-        使用百度 PP-OCRv5 识别图片中的文字。
+        使用百度 OCR 识别图片中的文字。
         支持本地文件或在线 URL，并提供多种图像矫正增强选项。
         """
         access_token = self._get_access_token()
-        request_url = f"https://aip.baidubce.com/rest/2.0/ocr/v1/pp_ocrv5?access_token={access_token}"
+        # 默认改用通用文字识别(标准版)，其返回结构更简单且兼容性更好
+        request_url = f"https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic?access_token={access_token}"
         
         payload: Dict[str, Any] = {
-            "useDocOrientationClassify": str(use_doc_orientation).lower(),
-            "useDocUnwarping": str(use_doc_unwarping).lower(),
-            "useTextlineOrientation": str(use_textline_orientation).lower()
+            "detect_direction": "true" if use_doc_orientation else "false",
         }
 
         if image_path:
@@ -72,17 +71,19 @@ class BaiduOCRTool:
         elif image_url:
             payload["url"] = image_url
         else:
-            return {"error": "必须提供 image_path 或 image_url 其中之一"}
+            return {"success": False, "error_msg": "必须提供 image_path 或 image_url 其中之一"}
 
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/json'
         }
 
-        response = requests.post(request_url, headers=headers, data=payload)
-        response.raise_for_status()
-        
-        result = response.json()
+        try:
+            response = requests.post(request_url, headers=headers, data=payload)
+            response.raise_for_status()
+            result = response.json()
+        except Exception as e:
+            return {"success": False, "error_msg": f"请求百度 OCR 失败: {str(e)}"}
         
         # 简单处理错误信息
         if "error_code" in result:

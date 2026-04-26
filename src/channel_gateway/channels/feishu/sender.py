@@ -1,6 +1,8 @@
 import json
 import logging
 import time
+import os
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -226,6 +228,44 @@ class FeishuAsyncSender:
         except Exception as e:
             logger.error(f"Failed to send card to Feishu: {e}")
             return {"status": "failed", "error": str(e)}
+
+    async def download_image(self, message_id: str, file_key: str) -> str:
+        """
+        从飞书下载图片并保存到本地临时目录。
+        返回本地文件绝对路径。
+        """
+        temp_dir = Path("data/temp_images")
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        file_path = temp_dir / f"{file_key}.jpg"
+        
+        if self.mock_mode:
+            logger.info(f"[MOCK FEISHU DOWNLOAD] message_id={message_id}, file_key={file_key} -> {file_path}")
+            # 创建一个虚假的空文件用于测试
+            file_path.touch()
+            return str(file_path.absolute())
+
+        try:
+            token = await self._get_tenant_access_token()
+            headers = {
+                "Authorization": f"Bearer {token}"
+            }
+            # 飞书获取消息资源接口 (获取消息中的资源文件)
+            # 文档: https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/im-v1/message-resource/get
+            url = f"https://open.feishu.cn/open-apis/im/v1/messages/{message_id}/resources/{file_key}?type=image"
+            
+            async with self._client.stream("GET", url, headers=headers) as response:
+                response.raise_for_status()
+                with open(file_path, "wb") as f:
+                    async for chunk in response.aiter_bytes():
+                        f.write(chunk)
+            
+            logger.info(f"Successfully downloaded image {file_key} from message {message_id} to {file_path}")
+            return str(file_path.absolute())
+            
+        except Exception as e:
+            logger.error(f"Failed to download image {file_key} from message {message_id} in Feishu: {e}")
+            raise RuntimeError(f"图片下载失败: {e}")
 
     async def aclose(self):
         """

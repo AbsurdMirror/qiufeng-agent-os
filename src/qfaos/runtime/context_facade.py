@@ -177,6 +177,16 @@ class DefaultQFASessionContext(QFASessionContext):
             self._event
         )
 
+    async def download_image(self, file_id: str) -> str:
+        """从渠道下载图片到本地。"""
+        if self._channel_gateway is None:
+            raise QFAInvalidConfigError("当前上下文未注入 Channel Gateway，无法下载文件")
+        # 使用当前事件的消息 ID
+        return await self._channel_gateway.feishu_sender.download_image(
+            message_id=self._event.message_id, 
+            file_key=file_id
+        )
+
     def record(self, event_name: str, payload: dict[str, Any] | str, level: str = "INFO") -> None:
         if self._observability is None:
             return

@@ -28,26 +28,27 @@ class FeishuWebhookTextEventParser:
         sender_id = _require_mapping(sender, "sender_id")
 
         message_type = _require_str(message, "message_type")
-        if message_type != "text":
-            raise ValueError("unsupported_message_type")
-
-        event_type = _optional_str(header, "event_type")
-        if event_type is not None and event_type != "im.message.receive_v1":
-            raise ValueError("unsupported_event_type")
-
+        
         # 解析被二次序列化的 content 字符串
         content = _require_str(message, "content")
         content_payload = _load_json_dict(content)
-        text = content_payload.get("text")
-        if not isinstance(text, str) or not text.strip():
-            raise ValueError("empty_text")
+
+        if message_type == "text":
+            text = content_payload.get("text")
+            if not isinstance(text, str) or not text.strip():
+                raise ValueError("empty_text")
+            contents = (UniversalEventContent(type="text", data=text),)
+        elif message_type == "image":
+            image_key = content_payload.get("image_key")
+            if not isinstance(image_key, str) or not image_key:
+                raise ValueError("missing_image_key")
+            contents = (UniversalEventContent(type="image", data="", file_id=image_key),)
+        else:
+            raise ValueError(f"unsupported_message_type: {message_type}")
 
         timestamp = _parse_timestamp(_require_str(header, "create_time"))
         user_id = _extract_user_id(sender_id)
         chat_id = _optional_str(message, "chat_id")
-        
-        # 将解析出的文本包装进支持多模态的 UniversalEventContent
-        contents = (UniversalEventContent(type="text", data=text),)
         
         message_id = _require_str(message, "message_id")
 
@@ -83,21 +84,27 @@ class FeishuLongConnectionTextEventParser:
             raise ValueError("unsupported_event_type")
 
         message_type = _require_str(message, "message_type")
-        if message_type != "text":
-            raise ValueError("unsupported_message_type")
 
         content = _require_str(message, "content")
         content_payload = _load_json_dict(content)
-        text = content_payload.get("text")
-        if not isinstance(text, str) or not text.strip():
-            raise ValueError("empty_text")
+        
+        if message_type == "text":
+            text = content_payload.get("text")
+            if not isinstance(text, str) or not text.strip():
+                raise ValueError("empty_text")
+            contents = (UniversalEventContent(type="text", data=text),)
+        elif message_type == "image":
+            image_key = content_payload.get("image_key")
+            if not isinstance(image_key, str) or not image_key:
+                raise ValueError("missing_image_key")
+            contents = (UniversalEventContent(type="image", data="", file_id=image_key),)
+        else:
+            raise ValueError(f"unsupported_message_type: {message_type}")
 
         timestamp = _parse_timestamp(_require_str(header, "create_time"))
         user_id = _extract_user_id(sender_id)
         chat_id = _optional_str(message, "chat_id")
         
-        contents = (UniversalEventContent(type="text", data=text),)
-
         message_id = _require_str(message, "message_id")
 
         return UniversalEvent(

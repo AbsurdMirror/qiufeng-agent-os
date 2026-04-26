@@ -15,6 +15,7 @@ class ChannelType(str, Enum):
 class EventType(str, Enum):
     """事件类型枚举"""
     TextMessage = "text_message"
+    ImageMessage = "image_message"
 
 
 class ModelType(str, Enum):
