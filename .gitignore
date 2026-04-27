@@ -1,6 +1,7 @@
 .qf/
 .venv/
 .pytest_cache/
+.storage/
 __pycache__/
 tests/p05_t7/scripts/feishu_secret
 tests/p05_t7/scripts/minimax_api_key
@@ -8,6 +9,11 @@ tests/p05_t7/scripts/minimax_api_key
 # Sensitive data and logs
 agents/feishu_secret
 agents/minimax_api_key
+agents/baidu_ocr_api_key
+agents/baidu_ocr_secret_key
+data/
 agents/bills.db
 agents/bills copy.db
 bill_agent_logs/
+
+*.log
