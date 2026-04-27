@@ -13,6 +13,8 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from pydantic import Field
 from src.qfaos import QFAConfig, QFAEnum, QFAOS, qfaos_pytool, QFAEvent, QFAExecutionContext, QFASessionContext
+from src.domain.errors import format_user_facing_error
+from src.domain.models import ModelMessage
 from src.observability_hub.cli.tailer import CLILogTailer
 from pytools.baidu_ocr_tool import BaiduOCRTool
 
@@ -545,7 +547,7 @@ async def send_bill_card(
         # 构造卡片变量
         template_variable = {
             "total": f"¥{total_sum:,.2f}",
-            "object_list_1": formatted_bills[:10]  # 限制展示前10条
+            "object_list_1": formatted_bills
         }
 
         # 写死 Template ID
@@ -574,7 +576,7 @@ agent.register_pytool(send_bill_card)
 
 # 7. 注册记忆策略与观测 log 策略
 memory_cfg = QFAConfig.Memory(
-    backend=QFAEnum.Memory.Backend.in_memory,
+    backend=QFAEnum.Memory.Backend.jsonl,
 )
 agent.register_memory(memory_cfg)
 
@@ -608,7 +610,7 @@ async def execute(event:QFAEvent, ctx:QFAExecutionContext) -> None:
     """
     session_ctx = ctx.get_session_ctx(event.session_id)
     if event.session_id not in has_inject_system_prompt_sessions:
-        await session_ctx.add_memory(system_prompt, "system")
+        await session_ctx.add_memory(ModelMessage(role="system", content=system_prompt))
         system_prompt_date_by_session[event.session_id] = datetime.now().strftime("%Y-%m-%d")
         has_inject_system_prompt_sessions.add(event.session_id)
     else:
@@ -616,8 +618,10 @@ async def execute(event:QFAEvent, ctx:QFAExecutionContext) -> None:
         today = datetime.now().strftime("%Y-%m-%d")
         if system_prompt_date_by_session[event.session_id] != today:
             await session_ctx.add_memory(
-                f"日期变成了: {today}, 星期{datetime.now().strftime('%A')}", 
-                "system"
+                ModelMessage(
+                    role="system",
+                    content=f"日期变成了: {today}, 星期{datetime.now().strftime('%A')}",
+                )
             )
             system_prompt_date_by_session[event.session_id] = today
 
@@ -694,13 +698,22 @@ async def _do_execute(event:QFAEvent, session_ctx: QFASessionContext) -> None:
                       + "/get_bill [ID] - 获取账单详情\n" \
                       + "/query_bills - 查询所有账单\n" \
                       + "/get_statistics - 获取账单统计\n" \
+                      + "/clear - 清除当前会话的上下文记忆\n" \
                       + "/help - 显示此帮助信息\n"
             await session_ctx.send_message(QFAEnum.Channel.Feishu, help_text)
             return
 
         # 完整的命令行映射逻辑
         try:
-            if cmd == "add_category" and len(args) >= 1:
+            if cmd == "clear":
+                await session_ctx.clear_memory()
+                # 同时清除本地的系统提示词注入标记
+                if event.session_id in has_inject_system_prompt_sessions:
+                    has_inject_system_prompt_sessions.remove(event.session_id)
+                if event.session_id in system_prompt_date_by_session:
+                    del system_prompt_date_by_session[event.session_id]
+                await session_ctx.send_message(QFAEnum.Channel.Feishu, "上下文记忆已清除。")
+            elif cmd == "add_category" and len(args) >= 1:
                 res = bill_manager.add_category(args[0])
                 await session_ctx.send_message(QFAEnum.Channel.Feishu, f"分类添加{'成功' if res else '失败'}")
             elif cmd == "delete_category" and len(args) >= 1:
@@ -754,6 +767,7 @@ async def _do_execute(event:QFAEvent, session_ctx: QFASessionContext) -> None:
     MAX_ROUND = 30
 
     prompt = user_input
+    is_first_round = True
     for i in range(MAX_ROUND):
         session_ctx.record("bill.ai.round.begin", {"round": i}, level="DEBUG")
         model_output = await session_ctx.model_ask(
@@ -761,29 +775,45 @@ async def _do_execute(event:QFAEvent, session_ctx: QFASessionContext) -> None:
             prompt,
             tools_mode="all",
         )
-        await session_ctx.add_memory(prompt, "user")
-        await session_ctx.add_memory(
-            content=model_output.response,
-            role="assistant",
-            tool_invocations=model_output.tool_invocations,
-        )
+        if is_first_round:
+            await session_ctx.add_user_text_memory(prompt)
+            is_first_round = False
+        if model_output.assistant_message is not None:
+            await session_ctx.add_assistant_message_memory(model_output.assistant_message)
         session_ctx.record("bill.ai.model.raw", {"raw": str(model_output)}, level="INFO")
         
         if model_output.is_pytool_call:
-            session_ctx.record("bill.ai.tool.call", {"tool": model_output.tool_call}, level="INFO")
-            try:
-                response = await session_ctx.call_pytool(model_output.tool_call)
-                tool_output = response.output
-                session_ctx.record("bill.ai.tool.result", {"output": str(response)}, level="INFO")
-            except Exception as e:
-                tool_output = {"ok": False, "code": "PYTOOL_CALL_FAILED", "error": str(e)}
-                session_ctx.record("bill.ai.tool.result.error", {"output": str(tool_output)}, level="ERROR")
-            
-            tool_name = model_output.tool_call.get("capability_id", "unknown_tool")
-            prompt = f"Tool Result ({tool_name}): {tool_output}"
+            for tool_call in model_output.tool_calls:
+                session_ctx.record(
+                    "bill.ai.tool.call",
+                    {
+                        "tool_name": tool_call.capability_id,
+                        "payload": dict(tool_call.payload),
+                        "metadata": dict(tool_call.metadata),
+                    },
+                    level="INFO",
+                )
+                try:
+                    response = await session_ctx.call_pytool(tool_call)
+                    await session_ctx.add_tool_result_memory(response.tool_message)
+                    session_ctx.record(
+                        "bill.ai.tool.result",
+                        {
+                            "tool_name": response.tool_name,
+                            "tool_call_id": response.tool_call_id,
+                            "output": response.output,
+                        },
+                        level="INFO",
+                    )
+                except Exception as e:
+                    error_text = format_user_facing_error(e, summary=f"执行工具 {tool_call.capability_id} 失败")
+                    session_ctx.record("bill.ai.tool.result.error", {"error": error_text}, level="ERROR")
+                    await session_ctx.send_message(QFAEnum.Channel.Feishu, error_text)
+                    return
+            prompt = ""
         
         elif model_output.is_answer:
-            response_text = model_output.response or ""
+            response_text = model_output.response_text or ""
 
             # 去一下开头的换行
             response_text = response_text.lstrip("\n")

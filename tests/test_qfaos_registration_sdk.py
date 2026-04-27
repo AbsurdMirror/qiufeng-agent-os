@@ -5,7 +5,8 @@ from pydantic import Field
 
 from src.qfaos import QFAOS, QFAConfig, QFAEnum, qfaos_pytool, QFAEvent
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
-from src.domain.models import ModelMessage
+from src.domain.models import ModelMessage, ToolCallFunction, ToolInvocation
+from src.domain.translators.model_interactions import ParsedToolCall
 
 # 1. 声明式工具类 (用于方式 2)
 class MathService:
@@ -26,7 +27,7 @@ async def test_qfaos_triple_registration_and_execution():
     agent = QFAOS()
     
     # --- 注册方式 1: 使用 @agent.pytool 装饰器 ---
-    @agent.pytool(id="func_add")
+    @agent.pytool("func_add")
     def add_numbers(
         a: Annotated[int, Field(description="第一个加数")],
         b: Annotated[int, Field(description="第二个加数")]
@@ -57,26 +58,33 @@ async def test_qfaos_triple_registration_and_execution():
     async def handle_event(event: QFAEvent, ctx):
         session_id = event.session_id
         session_ctx = ctx.get_session_ctx(session_id)
+
+        def _build_tool_call(capability_id: str, payload: dict[str, object]) -> ParsedToolCall:
+            return ParsedToolCall(
+                invocation=ToolInvocation(
+                    id=None,
+                    function=ToolCallFunction(
+                        name=capability_id,
+                        arguments='{"payload":"omitted"}',
+                    ),
+                ),
+                request=CapabilityRequest(
+                    capability_id=capability_id,
+                    payload=payload,
+                    metadata={},
+                ),
+            )
         
         # 尝试调用工具 1 (装饰器方式)
-        res1 = await session_ctx.call_pytool({
-            "capability_id": "tool.func_add",
-            "payload": {"a": 10, "b": 20}
-        })
+        res1 = await session_ctx.call_pytool(_build_tool_call("tool.func_add", {"a": 10, "b": 20}))
         results["add"] = res1.output.get("result")
         
         # 尝试调用工具 2 (实例方式)
-        res2 = await session_ctx.call_pytool({
-            "capability_id": "tool.instance.sub",
-            "payload": {"a": 50, "b": 15}
-        })
+        res2 = await session_ctx.call_pytool(_build_tool_call("tool.instance.sub", {"a": 50, "b": 15}))
         results["sub"] = res2.output.get("result")
         
         # 尝试调用工具 3 (手动方式)
-        res3 = await session_ctx.call_pytool({
-            "capability_id": "tool.manual_mul",
-            "payload": {"a": 6, "b": 7}
-        })
+        res3 = await session_ctx.call_pytool(_build_tool_call("tool.manual_mul", {"a": 6, "b": 7}))
         results["mul"] = res3.output.get("result")
 
     # --- 模拟运行环境并触发调用 ---
@@ -171,7 +179,7 @@ async def test_qfaos_registration_invalid_format():
     # --- 1. @agent.pytool 方式 (2 种情况) ---
     print("\n[TEST 1/6] @agent.pytool + 输入不规范")
     with pytest.raises(TypeError) as excinfo:
-        @agent.pytool(id="t1")
+        @agent.pytool("t1")
         def f1(a: int) -> Annotated[int, Field(description="o")]: pass
     err_msg = str(excinfo.value)
     assert "must use Annotated[...] for parameter schema parsing" in err_msg
@@ -181,7 +189,7 @@ async def test_qfaos_registration_invalid_format():
 
     print("[TEST 2/6] @agent.pytool + 输出不规范")
     with pytest.raises(TypeError) as excinfo:
-        @agent.pytool(id="t2")
+        @agent.pytool("t2")
         def f2(a: Annotated[int, Field(description="i")]) -> int: pass
     err_msg = str(excinfo.value)
     assert "must use Annotated[...] for return schema parsing" in err_msg

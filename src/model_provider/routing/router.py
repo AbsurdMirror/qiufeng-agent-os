@@ -1,5 +1,8 @@
-from typing import Any, Annotated
+from typing import Annotated
+
 from pydantic import Field
+
+from src.domain.errors import build_error_report
 from src.domain.models import (
     ModelMessage,
     ModelRequest,
@@ -11,8 +14,6 @@ from src.model_provider.providers.litellm_adapter import (
     build_litellm_completion_payload,
     build_model_response,
 )
-
-import os
 
 from src.observability_hub.exports import ObservabilityHubExports
 
@@ -32,21 +33,6 @@ class ModelRouter(ModelProviderClient):
 
     def add_client(self, model_name: str, client: RawModelProviderClient) -> None:
         self._clients[model_name] = client
-
-    def _build_repair_message(self, *, invalid_output: str, error_text: str, finish_reason: str) -> ModelMessage:
-        return ModelMessage(
-            role="user",
-            content=(
-                "你的上一次"
-                "工具调用" if finish_reason == "SchemaValidationError" else "输出"
-                "在解析阶段出错，请严格按照本轮规范重新输出。\n"
-                "要求：只输出符合规范的结果，不要附加解释文本。\n"
-                "上一次"
-                "工具调用" if finish_reason == "SchemaValidationError" else "输出"
-                f"为: {invalid_output}\n"
-                f"解析错误: {error_text}"
-            ),
-        )
 
     @qfaos_pytool(id="model.completion", domain="model")
     def completion(
@@ -68,13 +54,12 @@ class ModelRouter(ModelProviderClient):
         output_schema = request.output_schema
         current_request = request
         attempts = 0
+        provider_id = client.provider_id
         while True:
             try:
                 payload = build_litellm_completion_payload(
                     current_request,
                 )
-
-                provider_id = client.provider_id
                 
                 if self._observability:
                     self._observability.record(
@@ -84,7 +69,7 @@ class ModelRouter(ModelProviderClient):
                             "model_request": payload,
                             "provider_id": provider_id,
                         },
-                        "INFO",
+                        "DEBUG",
                     )
                 raw = client.completion(payload)
                 if self._observability:
@@ -97,12 +82,13 @@ class ModelRouter(ModelProviderClient):
                         },
                         "DEBUG",
                     )
-                response = build_model_response(
+                response, repair_error = build_model_response(
                     raw,
                     request=current_request,
                     output_schema=output_schema,
                     fallback_model_name=current_request.model_name,
                     provider_id=provider_id,
+                    capture_repair_error=True,
                 )
             except Exception as exc:  # noqa: BLE001
                 fallback = ModelResponse(
@@ -111,14 +97,16 @@ class ModelRouter(ModelProviderClient):
                     success=False,
                     finish_reason="error",
                     provider_id=provider_id,
-                    repair_reason=str(exc),
                     raw={
                         "reason": "model_router_completion_failed",
-                        "message": str(exc),
-                        "traceback": __import__('traceback').format_exc(),
+                        "message": build_error_report(
+                            exc,
+                            summary="模型调用失败",
+                        ).to_user_message(),
                     },
                 )
                 response = fallback
+                repair_error = None
 
             if response.success:
                 return response
@@ -126,7 +114,9 @@ class ModelRouter(ModelProviderClient):
             if attempts >= max_retries:
                 exhausted_raw = dict(response.raw)
                 exhausted_raw["reason"] = "model_response_parse_failed"
-                exhausted_raw["message"] += ". response parsing failed after retries"
+                current_message = exhausted_raw.get("message")
+                if isinstance(current_message, str):
+                    exhausted_raw["message"] = f"{current_message}\nresponse parsing failed after retries"
                 exhausted_raw["retry_count"] = attempts
                 return ModelResponse(
                     model_name=response.model_name,
@@ -137,27 +127,31 @@ class ModelRouter(ModelProviderClient):
                     usage=response.usage,
                     parsed=response.parsed,
                     tool_calls=response.tool_calls,
-                    tool_invocations=response.tool_invocations,
+                    message=response.message,
                     repair_reason=response.repair_reason,
                     raw=exhausted_raw,
                 )
+            if repair_error is None:
+                return ModelResponse(
+                    model_name=response.model_name,
+                    content=response.content,
+                    success=response.success,
+                    finish_reason=response.finish_reason,
+                    provider_id=response.provider_id,
+                    usage=response.usage,
+                    parsed=response.parsed,
+                    tool_calls=response.tool_calls,
+                    message=response.message,
+                    repair_reason=response.repair_reason,
+                    raw=response.raw,
+                )
             attempts += 1
-            repair_reason = response.repair_reason
-            repair_message = self._build_repair_message(
-                invalid_output= [tool_invocation.to_str() for tool_invocation in response.tool_invocations] \
-                                if response.finish_reason == "SchemaValidationError" else response.content,
-                error_text=repair_reason,
-                finish_reason=response.finish_reason,
-            )
+            repair_message = repair_error.to_repair_message()
             current_request = ModelRequest(
                 messages=current_request.messages + (repair_message,),
                 model_name=current_request.model_name,
                 model_tag=current_request.model_tag,
-                temperature=current_request.temperature,
-                top_p=current_request.top_p,
-                max_tokens=current_request.max_tokens,
                 tools=current_request.tools,
-                output_schema=current_request.output_schema,
-                max_retries=current_request.max_retries,
+                generation_config=current_request.generation_config,
                 metadata=current_request.metadata,
             )

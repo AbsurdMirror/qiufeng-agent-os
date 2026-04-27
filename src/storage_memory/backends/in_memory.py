@@ -64,6 +64,11 @@ class InMemoryHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         raw_items = await self.lrange(hot_key, -limit, -1)
         return tuple(_load_hot_memory_item(raw_item) for raw_item in raw_items)
 
+    async def delete_hot_memory(self, logic_id: str, session_id: str) -> None:
+        hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
+        if hot_key in self._hot_memory:
+            del self._hot_memory[hot_key]
+
     async def persist_runtime_state(
         self,
         logic_id: str,

@@ -3,7 +3,8 @@ from typing import Any, Literal, Protocol
 
 from src.domain.events import UniversalEvent
 from src.domain.capabilities import CapabilityDescription
-from src.domain.models import ToolInvocation
+from src.domain.models import ModelMessage, ModelResponse
+from src.domain.translators.model_interactions import ParsedToolCall
 from src.qfaos.config import QFAConfig
 from src.qfaos.enums import QFAEnum
 
@@ -45,11 +46,35 @@ class QFAEvent:
 class QFAModelOutput:
     """模型调用的结构化输出。"""
 
-    is_pytool_call: bool
-    tool_call: dict[str, Any] | None
-    tool_invocations: tuple[ToolInvocation, ...]
-    is_answer: bool
-    response: str | None
+    model_response: ModelResponse
+    assistant_message: ModelMessage | None
+    tool_calls: tuple[ParsedToolCall, ...]
+
+    @property
+    def is_pytool_call(self) -> bool:
+        return bool(self.tool_calls)
+
+    @property
+    def tool_call(self) -> ParsedToolCall | None:
+        return self.tool_calls[0] if self.tool_calls else None
+
+    @property
+    def has_answer_content(self) -> bool:
+        return bool(self.response_text)
+
+    @property
+    def is_answer(self) -> bool:
+        return self.has_answer_content
+
+    @property
+    def response(self) -> str | None:
+        return self.response_text
+
+    @property
+    def response_text(self) -> str | None:
+        if self.assistant_message is not None:
+            return self.assistant_message.content
+        return self.model_response.content
 
 
 @dataclass(frozen=True)
@@ -60,8 +85,14 @@ class QFAToolResult:
     ticket: str | None
     tool_name: str
     tool_desc: str
-    tool_args: dict[str, Any]
-    output: dict[str, Any]
+    tool_args: dict[str, object]
+    output: dict[str, object]
+    tool_call: ParsedToolCall
+    tool_message: ModelMessage
+
+    @property
+    def tool_call_id(self) -> str | None:
+        return self.tool_call.call_id
 
 
 class QFASessionContext(Protocol):
@@ -74,12 +105,20 @@ class QFASessionContext(Protocol):
     async def get_memory(self) -> list[dict[str, Any]]:
         raise NotImplementedError
 
-    async def add_memory(
-        self,
-        content: str | None,
-        role: str = "assistant",
-        tool_invocations: tuple[ToolInvocation, ...] = (),
-    ) -> None:
+    async def add_memory(self, message: ModelMessage) -> None:
+        raise NotImplementedError
+
+    async def add_user_text_memory(self, content: str) -> None:
+        raise NotImplementedError
+
+    async def add_assistant_message_memory(self, message: ModelMessage) -> None:
+        raise NotImplementedError
+
+    async def add_tool_result_memory(self, message: ModelMessage) -> None:
+        raise NotImplementedError
+
+    async def clear_memory(self) -> None:
+        """清除当前会话的所有历史记忆。"""
         raise NotImplementedError
 
     async def model_ask(
@@ -93,7 +132,7 @@ class QFASessionContext(Protocol):
 
     async def call_pytool(
         self,
-        tool_call: dict[str, Any],
+        tool_call: ParsedToolCall,
         ticket_id: str | None = None,
     ) -> QFAToolResult:
         raise NotImplementedError

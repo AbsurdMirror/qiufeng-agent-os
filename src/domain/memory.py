@@ -1,5 +1,5 @@
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any
 
 from src.domain.models import ToolInvocation
 
@@ -24,4 +24,7 @@ class HotMemoryItem:
     role: str
     content: str | None
     tool_calls: tuple[ToolInvocation, ...] = ()
-    metadata: dict[str, Any] = field(default_factory=dict)
+    tool_call_id: str | None = None
+    name: str | None = None
+    structured_output: Mapping[str, object] | None = None
+    metadata: dict[str, object] = field(default_factory=dict)

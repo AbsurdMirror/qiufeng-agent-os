@@ -1,14 +1,20 @@
-from dataclasses import asdict
 from typing import Any, Literal
 
 from src.domain.events import UniversalEvent
 from src.domain.responses import ReplyText, FeishuReplyCard
 from src.channel_gateway.exports import ChannelGatewayExports
+from src.domain.errors import format_user_facing_error
 from src.observability_hub.exports import ObservabilityHubExports
 from src.orchestration_engine.context.runtime_context import RuntimeContext
-from src.domain.models import ModelMessage, ModelResponse, ToolInvocation
+from src.domain.models import ModelMessage, ModelResponse
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.domain.translators.schema_translator import SchemaTranslator
+from src.domain.translators.model_interactions import (
+    ParsedToolCall,
+    build_tool_result_message,
+    model_message_to_debug_dict,
+    model_message_to_hot_memory_item,
+)
 from src.orchestration_engine.contracts import CapabilityHub
 from src.qfaos.config import QFAConfig
 from src.qfaos.enums import QFAEnum
@@ -19,7 +25,6 @@ from src.qfaos.runtime.contracts import (
     QFASessionContext,
     QFAToolResult,
 )
-from src.domain.memory import HotMemoryItem
 from src.storage_memory.exports import StorageMemoryExports
 
 from ..internal.primitives import reset_approved_ticket_id, set_approved_ticket_id
@@ -51,27 +56,17 @@ class DefaultQFASessionContext(QFASessionContext):
     def state(self) -> dict[str, Any]:
         return self._runtime_context.state
 
-    async def get_memory(self) -> list[dict[str, Any]]:
+    async def get_memory(self) -> list[dict[str, object]]:
         history = self._runtime_context.memory.get("dialogue_history", [])
-        result: list[dict[str, Any]] = []
+        result: list[dict[str, object]] = []
         for item in history:
-            message = dict(item)
-            message["tool_calls"] = [asdict(call) for call in message.get("tool_calls", ())]
-            result.append(message)
+            if not isinstance(item, ModelMessage):
+                raise QFAInvalidConfigError("dialogue_history 中只允许存在 ModelMessage")
+            result.append(model_message_to_debug_dict(item))
         return result
 
-    async def add_memory(
-        self,
-        content: str | None,
-        role: str = "assistant",
-        tool_invocations: tuple[ToolInvocation, ...] = (),
-    ) -> None:
-        item = HotMemoryItem(
-            trace_id=self._runtime_context.trace_id,
-            role=role,
-            content=content,
-            tool_calls=tool_invocations,
-        )
+    async def add_memory(self, message: ModelMessage) -> None:
+        item = model_message_to_hot_memory_item(message, self._runtime_context.trace_id)
         await self._storage_memory.append_hot_memory(
             self._logic_id,
             self._runtime_context.session_id,
@@ -79,13 +74,32 @@ class DefaultQFASessionContext(QFASessionContext):
             10,
         )
         dialogue = self._runtime_context.memory.setdefault("dialogue_history", [])
-        dialogue.append(
-            {
-                "role": role,
-                "content": content,
-                "tool_calls": tool_invocations,
-            }
+        if not isinstance(dialogue, list):
+            raise QFAInvalidConfigError("dialogue_history 必须为 ModelMessage 列表")
+        dialogue.append(message)
+
+    async def add_user_text_memory(self, content: str) -> None:
+        await self.add_memory(ModelMessage(role="user", content=content))
+
+    async def add_assistant_message_memory(self, message: ModelMessage) -> None:
+        if message.role != "assistant":
+            raise QFAInvalidConfigError("assistant memory 必须传入 assistant 角色消息")
+        await self.add_memory(message)
+
+    async def add_tool_result_memory(self, message: ModelMessage) -> None:
+        if message.role != "tool":
+            raise QFAInvalidConfigError("tool result memory 必须传入 tool 角色消息")
+        await self.add_memory(message)
+
+    async def clear_memory(self) -> None:
+        # 1. 清除持久化存储中的热记忆
+        await self._storage_memory.delete_hot_memory(
+            self._logic_id,
+            self._runtime_context.session_id,
         )
+        # 2. 清除当前运行时的对话历史快照
+        if "dialogue_history" in self._runtime_context.memory:
+            self._runtime_context.memory["dialogue_history"] = []
 
     async def model_ask(
         self,
@@ -125,31 +139,32 @@ class DefaultQFASessionContext(QFASessionContext):
 
     async def call_pytool(
         self,
-        tool_call: dict[str, Any],
+        tool_call: ParsedToolCall,
         ticket_id: str | None = None,
     ) -> QFAToolResult:
-        capability_id = tool_call.get("capability_id")
-        if not isinstance(capability_id, str) or not capability_id.strip():
-            raise QFAInvalidConfigError("tool_call.capability_id 必须为非空字符串")
-        tool_args = tool_call.get("payload", {})
-        if not isinstance(tool_args, dict):
-            raise QFAInvalidConfigError("tool_call.payload 必须为 dict")
-        tool_metadata = tool_call.get("metadata", {})
-        if not isinstance(tool_metadata, dict):
-            raise QFAInvalidConfigError("tool_call.metadata 必须为 dict")
+        tool_metadata = dict(tool_call.metadata)
+        tool_metadata["trace_id"] = self._runtime_context.trace_id
         token = set_approved_ticket_id(ticket_id)
         try:
-            result = await self._capability_hub.invoke(
-                CapabilityRequest(
-                    capability_id=capability_id,
-                    payload=tool_args,
-                    metadata={**tool_metadata, "trace_id": self._runtime_context.trace_id},
-                    ticket_id=ticket_id,
+            try:
+                result = await self._capability_hub.invoke(
+                    CapabilityRequest(
+                        capability_id=tool_call.capability_id,
+                        payload=tool_call.payload,
+                        metadata=tool_metadata,
+                        ticket_id=ticket_id,
+                    )
                 )
-            )
+            except Exception as exc:  # noqa: BLE001
+                raise QFAInvalidConfigError(
+                    format_user_facing_error(exc, summary=f"调用工具 {tool_call.capability_id} 失败")
+                ) from exc
         finally:
             reset_approved_ticket_id(token)
-        return self._to_tool_result(capability_id, tool_args, result)
+        capability = self._capability_hub.get_capability(tool_call.capability_id)
+        if capability is None:
+            raise QFAInvalidConfigError(f"找不到工具能力描述: {tool_call.capability_id}")
+        return self._to_tool_result(tool_call=tool_call, capability=capability, result=result)
 
     async def send_message(self, channel: QFAEnum.Channel, text: str) -> None:
         if channel != QFAEnum.Channel.Feishu:
@@ -198,12 +213,17 @@ class DefaultQFASessionContext(QFASessionContext):
 
     def _to_model_output(self, result: CapabilityResult) -> QFAModelOutput:
         if not result.success:
+            failed_response = ModelResponse(
+                model_name="unknown-model",
+                content=result.error_message or "",
+                success=False,
+                finish_reason="error",
+                provider_id=None,
+            )
             return QFAModelOutput(
-                is_pytool_call=False,
-                tool_call=None,
-                tool_invocations=(),
-                is_answer=True,
-                response=result.error_message or "",
+                model_response=failed_response,
+                assistant_message=None,
+                tool_calls=(),
             )
 
         # 1. 自动推导与反序列化 (T3 架构核心)
@@ -219,114 +239,63 @@ class DefaultQFASessionContext(QFASessionContext):
         assert isinstance(output, ModelResponse), f"期望 ModelResponse，实际得到: {type(output)}"
 
         # 2. 转换逻辑
-        # 优先检查工具调用 (T4 模型能力规范)
-        if output.tool_calls:
-            # 提取第一个工具调用进行处理
-            first_call = output.tool_calls[0]
-            # 兼容处理：CapabilityRequest 转为 QFA 内部使用的 dict 格式
-            tool_call_dict = {
-                "capability_id": first_call.capability_id,
-                "payload": first_call.payload,
-                "metadata": first_call.metadata,
-            }
-            return QFAModelOutput(
-                is_pytool_call=True,
-                tool_call=tool_call_dict,
-                tool_invocations=output.tool_invocations,
-                is_answer=False,
-                response=None,
-            )
-
-        # 无工具调用，则视为普通文本回答
         return QFAModelOutput(
-            is_pytool_call=False,
-            tool_call=None,
-            tool_invocations=output.tool_invocations,
-            is_answer=True,
-            response=output.content or "",
+            model_response=output,
+            assistant_message=output.assistant_message,
+            tool_calls=output.tool_calls,
         )
 
     def _to_tool_result(
         self,
-        capability_id: str,
-        tool_args: dict[str, Any],
+        tool_call: ParsedToolCall,
+        capability: CapabilityDescription,
         result: CapabilityResult,
     ) -> QFAToolResult:
-        # 1. 获取能力描述 (T3 架构核心)
-        capability = self._capability_hub.get_capability(capability_id)
-        tool_desc = capability.description if capability else f"工具 {capability_id}"
+        tool_desc = capability.description
+        ticket = None
+        is_ask_ticket = False
+        final_output: dict[str, object]
 
-        # 2. 处理失败场景
         if not result.success:
             if result.error_code == "requires_user_approval":
                 ticket = result.metadata.get("ticket_id")
-                return QFAToolResult(
-                    is_ask_ticket=True,
-                    ticket=str(ticket) if ticket else None,
-                    tool_name=capability_id,
-                    tool_desc=tool_desc,
-                    tool_args=tool_args,
-                    output=dict(result.output),  # 审批阶段的 output 通常包含提示信息
-                )
-            else:
-                return QFAToolResult(
-                    is_ask_ticket=False,
-                    ticket=None,
-                    tool_name=capability_id,
-                    tool_desc=tool_desc,
-                    tool_args=tool_args,
-                    output={
-                        "error_code": result.error_code,
-                        "error_message": result.error_message,
-                    },
-                )
-
-        # 3. 处理成功场景：自动推导与反序列化 (T3 架构核心)
-        if not capability:
-            # 兜底：如果没有能力描述，回退到原始字典
-            return QFAToolResult(
-                is_ask_ticket=False,
-                ticket=None,
-                tool_name=capability_id,
-                tool_desc=tool_desc,
-                tool_args=tool_args,
-                output=dict(result.output),
-            )
-
-        # 验证并还原为 Model 实例
-        parsed_obj = SchemaTranslator.validate_payload(capability.output_model, result.output)
-        
-        # 提取真正的返回值 (由 SchemaTranslator 包装在 result 字段中)
-        raw_output = getattr(parsed_obj, "result")
-        
-        # 统一转为 dict 返回给编排层 (QFA 契约要求 output 为 dict)
-        if hasattr(raw_output, "model_dump"):
-            final_output = raw_output.model_dump(mode="json")
-        elif hasattr(raw_output, "__dict__"):
-            final_output = dict(raw_output)
+                is_ask_ticket = True
+            final_output = {
+                "error_code": result.error_code or "tool_execution_failed",
+                "error_message": result.error_message or "工具执行失败",
+            }
         else:
-            final_output = {"result": raw_output}
+            parsed_obj = SchemaTranslator.validate_payload(capability.output_model, result.output)
+            result_value = getattr(parsed_obj, "result")
+            if isinstance(result_value, dict):
+                final_output = result_value
+            elif hasattr(result_value, "model_dump"):
+                final_output = result_value.model_dump(mode="json")
+            else:
+                final_output = {"result": result_value}
 
         return QFAToolResult(
-            is_ask_ticket=False,
-            ticket=None,
-            tool_name=capability_id,
+            is_ask_ticket=is_ask_ticket,
+            ticket=str(ticket) if ticket else None,
+            tool_name=tool_call.capability_id,
             tool_desc=tool_desc,
-            tool_args=tool_args,
+            tool_args=tool_call.payload,
             output=final_output,
+            tool_call=tool_call,
+            tool_message=build_tool_result_message(tool_call, final_output),
         )
 
     def _build_messages(self, prompt: str) -> tuple[ModelMessage, ...]:
         history = self._runtime_context.memory.get("dialogue_history", [])
-        messages = [
-            ModelMessage(
-                role=item["role"],
-                content=item.get("content"),
-                tool_calls=item.get("tool_calls", ()),
-            )
-            for item in history
-        ]
-        messages.append(ModelMessage(role="user", content=prompt))
+        if not isinstance(history, list):
+            raise QFAInvalidConfigError("dialogue_history 必须为 ModelMessage 列表")
+        messages: list[ModelMessage] = []
+        for item in history:
+            if not isinstance(item, ModelMessage):
+                raise QFAInvalidConfigError("dialogue_history 中只允许存在 ModelMessage")
+            messages.append(item)
+        if prompt:
+            messages.append(ModelMessage(role="user", content=prompt))
         return tuple(messages)
 
 

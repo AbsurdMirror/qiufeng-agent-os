@@ -43,6 +43,12 @@ def initialize(
             limit=limit,
             observability=observability,
         ),
+        delete_hot_memory=lambda logic_id, session_id: _delete_hot_memory(
+            protocol=store,
+            logic_id=logic_id,
+            session_id=session_id,
+            observability=observability,
+        ),
         persist_runtime_state=lambda logic_id, session_id, state: _persist_runtime_state(
             protocol=store,
             logic_id=logic_id,
@@ -77,6 +83,10 @@ async def _append_hot_memory(
                 "session_id": session_id,
                 "role": item.role,
                 "content_preview": item.content[:100] if item.content else "",
+                "tool_call_count": len(item.tool_calls),
+                "tool_call_ids": [call.id for call in item.tool_calls if call.id],
+                "tool_name": item.name,
+                "tool_call_id": item.tool_call_id,
             },
             "DEBUG",
         )
@@ -98,6 +108,26 @@ async def _read_hot_memory(
     """代理方法：读取热记忆"""
     # 注意：读取时可能没有上下文 TraceID，此处不做强制记录，或者仅记录动作
     return await protocol.read_hot_memory(logic_id=logic_id, session_id=session_id, limit=limit)
+
+
+async def _delete_hot_memory(
+    protocol: StorageAccessProtocol,
+    logic_id: str,
+    session_id: str,
+    observability: ObservabilityHubExports | None = None,
+) -> None:
+    """代理方法：删除热记忆"""
+    if observability:
+        observability.record(
+            "system",
+            {
+                "event": "storage.hot_memory.delete",
+                "logic_id": logic_id,
+                "session_id": session_id,
+            },
+            "INFO",
+        )
+    await protocol.delete_hot_memory(logic_id=logic_id, session_id=session_id)
 
 
 async def _persist_runtime_state(

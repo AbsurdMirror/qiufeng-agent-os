@@ -57,6 +57,11 @@ class RedisHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         raw_items = await self.lrange(hot_key, -limit, -1)
         return tuple(_load_hot_memory_item(raw_item) for raw_item in raw_items)
 
+    async def delete_hot_memory(self, logic_id: str, session_id: str) -> None:
+        """删除指定会话的所有热记忆历史记录"""
+        hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
+        await self._redis.delete(hot_key)
+
     async def persist_runtime_state(
         self,
         logic_id: str,

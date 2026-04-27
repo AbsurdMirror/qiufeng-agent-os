@@ -1,5 +1,8 @@
-from typing import Any, Mapping, Protocol, Union
+from collections.abc import Mapping
+from typing import Protocol, Union
+
 from src.domain.models import (
+    ModelMessage,
     ModelRequest,
     ModelResponse,
 )
@@ -23,12 +26,12 @@ class ModelProviderClient(Protocol):
 class RawModelProviderClient(Protocol):
     """
     对内模型提供商客户端协议 (Inner Interface)。
-    输入为 Mapping[str, Any]，输出为 LiteLLM 兼容的原始响应。
+    输入为 Mapping[str, object]，输出为 LiteLLM 兼容的原始响应。
     适用于具体模型的适配器实现（如 MiniMax）。
     """
     provider_id: str
 
-    def completion(self, payload: Mapping[str, Any]) -> LiteLLMRawResponse:
+    def completion(self, payload: Mapping[str, object]) -> LiteLLMRawResponse:
         raise NotImplementedError
 
 
@@ -46,7 +49,8 @@ class InMemoryModelProviderClient:
         """
         last_content = ""
         if request.messages:
-            last_content = request.messages[-1].content
+            last_message = request.messages[-1]
+            last_content = last_message.content or ""
         
         return ModelResponse(
             success=True,
@@ -54,6 +58,7 @@ class InMemoryModelProviderClient:
             content=last_content,
             finish_reason="stop",
             provider_id=self.provider_id,
+            message=ModelMessage(role="assistant", content=last_content),
             raw={
                 "model": request.model_name or "mock-model",
                 "choices": [

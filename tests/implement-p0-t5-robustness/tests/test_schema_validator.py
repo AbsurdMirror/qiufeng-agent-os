@@ -90,7 +90,9 @@ def test_mp_t5_02_router_exhausts_retries_and_returns_error_response():
                 finish_reason="error",
                 provider_id=self.provider_id,
                 repair_reason="schema_validation_failed",
-                raw={"message": "schema_validation_failed"},
+                raw={
+                    "message": "schema_validation_failed",
+                },
             )
 
     router = ModelRouter(clients={"demo": _Client()})

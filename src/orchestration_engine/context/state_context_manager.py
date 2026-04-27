@@ -2,6 +2,7 @@ import copy
 import logging
 from typing import Any, Mapping
 
+from src.domain.translators.model_interactions import hot_memory_item_to_model_message
 from src.orchestration_engine.context.runtime_context import RuntimeContext
 from src.storage_memory.exports import StorageMemoryExports
 
@@ -29,13 +30,7 @@ class StateContextManager:
 
         # 将 Memory 组装
         memory_dict = {
-            "dialogue_history": [
-                {
-                    **{"role": item.role, "content": item.content},
-                    **({"tool_calls": item.tool_calls} if item.tool_calls else {}),
-                }
-                for item in hot_memory_items
-            ]
+            "dialogue_history": [hot_memory_item_to_model_message(item) for item in hot_memory_items]
         }
 
         # 初始化 RuntimeContext

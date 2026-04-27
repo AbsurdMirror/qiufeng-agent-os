@@ -22,5 +22,6 @@ class StorageMemoryExports:
         Awaitable[tuple[HotMemoryItem, ...]],
     ]
     read_hot_memory: Callable[[str, str, int], Awaitable[tuple[HotMemoryItem, ...]]]
+    delete_hot_memory: Callable[[str, str], Awaitable[None]]
     persist_runtime_state: Callable[[str, str, Mapping[str, Any]], Awaitable[dict[str, Any]]]
     load_runtime_state: Callable[[str, str], Awaitable[dict[str, Any]]]

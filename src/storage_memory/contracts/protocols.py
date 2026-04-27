@@ -49,6 +49,10 @@ class StorageAccessProtocol(Protocol):
         """读取指定会话的热记忆历史记录"""
         raise NotImplementedError
 
+    async def delete_hot_memory(self, logic_id: str, session_id: str) -> None:
+        """删除指定会话的所有热记忆历史记录"""
+        raise NotImplementedError
+
     async def persist_runtime_state(
         self,
         logic_id: str,

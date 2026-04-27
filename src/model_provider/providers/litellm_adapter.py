@@ -1,9 +1,18 @@
-from dataclasses import asdict, dataclass, field
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
 from importlib.metadata import PackageNotFoundError, version
 from importlib.util import find_spec
-from typing import Any, Mapping
+import json
 
-from src.domain.models import ModelMessage, ModelRequest, ModelResponse, ModelUsage, ToolCallFunction, ToolInvocation
+from src.domain.errors import ModelResponseRepairableError
+from src.domain.models import (
+    ModelMessage,
+    ModelOutputSchema,
+    ModelRequest,
+    ModelResponse,
+    ModelUsage,
+)
+from src.domain.translators.model_interactions import ParsedToolCall
 from src.model_provider.contracts import LiteLLMRawResponse
 
 import litellm
@@ -23,9 +32,9 @@ class LiteLLMRuntimeState:
     status: str
     reason: str | None = None
     litellm_version: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "litellm_installed": self.litellm_installed,
             "available": self.available,
@@ -61,7 +70,7 @@ def build_litellm_completion_payload(
     request: ModelRequest,
     api_key: str | None = None,
     base_url: str | None = None,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """
     将内部统一的 ModelRequest 对象转换为 LiteLLM 的 completion 函数所需要的参数字典。
     
@@ -75,27 +84,22 @@ def build_litellm_completion_payload(
     if not isinstance(request.model_name, str):
         raise ValueError("model_request_model_name_required")
 
-    payload: dict[str, Any] = {
+    payload: dict[str, object] = {
         "model": request.model_name,
         "messages": tuple(_to_litellm_message(message) for message in request.messages),
     }
-    if request.temperature is not None:
-        payload["temperature"] = request.temperature
-    if request.top_p is not None:
-        payload["top_p"] = request.top_p
-    if request.max_tokens is not None:
-        payload["max_tokens"] = request.max_tokens
+    payload["temperature"] = request.temperature
+    payload["top_p"] = request.top_p
+    payload["max_tokens"] = request.max_tokens
     if request.tools:
         payload["tools"] = tuple(_to_litellm_tool(tool) for tool in request.tools)
     if api_key:
         payload["api_key"] = api_key
     if base_url:
         payload["base_url"] = base_url
-    if getattr(request, "output_schema", None) is not None:
+    if request.output_schema is not None:
         payload["response_format"] = request.output_schema
-    
-    # 缺点与漏洞风险点：这里使用 dict() 只是浅拷贝。
-    # 如果 request.metadata 中包含嵌套的可变对象（如列表、字典），在后续修改 payload["metadata"] 时可能会篡改原始请求数据。
+
     metadata = dict(request.metadata)
     litellm_kwargs = metadata.pop("litellm_kwargs", None)
     if metadata:
@@ -109,166 +113,208 @@ def build_model_response(
     response_raw: LiteLLMRawResponse,
     *,
     request: ModelRequest,
-    output_schema: Any | None,
+    output_schema: ModelOutputSchema | None,
     fallback_model_name: str,
     provider_id: str,
-) -> ModelResponse:
+    capture_repair_error: bool = False,
+) -> ModelResponse | tuple[ModelResponse, ModelResponseRepairableError | None]:
     """
     统一构造 ModelResponse：
     直接根据 response_raw 的类型（dict 或 LiteLLM 对象）提取数据。
     """
     if isinstance(response_raw, ModelResponse):
-        return response_raw
+        return _return_build_result(
+            response_raw,
+            _derive_repair_error_from_response(response_raw),
+            capture_repair_error,
+        )
 
-    elif isinstance(response_raw, litellm.ModelResponse):
+    if isinstance(response_raw, litellm.ModelResponse):
+        if not response_raw.choices:
+            response = ModelResponse(
+                success=False,
+                model_name=fallback_model_name,
+                content="",
+                finish_reason="error",
+                provider_id=provider_id,
+                repair_reason="model_response_choices_empty",
+                raw={"response_raw": str(response_raw)},
+            )
+            repair_error = SchemaValidationError(
+                reason_code="model_response_choices_empty",
+                invalid_output="",
+                error_text="model_response_choices_empty",
+                schema_name=None,
+            )
+            return _return_build_result(response, repair_error, capture_repair_error)
+
         first_choice = response_raw.choices[0]
         message_obj = first_choice.message
         usage_obj = response_raw.usage
         model_name = response_raw.model
         finish_reason = first_choice.finish_reason
-        content = message_obj.content
+        content = _normalize_message_content(message_obj.content)
         
         # 归一化 usage
         usage = None
         if usage_obj:
             usage = ModelUsage(
-                input_tokens=getattr(usage_obj, "prompt_tokens", None) or getattr(usage_obj, "input_tokens", None),
-                output_tokens=getattr(usage_obj, "completion_tokens", None) or getattr(usage_obj, "output_tokens", None),
-                total_tokens=getattr(usage_obj, "total_tokens", None),
+                input_tokens=_read_token_count(usage_obj, ("prompt_tokens", "input_tokens")),
+                output_tokens=_read_token_count(usage_obj, ("completion_tokens", "output_tokens")),
+                total_tokens=_read_token_count(usage_obj, ("total_tokens",)),
             )
 
         content_effective = "" if content is None else content.strip()
 
-        parsed = None
-        schema_error: str | None = None
+        parsed: object | None = None
+        schema_error: SchemaValidationError | None = None
 
         # 3. 解析 Tool Calls
-        tool_calls = ()
-        tool_invocations: tuple[ToolInvocation, ...] = ()
-        if message_obj.tool_calls:
+        tool_calls: tuple[ParsedToolCall, ...] = ()
+        tool_call_candidates = message_obj.tool_calls
+        if tool_call_candidates:
             try:
-                tool_calls = convert_litellm_tool_calls(message_obj.tool_calls, request.tools)
-                tool_invocations = tuple(
-                    ToolInvocation(
-                        id=call.id,
-                        type="function",
-                        function=ToolCallFunction(
-                            name=call.function.name,
-                            arguments=call.function.arguments,
-                        ),
-                    )
-                    for call in message_obj.tool_calls
-                )
+                parsed_tool_calls = convert_litellm_tool_calls(tool_call_candidates, request.tools)
+                tool_calls = tuple(parsed_tool_calls)
             except ToolCallValidationError as exc:
-                return ModelResponse(
+                response = ModelResponse(
                     success=False,
-                    model_name=str(model_name),
+                    model_name=model_name,
                     content=content,
-                    finish_reason="ToolCallValidationError",
+                    finish_reason="tool_call_error",
                     provider_id=provider_id,
                     usage=usage,
-                    repair_reason=str(exc),
-                    raw={"response_raw": str(response_raw), "reason": "tool_calls_parse_failed"},
+                    repair_reason=exc.error_text,
+                    raw={
+                        "response_raw": str(response_raw),
+                        "reason": "tool_calls_parse_failed",
+                        "tool_error": exc.to_dict(),
+                    },
                 )
-        elif hasattr(message_obj, "function_call") and message_obj.function_call:
-            # 兼容旧版 function_call (LiteLLM 会将其转换为对象或保持字典，取决于版本)
-            # 但用户要求 parse_message_tool_calls 仅接受 List[ChatCompletionMessageToolCall]
-            # 这里如果不符合类型要求，暂时不处理或抛出错误
-            pass
+                return _return_build_result(response, exc, capture_repair_error)
+        assistant_message = ModelMessage(
+            role="assistant",
+            content=content,
+            tool_calls=tuple(item.invocation for item in tool_calls),
+        )
 
-        # 4. 构建响应对象
         if output_schema is not None:
             if content_effective:
                 try:
                     parsed = parse_message_content(output_schema, content_effective)
                 except SchemaValidationError as exc:
-                    if not tool_calls:
-                        schema_error = str(exc)
+                    schema_error = exc
             elif not tool_calls:
-                schema_error = "model_message_content_empty"
+                schema_error = SchemaValidationError(
+                    reason_code="model_message_content_empty",
+                    invalid_output="",
+                    error_text="model_message_content_empty",
+                    schema_name=None,
+                )
 
         # 5. 构造最终响应
         resolved_finish_reason = str(finish_reason) if finish_reason else "stop"
         
         if tool_calls:
-            return ModelResponse(
+            response = ModelResponse(
                 success=True,
-                model_name=str(model_name),
+                model_name=model_name,
                 content=content,
                 finish_reason=resolved_finish_reason if resolved_finish_reason != "stop" else "tool_calls",
                 provider_id=provider_id,
                 usage=usage,
                 parsed=parsed,
                 tool_calls=tool_calls,
-                tool_invocations=tool_invocations,
+                message=assistant_message,
+                repair_reason=schema_error.error_text if schema_error is not None else None,
                 raw={"response_raw": str(response_raw)},
             )
+            return _return_build_result(response, schema_error, capture_repair_error)
 
         if parsed is not None:
-            return ModelResponse(
+            response = ModelResponse(
                 success=True,
-                model_name=str(model_name),
+                model_name=model_name,
                 content=content,
                 finish_reason=resolved_finish_reason,
                 provider_id=provider_id,
                 usage=usage,
                 parsed=parsed,
                 tool_calls=tool_calls,
-                tool_invocations=tool_invocations,
+                message=assistant_message,
                 raw={"response_raw": str(response_raw)},
             )
+            return _return_build_result(response, None, capture_repair_error)
 
         if output_schema is not None:
-            return ModelResponse(
+            response = ModelResponse(
                 success=False,
-                model_name=str(model_name),
+                model_name=model_name,
                 content=content,
                 finish_reason="error",
                 provider_id=provider_id,
                 usage=usage,
-                repair_reason=schema_error or "schema_validation_failed",
+                message=assistant_message,
+                repair_reason=schema_error.error_text if schema_error is not None else "schema_validation_failed",
                 raw={"response_raw": str(response_raw)},
             )
+            return _return_build_result(response, schema_error, capture_repair_error)
 
         if not content_effective:
-            return ModelResponse(
+            repair_error = SchemaValidationError(
+                reason_code="model_message_content_empty",
+                invalid_output="",
+                error_text="model_message_content_empty",
+                schema_name=None,
+            )
+            response = ModelResponse(
                 success=False,
-                model_name=str(model_name),
+                model_name=model_name,
                 content=content or "",
                 finish_reason="error",
                 provider_id=provider_id,
                 usage=usage,
-                repair_reason="model_message_content_empty",
+                message=assistant_message,
+                repair_reason=repair_error.error_text,
                 raw={"response_raw": str(response_raw)},
             )
+            return _return_build_result(response, repair_error, capture_repair_error)
 
-        return ModelResponse(
+        response = ModelResponse(
             success=True,
-            model_name=str(model_name),
+            model_name=model_name,
             content=content,
             finish_reason=resolved_finish_reason,
             provider_id=provider_id,
             usage=usage,
             parsed=parsed,
             tool_calls=tool_calls,
-            tool_invocations=tool_invocations,
+            message=assistant_message,
             raw={"response_raw": str(response_raw)},
         )
-    else:
-        raise NotImplementedError(f"Unsupported response type: {type(response_raw)}")
+        return _return_build_result(response, None, capture_repair_error)
+
+    raise NotImplementedError(f"Unsupported response type: {type(response_raw)}")
 
 
 def _to_litellm_message(message: ModelMessage) -> dict[str, object]:
-    payload: dict[str, object] = {
-        "role": message.role,
-        "content": message.content,
-    }
+    payload: dict[str, object] = {"role": message.role}
+    if message.content is not None:
+        payload["content"] = message.content
+    elif message.structured_content is not None:
+        payload["content"] = json.dumps(dict(message.structured_content), ensure_ascii=False)
+    else:
+        payload["content"] = ""
     if message.tool_calls:
-        payload["tool_calls"] = [asdict(call) for call in message.tool_calls]
+        payload["tool_calls"] = [call.to_dict() for call in message.tool_calls]
+    if message.tool_call_id is not None:
+        payload["tool_call_id"] = message.tool_call_id
+    if message.name is not None:
+        payload["name"] = message.name
     return payload
 
 
-def _to_litellm_tool(tool: CapabilityDescription) -> dict[str, Any]:
+def _to_litellm_tool(tool: CapabilityDescription) -> dict[str, object]:
     capability_id = tool.capability_id
     description = tool.description
     input_schema = tool.input_schema
@@ -280,6 +326,51 @@ def _to_litellm_tool(tool: CapabilityDescription) -> dict[str, Any]:
             "parameters": dict(input_schema),
         },
     }
+
+
+def _read_token_count(source: object, field_names: tuple[str, ...]) -> int | None:
+    for field_name in field_names:
+        value = getattr(source, field_name, None)
+        if isinstance(value, int):
+            return value
+    return None
+
+
+def _normalize_message_content(content: object) -> str | None:
+    if content is None:
+        return None
+    if isinstance(content, str):
+        return content
+    raise ValueError("model_message_content_must_be_string")
+
+
+def _return_build_result(
+    response: ModelResponse,
+    repair_error: ModelResponseRepairableError | None,
+    capture_repair_error: bool,
+) -> ModelResponse | tuple[ModelResponse, ModelResponseRepairableError | None]:
+    if capture_repair_error:
+        return response, repair_error
+    return response
+
+
+def _derive_repair_error_from_response(
+    response: ModelResponse,
+) -> ModelResponseRepairableError | None:
+    if response.success or response.repair_reason is None:
+        return None
+    if response.finish_reason == "tool_call_error":
+        return ToolCallValidationError(
+            response.repair_reason,
+            reason_code=response.repair_reason,
+            raw_arguments=response.content,
+        )
+    return SchemaValidationError(
+        reason_code=response.repair_reason,
+        invalid_output=response.content or "",
+        error_text=response.repair_reason,
+        schema_name=None,
+    )
 
 
 def _has_dependency(module_name: str) -> bool:

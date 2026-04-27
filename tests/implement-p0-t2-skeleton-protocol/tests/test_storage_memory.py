@@ -3,6 +3,7 @@ import asyncio
 import pytest
 from src.storage_memory.backends.in_memory import InMemoryHotMemoryStore
 from src.domain.memory import HotMemoryItem
+from src.domain.models import ToolCallFunction, ToolInvocation
 
 @pytest.fixture
 def memory_store():
@@ -78,6 +79,41 @@ def test_sm_03_append_hot_memory_with_max_rounds(memory_store):
     # 返回的最新记录列表
     assert result[0].trace_id == "t2"
     assert result[1].trace_id == "t3"
+
+
+def test_sm_03b_append_hot_memory_preserves_tool_messages(memory_store):
+    logic_id = "agent_tool"
+    session_id = "session_tool"
+    tool_call = ToolInvocation(
+        id="call-1",
+        function=ToolCallFunction(name="tool.calc", arguments='{"a":1,"b":2}'),
+    )
+
+    result = asyncio.run(
+        memory_store.append_hot_memory(
+            logic_id,
+            session_id,
+            HotMemoryItem(
+                trace_id="trace-tool",
+                role="tool",
+                content='{"result":"ok"}',
+                tool_call_id="call-1",
+                name="tool.calc",
+                structured_output={"result": "ok"},
+                tool_calls=(tool_call,),
+            ),
+            max_rounds=5,
+        )
+    )
+
+    assert len(result) == 1
+    restored = result[0]
+    assert restored.role == "tool"
+    assert restored.tool_call_id == "call-1"
+    assert restored.name == "tool.calc"
+    assert restored.structured_output == {"result": "ok"}
+    assert len(restored.tool_calls) == 1
+    assert restored.tool_calls[0].function.name == "tool.calc"
 
 def test_sm_04_runtime_state_persistence(memory_store):
     """测试项 SM-04: 运行时状态持久化与加载"""

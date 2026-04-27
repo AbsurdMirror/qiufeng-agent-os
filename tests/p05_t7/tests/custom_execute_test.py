@@ -1,11 +1,11 @@
 import pytest
 from pydantic import BaseModel
-from typing import Any
 
 from src.domain.events import UniversalEvent, UniversalEventContent
 from src.orchestration_engine.context.runtime_context import RuntimeContext
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
-from src.domain.models import ModelResponse
+from src.domain.models import ModelMessage, ModelResponse, ToolCallFunction, ToolInvocation
+from src.domain.translators.model_interactions import ParsedToolCall
 from src.domain.translators.schema_translator import SchemaTranslator
 from src.model_provider.routing.router import ModelRouter
 from src.qfaos import QFAConfig, QFAEnum, QFAOS
@@ -34,7 +34,7 @@ def _build_runtime_ctx() -> RuntimeContext:
         trace_id="trace-1",
         logic_id="logic-1",
         session_id="session-1",
-        memory={"dialogue_history": [{"role": "user", "content": "历史消息"}]},
+        memory={"dialogue_history": [ModelMessage(role="user", content="历史消息")]},
         state={"ticket_asked": False},
     )
 
@@ -43,20 +43,51 @@ def _build_capability_hub() -> RegisteredCapabilityHub:
     hub = RegisteredCapabilityHub()
     output_model = SchemaTranslator.func_to_output_model(ModelRouter.completion)
     class _ToolOutputModel(BaseModel):
-        result: Any
+        result: object
 
     async def model_handler(_request: CapabilityRequest) -> CapabilityResult:
         model_response = ModelResponse(
             success=True,
             model_name="minimax-text-01",
-            content="",
+            content="我先调用工具",
             finish_reason="tool_calls",
             provider_id="stub",
+            message=ModelMessage(
+                role="assistant",
+                content="我先调用工具",
+                tool_calls=(
+                    ToolInvocation(
+                        id="call-calc",
+                        function=ToolCallFunction(name="tool.calc", arguments='{"a": 1, "b": 2}'),
+                    ),
+                    ToolInvocation(
+                        id="call-ticket",
+                        function=ToolCallFunction(name="tool.need_ticket", arguments="{}"),
+                    ),
+                ),
+            ),
             tool_calls=(
-                CapabilityRequest(
-                    capability_id="tool.calc",
-                    payload={"a": 1, "b": 2},
-                    metadata={},
+                ParsedToolCall(
+                    invocation=ToolInvocation(
+                        id="call-calc",
+                        function=ToolCallFunction(name="tool.calc", arguments='{"a": 1, "b": 2}'),
+                    ),
+                    request=CapabilityRequest(
+                        capability_id="tool.calc",
+                        payload={"a": 1, "b": 2},
+                        metadata={"call_id": "call-calc"},
+                    ),
+                ),
+                ParsedToolCall(
+                    invocation=ToolInvocation(
+                        id="call-ticket",
+                        function=ToolCallFunction(name="tool.need_ticket", arguments="{}"),
+                    ),
+                    request=CapabilityRequest(
+                        capability_id="tool.need_ticket",
+                        payload={},
+                        metadata={"call_id": "call-ticket"},
+                    ),
                 ),
             ),
         )
@@ -142,20 +173,20 @@ async def test_session_state_and_structured_outputs():
     model_output = await session_ctx.model_ask(model_cfg, "请计算", tools_mode="all")
     assert model_output.is_pytool_call is True
     assert model_output.tool_call is not None
+    assert len(model_output.tool_calls) == 2
+    assert model_output.response == "我先调用工具"
 
-    normal_tool = await session_ctx.call_pytool(
-        {"capability_id": "tool.calc", "payload": {"a": 1, "b": 2}, "metadata": {}}
-    )
+    normal_tool = await session_ctx.call_pytool(model_output.tool_calls[0])
     assert normal_tool.is_ask_ticket is False
     assert normal_tool.output == {"result": "ok"}
     assert normal_tool.tool_name == "tool.calc"
+    assert normal_tool.tool_message.role == "tool"
 
-    ask_tool = await session_ctx.call_pytool(
-        {"capability_id": "tool.need_ticket", "payload": {}, "metadata": {}}
-    )
+    ask_tool = await session_ctx.call_pytool(model_output.tool_calls[1])
     assert ask_tool.is_ask_ticket is True
     assert ask_tool.ticket == "ticket-1"
     assert ask_tool.tool_name == "tool.need_ticket"
+    assert ask_tool.tool_call_id == "call-ticket"
 
 
 def test_custom_execute_registration():
