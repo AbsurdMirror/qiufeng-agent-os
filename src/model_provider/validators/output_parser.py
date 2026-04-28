@@ -7,8 +7,7 @@ from pydantic import BaseModel, ValidationError
 
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest
 from src.domain.errors import ModelResponseRepairableError
-from src.domain.models import ToolCallFunction, ToolInvocation
-from src.domain.translators.model_interactions import ParsedToolCall
+from src.domain.models import ToolCallFunction, ToolInvocation, ParsedToolCall
 
 from litellm import ChatCompletionMessageToolCall
 

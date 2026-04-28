@@ -5,43 +5,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from src.domain.capabilities import CapabilityRequest
-import src.domain.models as domain_models
-
-if TYPE_CHECKING:
-    from src.domain.memory import HotMemoryItem
-    from src.domain.models import ModelMessage
-
-ToolInvocation = domain_models.ToolInvocation
-
-
-@dataclass(frozen=True)
-class ParsedToolCall:
-    invocation: ToolInvocation
-    request: CapabilityRequest
-
-    @property
-    def call_id(self) -> str | None:
-        return self.invocation.id
-
-    @property
-    def capability_id(self) -> str:
-        return self.request.capability_id
-
-    @property
-    def tool_name(self) -> str:
-        return self.invocation.function.name
-
-    @property
-    def payload(self) -> dict[str, object]:
-        return self.request.payload
-
-    @property
-    def metadata(self) -> dict[str, object]:
-        return self.request.metadata
-
-
-domain_models.ParsedToolCall = ParsedToolCall
-
+from src.domain.models import ParsedToolCall
+from src.domain.memory import HotMemoryItem
+from src.domain.models import ModelMessage
 
 def model_message_to_hot_memory_item(message: ModelMessage, trace_id: str) -> HotMemoryItem:
     from src.domain.memory import HotMemoryItem

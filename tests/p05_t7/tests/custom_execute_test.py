@@ -4,8 +4,7 @@ from pydantic import BaseModel
 from src.domain.events import UniversalEvent, UniversalEventContent
 from src.orchestration_engine.context.runtime_context import RuntimeContext
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
-from src.domain.models import ModelMessage, ModelResponse, ToolCallFunction, ToolInvocation
-from src.domain.translators.model_interactions import ParsedToolCall
+from src.domain.models import ModelMessage, ModelResponse, ToolCallFunction, ToolInvocation, ParsedToolCall
 from src.domain.translators.schema_translator import SchemaTranslator
 from src.model_provider.routing.router import ModelRouter
 from src.qfaos import QFAConfig, QFAEnum, QFAOS

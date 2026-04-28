@@ -4,15 +4,15 @@ from importlib.metadata import PackageNotFoundError, version
 from importlib.util import find_spec
 import json
 
-from src.domain.errors import ModelResponseRepairableError
+from src.domain.errors import ModelResponseRepairableError, ModelTokenOverflowError
 from src.domain.models import (
     ModelMessage,
     ModelOutputSchema,
     ModelRequest,
     ModelResponse,
     ModelUsage,
+    ParsedToolCall
 )
-from src.domain.translators.model_interactions import ParsedToolCall
 from src.model_provider.contracts import LiteLLMRawResponse
 
 import litellm
@@ -382,3 +382,169 @@ def _read_dependency_version(package_name: str) -> str | None:
         return version(package_name)
     except PackageNotFoundError:
         return None
+
+
+def trim_messages(
+    messages: Sequence[Mapping[str, object]],
+    *,
+    model: str,
+    trim_ratio: float = 0.75,
+    max_context_tokens: int | None = None,
+    reserved_output_tokens: int | None = None,
+) -> list[dict[str, object]]:
+    """
+    精简版消息裁剪器：
+    1. 计算 Token 预算。
+    2. 正序提取所有 system 消息，计算其 Token。若超预算则报错。
+    3. 逆序提取对话历史（User 或 Assistant+Tool 成组），直到填满预算。
+    4. 若连最近的一组对话都塞不下，则报错。
+    """
+    if not messages:
+        return []
+
+    # 1. 预算计算
+    def _resolve_context_window() -> int:
+        if isinstance(max_context_tokens, int) and max_context_tokens > 0:
+            return max_context_tokens
+        try:
+            return litellm.model_cost.get(model, {}).get("max_tokens", 64 * 1024)
+        except Exception:
+            return 64 * 1024
+
+    budget = int(_resolve_context_window() * trim_ratio)
+    if isinstance(reserved_output_tokens, int) and reserved_output_tokens > 0:
+        budget = max(0, budget - reserved_output_tokens)
+
+    # 2. 阶段一：System 消息固守 (Forward Pass)
+    system_messages: list[dict[str, object]] = []
+    system_tokens = 0
+    for msg in messages:
+        if str(msg.get("role") or "") == "system":
+            m = dict(msg)
+            tokens = litellm.token_counter(model=model, messages=[m])
+            system_messages.append(m)
+            system_tokens += tokens
+
+    if system_tokens > budget:
+        raise ModelTokenOverflowError(
+            f"System messages tokens ({system_tokens}) exceed budget ({budget})",
+            budget=budget,
+            actual=system_tokens,
+        )
+
+    # 3. 阶段二：上下文回溯 (Backward Pass)
+    context_pool: list[dict[str, object]] = []
+    current_tokens = system_tokens
+    i = len(messages) - 1
+    
+    while i >= 0:
+        msg = messages[i]
+        if str(msg.get("role") or "") == "system":
+            i -= 1
+            continue
+        
+        group: list[dict[str, object]] = []
+        if str(msg.get("role") or "") == "tool":
+            # 严格 1:1 处理：tool 及其上一条 assistant
+            if i - 1 < 0 or str(messages[i-1].get("role") or "") != "assistant":
+                raise ModelTokenOverflowError(
+                    "Structural error: tool message must follow an assistant message.",
+                    budget=budget
+                )
+            group = [dict(messages[i-1]), dict(messages[i])]
+            step = 2
+        else:
+            group = [dict(msg)]
+            step = 1
+        
+        group_tokens = litellm.token_counter(model=model, messages=group)
+        if current_tokens + group_tokens <= budget:
+            # 插入到 pool 头部保持相对顺序
+            context_pool = group + context_pool
+            current_tokens += group_tokens
+            i -= step
+        else:
+            break
+
+    # 4. 报错检查：如果存在非 system 消息但一条都没塞进去
+    has_non_system = any(str(m.get("role") or "") != "system" for m in messages)
+    if has_non_system and not context_pool:
+        raise ModelTokenOverflowError(
+            "Budget too small to include even the latest user/tool message group.",
+            budget=budget,
+            actual=current_tokens
+        )
+
+    return system_messages + context_pool
+
+
+def _cleanup_trimmed_messages(messages: list[dict[str, object]]) -> list[dict[str, object]]:
+    """
+    清理裁剪后的消息序列，确保满足模型 API 的结构约束。
+    
+    约束包括：
+    1. 序列开头不能是 tool 角色（通常必须是 system 或 user）。
+    2. 任何 tool 消息必须有对应的 assistant.tool_calls。
+    3. 任何带有 tool_calls 的 assistant 消息，如果其所有的 tool 结果都被裁掉了，该 assistant 消息也应被裁掉（防止悬空调用）。
+    """
+    if not messages:
+        return []
+
+    cleaned = list(messages)
+    
+    # 规则 1：移除开头的 tool 消息（因为它们失去了前置的 assistant 呼应）
+    while cleaned and str(cleaned[0].get("role") or "") == "tool":
+        cleaned.pop(0)
+
+    # 规则 2 & 3：处理 tool_calls 完整性
+    # 收集当前序列中所有 assistant 消息中定义的 tool_call_id
+    tool_call_ids: set[str] = set()
+    for msg in cleaned:
+        if str(msg.get("role") or "") != "assistant":
+            continue
+        tool_calls = msg.get("tool_calls")
+        if not isinstance(tool_calls, Sequence):
+            continue
+        for call in tool_calls:
+            if isinstance(call, Mapping):
+                call_id = call.get("id")
+                if isinstance(call_id, str) and call_id:
+                    tool_call_ids.add(call_id)
+
+    # 过滤掉那些 tool_call_id 不在已知列表中的 tool 消息
+    cleaned = [
+        msg
+        for msg in cleaned
+        if str(msg.get("role") or "") != "tool"
+        or not isinstance(msg.get("tool_call_id"), str)
+        or msg.get("tool_call_id") in tool_call_ids
+    ]
+
+    # 反向过滤：如果 assistant 的 tool_calls 对应的结果都被裁了，也移除该 assistant 消息
+    tool_message_ids: set[str] = set()
+    for msg in cleaned:
+        if str(msg.get("role") or "") != "tool":
+            continue
+        tool_call_id = msg.get("tool_call_id")
+        if isinstance(tool_call_id, str) and tool_call_id:
+            tool_message_ids.add(tool_call_id)
+
+    cleaned = [
+        msg
+        for msg in cleaned
+        if str(msg.get("role") or "") != "assistant"
+        or not isinstance(msg.get("tool_calls"), Sequence)
+        # 如果是 assistant 且有 tool_calls，至少要有一个 call 还在 cleaned 中有对应的 tool 响应
+        or any(
+            isinstance(call, Mapping)
+            and isinstance(call.get("id"), str)
+            and call.get("id") in tool_message_ids
+            for call in (msg.get("tool_calls") or ())
+        )
+    ]
+
+    # 再次清理开头可能新出现的 tool 消息
+    while cleaned and str(cleaned[0].get("role") or "") == "tool":
+        cleaned.pop(0)
+
+    return cleaned

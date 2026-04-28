@@ -3,8 +3,7 @@ from typing import Any, Literal, Protocol
 
 from src.domain.events import UniversalEvent
 from src.domain.capabilities import CapabilityDescription
-from src.domain.models import ModelMessage, ModelResponse
-from src.domain.translators.model_interactions import ParsedToolCall
+from src.domain.models import ModelMessage, ModelResponse, ParsedToolCall
 from src.qfaos.config import QFAConfig
 from src.qfaos.enums import QFAEnum
 

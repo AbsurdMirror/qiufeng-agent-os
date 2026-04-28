@@ -5,8 +5,7 @@ from pydantic import Field
 
 from src.qfaos import QFAOS, QFAConfig, QFAEnum, qfaos_pytool, QFAEvent
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
-from src.domain.models import ModelMessage, ToolCallFunction, ToolInvocation
-from src.domain.translators.model_interactions import ParsedToolCall
+from src.domain.models import ModelMessage, ToolCallFunction, ToolInvocation, ParsedToolCall
 
 # 1. 声明式工具类 (用于方式 2)
 class MathService:

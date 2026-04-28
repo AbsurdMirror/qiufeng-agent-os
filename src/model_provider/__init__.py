@@ -20,7 +20,7 @@ from src.domain.models import (
     ModelResponse,
     ModelUsage,
 )
-from src.domain.translators import ParsedToolCall
+from src.domain.models import ParsedToolCall
 from .exports import ModelProviderExports
 from .providers.litellm_adapter import (
     LiteLLMRuntimeState,

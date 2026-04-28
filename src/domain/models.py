@@ -8,7 +8,6 @@ from typing import Literal, TypeAlias
 from pydantic import BaseModel
 
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest
-from src.domain.translators.model_interactions import ParsedToolCall
 
 
 ModelMessageRole: TypeAlias = Literal["system", "user", "assistant", "tool"]
@@ -40,6 +39,32 @@ class ToolInvocation:
     def to_str(self) -> str:
         """将 ToolInvocation 转换为字符串表示"""
         return json.dumps(self.to_dict(), ensure_ascii=False)
+
+
+@dataclass(frozen=True)
+class ParsedToolCall:
+    invocation: ToolInvocation
+    request: CapabilityRequest
+
+    @property
+    def call_id(self) -> str | None:
+        return self.invocation.id
+
+    @property
+    def capability_id(self) -> str:
+        return self.request.capability_id
+
+    @property
+    def tool_name(self) -> str:
+        return self.invocation.function.name
+
+    @property
+    def payload(self) -> dict[str, object]:
+        return self.request.payload
+
+    @property
+    def metadata(self) -> dict[str, object]:
+        return self.request.metadata
 
 
 @dataclass(frozen=True)

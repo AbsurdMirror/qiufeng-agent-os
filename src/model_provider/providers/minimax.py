@@ -1,12 +1,11 @@
 from dataclasses import dataclass, field
 from typing import Any, Mapping
 import litellm
-from litellm.utils import trim_messages
 
 from src.domain.models import ModelResponse
 from src.model_provider.contracts import RawModelProviderClient, LiteLLMRawResponse
 from src.model_provider.providers.litellm_adapter import (
-    probe_litellm_runtime,
+    probe_litellm_runtime
 )
 
 
@@ -102,6 +101,18 @@ class MiniMaxModelProviderClient(RawModelProviderClient):
         payload_dict.setdefault("api_key", self._api_key)
         payload_dict.setdefault("base_url", self._base_url)
 
+        # 注入模型成本元数据，以便裁剪器能正确获取 context_window
+        fake_model_cost = {
+            "max_tokens": 64 * 1024,
+            "input_cost_per_token": 0.000001,  # 随便填个数，防止计费逻辑崩溃
+            "output_cost_per_token": 0.000002,
+            "lite_llm_model_name": "MiniMax-M2.7",
+            "model_name": "minimax/MiniMax-M2.7"
+        }
+        litellm.model_cost["minimax/MiniMax-M2.7"] = fake_model_cost
+        litellm.model_cost["minimax/MiniMax-M2.7-highspeed"] = fake_model_cost
+        litellm.model_cost["minimax/MiniMax-M2.5-highspeed"] = fake_model_cost
+
         # 处理 MiniMax 限制：messages 中只能有一个 system message
         raw_messages = payload_dict.get("messages", [])
         if raw_messages:
@@ -125,25 +136,17 @@ class MiniMaxModelProviderClient(RawModelProviderClient):
             
             payload_dict["messages"] = merged_messages
 
-        # 调用 litellm 的消息裁剪功能
+        """
+        # 调用自定义裁剪器（基于 litellm.token_counter）
         if payload_dict.get("messages"):
             payload_dict["messages"] = trim_messages(
                 payload_dict["messages"],
-                model=self._model_name or "gpt-3.5-turbo",
+                model=self._model_name,
                 trim_ratio=0.75,
             )
+        """
 
         try:
-            fake_model_cost = {
-                "max_tokens": 200000,
-                "input_cost_per_token": 0.000001,  # 随便填个数，防止计费逻辑崩溃
-                "output_cost_per_token": 0.000002,
-                "lite_llm_model_name": "MiniMax-M2.7",
-                "model_name": "minimax/MiniMax-M2.7"
-            }
-            litellm.model_cost["minimax/MiniMax-M2.7"] = fake_model_cost
-            litellm.model_cost["minimax/MiniMax-M2.7-highspeed"] = fake_model_cost
-            litellm.model_cost["minimax/MiniMax-M2.5-highspeed"] = fake_model_cost
             # litellm._turn_on_debug()
             # print("payload_dict", payload_dict)
             response = litellm.completion(**payload_dict)

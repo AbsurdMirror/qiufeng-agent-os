@@ -6,11 +6,10 @@ from src.channel_gateway.exports import ChannelGatewayExports
 from src.domain.errors import format_user_facing_error
 from src.observability_hub.exports import ObservabilityHubExports
 from src.orchestration_engine.context.runtime_context import RuntimeContext
-from src.domain.models import ModelMessage, ModelResponse
+from src.domain.models import ModelMessage, ModelResponse, ParsedToolCall
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.domain.translators.schema_translator import SchemaTranslator
 from src.domain.translators.model_interactions import (
-    ParsedToolCall,
     build_tool_result_message,
     model_message_to_debug_dict,
     model_message_to_hot_memory_item,
