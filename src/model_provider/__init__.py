@@ -24,9 +24,8 @@ from src.domain.models import ParsedToolCall
 from .exports import ModelProviderExports
 from .providers.litellm_adapter import (
     LiteLLMRuntimeState,
-    build_model_response,
-    build_litellm_completion_payload,
     probe_litellm_runtime,
+    LiteLLMAdapter,
 )
 from .providers.minimax import (
     MiniMaxModelProviderClient,
@@ -38,6 +37,7 @@ from .validators.output_parser import (
     ToolCallValidationError,
     convert_litellm_tool_calls,
     parse_message_content,
+    ModelOutputParser,
 )
 
 __all__ = [
@@ -54,11 +54,11 @@ __all__ = [
     "ParsedToolCall",
     "SchemaValidationError",
     "ToolCallValidationError",
-    "build_model_response",
-    "build_litellm_completion_payload",
     "convert_litellm_tool_calls",
     "initialize",
     "probe_litellm_runtime",
     "parse_message_content",
     "ModelRouter",
+    "ModelOutputParser",
+    "LiteLLMAdapter",
 ]

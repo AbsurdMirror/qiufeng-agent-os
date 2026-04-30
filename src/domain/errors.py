@@ -39,6 +39,15 @@ class ModelResponseRepairableError(Exception):
         )
 
 
+class ModelTokenOverflowError(Exception):
+    """当消息裁剪后仍超过模型 Token 预算时抛出。"""
+
+    def __init__(self, message: str, *, budget: int, actual: int | None = None) -> None:
+        super().__init__(message)
+        self.budget = budget
+        self.actual = actual
+
+
 @dataclass(frozen=True)
 class ErrorReport:
     summary: str

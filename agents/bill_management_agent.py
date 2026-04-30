@@ -531,8 +531,6 @@ async def send_bill_card(
             await session.send_message(QFAEnum.Channel.Feishu, "没有找到符合条件的账单。")
             return _tool_success(message="No bills to send")
 
-        print("b的type是：", type(bills))
-
         total_sum = sum(b.amount for b in bills)
         formatted_bills = []
         for b in bills:
@@ -778,6 +776,11 @@ async def _do_execute(event:QFAEvent, session_ctx: QFASessionContext) -> None:
         if is_first_round:
             await session_ctx.add_user_text_memory(prompt)
             is_first_round = False
+        if not model_output.model_response.success:
+            session_ctx.record("bill.ai.model.error", {"error": model_output.model_response.repair_reason}, level="ERROR")
+            await session_ctx.send_message(QFAEnum.Channel.Feishu, f"模型调用失败: {model_output.model_response.repair_reason}")
+            return
+
         if model_output.assistant_message is not None:
             await session_ctx.add_assistant_message_memory(model_output.assistant_message)
         session_ctx.record("bill.ai.model.raw", {"raw": str(model_output)}, level="INFO")

@@ -4,10 +4,7 @@ from enum import Enum
 import time
 from typing import Any
 
-try:
-    from pydantic import BaseModel as PydanticBaseModel
-except Exception:
-    PydanticBaseModel = None
+from pydantic import BaseModel as PydanticBaseModel
 
 
 class LogLevel(str, Enum):
@@ -34,7 +31,7 @@ class NormalizedRecord:
 
 def record(
     trace_id: str,
-    data: Mapping[str, Any] | str | Any,
+    data: Any,
     level: LogLevel | str = LogLevel.INFO,
 ) -> NormalizedRecord:
     """
@@ -48,80 +45,57 @@ def record(
     Returns:
         NormalizedRecord: 归一化后的记录实体
     """
-    normalized_level = level if isinstance(level, LogLevel) else LogLevel(str(level).upper())
+    if not isinstance(level, LogLevel):
+        try:
+            level = LogLevel(str(level).upper())
+        except Exception as exc:
+            raise ValueError(format_user_facing_error(exc, summary=f"日志级别 {level} 无效，必须为 {LogLevel.__members__.keys()} 中的一个"))
     payload, payload_type = _normalize_data(data)
     return NormalizedRecord(
         trace_id=trace_id,
-        level=normalized_level,
+        level=level,
         payload=payload,
         payload_type=payload_type,
         timestamp_ms=int(time.time() * 1000),
     )
 
-
-def _normalize_data(data: Mapping[str, Any] | str | Any) -> tuple[dict[str, Any], str]:
-    """内部路由：根据数据类型，选择对应的归一化策略"""
+def _any_to_mapping(data: Any) -> Mapping[str, Any]:
+    """将任意数据转换为字典格式"""
     if isinstance(data, Mapping):
-        return _flatten_mapping(data), "dict"
-    if isinstance(data, str):
-        return {"message": data}, "str"
-    if _is_base_model_instance(data):
-        serialized = _serialize_base_model(data)
-        return _flatten_mapping(serialized), "basemodel"
-    raise TypeError("unsupported_record_data_type")
+        return data
+    if is_dataclass(data):
+        return asdict(data)
+    if isinstance(data, PydanticBaseModel):
+        return data.model_dump()
+    if isinstance(data, list):
+        res = {}
+        for idx, item in enumerate(data):
+            res[f"{idx}"] = _any_to_mapping(item)
+        return res
+    return {"v": f"{data}"}
 
-
-def _is_base_model_instance(data: Any) -> bool:
-    """鸭子类型检测：判断对象是否是一个 Pydantic BaseModel 或类似的结构化数据类"""
-    if PydanticBaseModel is not None and isinstance(data, PydanticBaseModel):
-        return True
-    has_model_dump = callable(getattr(data, "model_dump", None))
-    has_dict = callable(getattr(data, "dict", None))
-    return has_model_dump or has_dict
-
-
-def _serialize_base_model(data: Any) -> dict[str, Any]:
-    """安全地将结构化模型转换为字典"""
-    model_dump = getattr(data, "model_dump", None)
-    if callable(model_dump):
-        serialized = model_dump()
-    else:
-        dict_method = getattr(data, "dict", None)
-        if not callable(dict_method):
-            raise TypeError("invalid_basemodel_payload")
-        serialized = dict_method()
-
-    if not isinstance(serialized, Mapping):
-        raise TypeError("basemodel_must_serialize_to_mapping")
-    return dict(serialized)
-
+def _normalize_data(data: Any) -> tuple[dict[str, str], str]:
+    """内部路由：根据数据类型，选择对应的归一化策略"""
+    mapping_data = _any_to_mapping(data)
+    return _flatten_mapping(mapping_data), f"{type(data)}"
 
 def _flatten_mapping(
     data: Mapping[str, Any],
     parent_key: str = "",
-) -> dict[str, Any]:
+) -> dict[str, str]:
     """
     核心算法：字典展平 (Flatten Dictionary)。
     将深层嵌套的字典拍平为一维结构，例如：
     {"user": {"id": 1, "name": "foo"}} 转换为 {"user.id": 1, "user.name": "foo"}
     这种结构极大地提升了后续存储在 Elasticsearch 等搜索引擎时的检索效率。
     """
-    flattened: dict[str, Any] = {}
+    flattened: dict[str, str] = {}
     for key, value in data.items():
-        key_str = str(key)
-        composite_key = f"{parent_key}.{key_str}" if parent_key else key_str
-        
-        if isinstance(value, Mapping):
-            # 递归处理嵌套字典
-            flattened.update(_flatten_mapping(value, composite_key))
-        elif is_dataclass(value):
-            # 递归处理 dataclass (如 ModelResponse)
-            flattened.update(_flatten_mapping(asdict(value), composite_key))
-        elif _is_base_model_instance(value):
-            # 递归处理 Pydantic 模型
-            serialized = _serialize_base_model(value)
-            flattened.update(_flatten_mapping(serialized, composite_key))
-        else:
-            # 基本类型直接存储
+        composite_key = f"{parent_key}.{key}" if parent_key else key
+        if isinstance(value, str):
             flattened[composite_key] = value
+            continue
+        mapping_value = _any_to_mapping(value)
+        flattened.update(_flatten_mapping(mapping_value, composite_key))
+
     return flattened

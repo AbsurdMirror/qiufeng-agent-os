@@ -3,10 +3,14 @@ from typing import Any, Mapping
 import litellm
 
 from src.domain.models import ModelResponse
-from src.model_provider.contracts import RawModelProviderClient, LiteLLMRawResponse
+from src.domain.errors import ModelTokenOverflowError
+from src.model_provider.contracts import RawModelProviderClient
 from src.model_provider.providers.litellm_adapter import (
-    probe_litellm_runtime
+    probe_litellm_runtime, 
+    LiteLLMAdapter,
+    LiteLLMRawResponse,
 )
+from src.observability_hub.exports import ObservabilityHubExports
 
 
 @dataclass
@@ -38,11 +42,6 @@ class MiniMaxRuntimeState:
 class MiniMaxModelProviderClient(RawModelProviderClient):
     """
     MiniMax 模型供应商的具体客户端实现。
-    
-    设计意图：
-    负责封装与 MiniMax 大模型 API 通信的具体细节。
-    它依赖 LiteLLM 库来进行实际的网络请求，但在调用前会先进行"运行时探测"，
-    以实现环境隔离与优雅降级（缺少依赖时不会崩溃，而是返回包含错误信息的标准化结果）。
     """
     def __init__(
         self,
@@ -50,11 +49,19 @@ class MiniMaxModelProviderClient(RawModelProviderClient):
         api_key: str | None = None,
         model_name: str | None = None,
         base_url: str | None = None,
+        observability: ObservabilityHubExports | None = None,
+        adapter: LiteLLMAdapter | None = None,
     ) -> None:
         self.provider_id = "minimax"
         self._api_key = api_key
         self._model_name = model_name
         self._base_url = base_url
+        self._observability = observability
+        self._adapter = adapter or LiteLLMAdapter(observability=observability)
+
+    def _record(self, trace_id: str | None, event: str, payload: Any, level: str = "DEBUG") -> None:
+        if self._observability and trace_id:
+            self._observability.record(trace_id, {"event": event, "payload": payload}, level)
 
     def _probe_runtime(self) -> MiniMaxRuntimeState:
         """探测当前运行环境是否满足调用 MiniMax 的条件"""
@@ -100,6 +107,8 @@ class MiniMaxModelProviderClient(RawModelProviderClient):
         payload_dict = dict(payload)
         payload_dict.setdefault("api_key", self._api_key)
         payload_dict.setdefault("base_url", self._base_url)
+        
+        trace_id = payload_dict.get("metadata", {}).get("trace_id")
 
         # 注入模型成本元数据，以便裁剪器能正确获取 context_window
         fake_model_cost = {
@@ -128,6 +137,8 @@ class MiniMaxModelProviderClient(RawModelProviderClient):
             
             merged_messages = []
             if system_contents:
+                if len(system_contents) > 1:
+                    self._record(trace_id, "minimax.messages_merged", {"count": len(system_contents)})
                 merged_messages.append({
                     "role": "system",
                     "content": "\n\n".join(system_contents)
@@ -136,34 +147,59 @@ class MiniMaxModelProviderClient(RawModelProviderClient):
             
             payload_dict["messages"] = merged_messages
 
-        """
-        # 调用自定义裁剪器（基于 litellm.token_counter）
-        if payload_dict.get("messages"):
-            payload_dict["messages"] = trim_messages(
-                payload_dict["messages"],
-                model=self._model_name,
-                trim_ratio=0.75,
-            )
-        """
-
         try:
+            # 计算需要预留给模型输出的 Token 数
+            reserved_output_tokens = None
+            max_tokens = payload_dict.get("max_tokens")
+            if isinstance(max_tokens, int) and max_tokens > 0:
+                reserved_output_tokens = max_tokens
+
+            # 调用自定义裁剪器（基于 litellm.token_counter）
+            if payload_dict.get("messages"):
+                payload_dict["messages"] = self._adapter.trim_messages(
+                    payload_dict["messages"],
+                    model=self._model_name or "gpt-3.5-turbo",
+                    trim_ratio=0.75,
+                    reserved_output_tokens=reserved_output_tokens,
+                    trace_id=trace_id,
+                )
+
             # litellm._turn_on_debug()
             # print("payload_dict", payload_dict)
             response = litellm.completion(**payload_dict)
-        except Exception as exc:
+        except ModelTokenOverflowError as exc:
+            from src.domain.errors import format_user_facing_error
+
+            message = format_user_facing_error(
+                exc,
+                summary="MiniMax 请求 Token 超限",
+            )
+            print(message)
+
             return ModelResponse(
                 success=False,
                 model_name=self._model_name or "minimax-model",
                 content="",
                 finish_reason="error",
                 provider_id=self.provider_id,
-                repair_reason="minimax_request_failed",
+                repair_reason="token_limit_exceeded",
                 raw={
-                    "reason": "minimax_request_failed",
-                    "message": str(exc),
+                    "reason": "token_limit_exceeded",
+                    "message": message,
+                    "budget": exc.budget,
+                    "actual": exc.actual,
                     "runtime": runtime_state.to_dict(),
                 },
             )
+        except Exception as exc:
+            from src.domain.errors import format_user_facing_error
+
+            raise RuntimeError(
+                format_user_facing_error(
+                    exc,
+                    summary="MiniMax 请求失败",
+                )
+            ) from exc
         return response
 
 

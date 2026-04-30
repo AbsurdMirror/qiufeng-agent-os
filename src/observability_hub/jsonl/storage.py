@@ -5,6 +5,7 @@ import time
 import threading
 from pathlib import Path
 from ..record.recording import NormalizedRecord
+from src.domain.errors import format_user_facing_error
 
 # ============================================================
 # 全栈监控层 —— JSONL 调试存储引擎 (JSONL Debug Storage Engine)
@@ -73,9 +74,11 @@ class JSONLStorageEngine:
                 # 以追加模式（"a"）打开文件，每次调用只添加一行，不覆盖已有内容
                 with open(self.log_file, "a", encoding="utf-8") as f:
                     f.write(line)
-        except Exception as e:
+        except Exception as exc:
             # 写入或轮转失败时降级处理：只记录错误日志，不抛异常，避免影响主业务流程
-            logger.error(f"Failed to write JSONL log: {e}")
+            logger.error(
+                format_user_facing_error(exc, summary=f"Failed to write JSONL log: {record}")
+                )
 
     def _rotate_if_needed(self) -> None:
         """

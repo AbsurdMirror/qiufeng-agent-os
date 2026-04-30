@@ -12,6 +12,7 @@ from src.domain.models import (
     ModelResponse,
     ModelUsage,
 )
+from src.domain.errors import format_user_facing_error
 from src.model_provider.contracts import ModelProviderClient
 from src.skill_hub.contracts import PyTool
 from src.skill_hub.primitives.security import with_security_policy, default_security_policy
@@ -87,40 +88,31 @@ class RegisteredCapabilityHub:
             
             # 构造自动处理的 Handler
             async def auto_handler(request: CapabilityRequest, _method=method, _desc=meta_desc) -> CapabilityResult:
-                try:
-                    # 1. 验证并转换输入载荷 (聚合参数)
-                    params_obj = SchemaTranslator.validate_payload(_desc.input_model, request.payload or {})
-                    
-                    # 提取参数字典
-                    params = dict(params_obj)
-                    
-                    # 自动合并：将 CapabilityRequest.metadata 合并到方法的 metadata 参数中（如果存在）
-                    if "metadata" in params and isinstance(params["metadata"], dict):
-                        merged_meta = dict(request.metadata)
-                        merged_meta.update(params["metadata"])
-                        params["metadata"] = merged_meta
-                    
-                    # 2. 执行方法 (支持异步/同步)
-                    result = _method(**params)
-                    if inspect.isawaitable(result):
-                        result = await result
-                    
-                    # 3. 验证并转换返回值 (归一化为 dict)
-                    output = SchemaTranslator.serialize_instance(_desc.output_model, result)
-                    
-                    return CapabilityResult(
-                        capability_id=request.capability_id,
-                        success=True,
-                        output=output,
-                    )
-                except Exception as exc:
-                    return CapabilityResult(
-                        capability_id=request.capability_id,
-                        success=False,
-                        output={},
-                        error_code="capability_execution_error",
-                        error_message=str(exc),
-                    )
+                # 1. 验证并转换输入载荷 (聚合参数)
+                params_obj = SchemaTranslator.validate_payload(_desc.input_model, request.payload or {})
+                
+                # 提取参数字典
+                params = dict(params_obj)
+                
+                # 自动合并：将 CapabilityRequest.metadata 合并到方法的 metadata 参数中（如果存在）
+                if "metadata" in params and isinstance(params["metadata"], dict):
+                    merged_meta = dict(request.metadata)
+                    merged_meta.update(params["metadata"])
+                    params["metadata"] = merged_meta
+                
+                # 2. 执行方法 (支持异步/同步)
+                result = _method(**params)
+                if inspect.isawaitable(result):
+                    result = await result
+                
+                # 3. 验证并转换返回值 (归一化为 dict)
+                output = SchemaTranslator.serialize_instance(_desc.output_model, result)
+                
+                return CapabilityResult(
+                    capability_id=request.capability_id,
+                    success=True,
+                    output=output,
+                )
 
             self.register_capability(meta_desc, auto_handler)
             registered.append(meta_desc)
@@ -166,13 +158,15 @@ class RegisteredCapabilityHub:
         try:
             result = await handler(request)
         except Exception as e:
+            error = format_user_facing_error(e, summary="能力调用失败")
+            print(error)
             if self._observability:
                 self._observability.record(
                     trace_id,
                     {
                         "event": "capability.invoke.failed",
                         "capability_id": request.capability_id,
-                        "error": str(e),
+                        "error": error,
                     },
                     "ERROR",
                 )
@@ -181,7 +175,7 @@ class RegisteredCapabilityHub:
                 success=False,
                 output={},
                 error_code="capability_execution_failed",
-                error_message=str(e),
+                error_message=error,
                 metadata={"domain": capability.domain}
             )
         

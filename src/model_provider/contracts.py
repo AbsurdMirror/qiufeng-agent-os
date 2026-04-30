@@ -1,15 +1,13 @@
 from collections.abc import Mapping
-from typing import Protocol, Union
+from typing import Protocol
 
 from src.domain.models import (
     ModelMessage,
     ModelRequest,
     ModelResponse,
 )
-import litellm
-
-LiteLLMRawResponse = Union["litellm.ModelResponse", "litellm.CustomStreamWrapper", ModelResponse]
-
+from src.observability_hub.exports import ObservabilityHubExports
+from src.model_provider.providers.litellm_adapter import LiteLLMAdapter, LiteLLMRawResponse
 
 class ModelProviderClient(Protocol):
     """
@@ -30,6 +28,10 @@ class RawModelProviderClient(Protocol):
     适用于具体模型的适配器实现（如 MiniMax）。
     """
     provider_id: str
+    
+    # T4 扩展：支持观测与协议转换器的注入
+    _observability: ObservabilityHubExports | None = None
+    _adapter: LiteLLMAdapter | None = None
 
     def completion(self, payload: Mapping[str, object]) -> LiteLLMRawResponse:
         raise NotImplementedError

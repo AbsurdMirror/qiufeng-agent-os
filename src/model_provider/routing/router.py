@@ -11,8 +11,10 @@ from src.domain.models import (
 from src.domain.decorators import qfaos_pytool
 from src.model_provider.contracts import ModelProviderClient, RawModelProviderClient
 from src.model_provider.providers.litellm_adapter import (
-    build_litellm_completion_payload,
-    build_model_response,
+    LiteLLMAdapter,
+)
+from src.model_provider.validators.output_parser import (
+    ModelOutputParser,
 )
 
 from src.observability_hub.exports import ObservabilityHubExports
@@ -30,8 +32,36 @@ class ModelRouter(ModelProviderClient):
         """
         self._clients = clients
         self._observability = observability
+        self._parser = ModelOutputParser(observability=observability)
+        self._adapter = LiteLLMAdapter(observability=observability, parser=self._parser)
+        
+        # 自动为初始客户端注入依赖
+        for client in self._clients.values():
+            self._inject_dependencies(client)
+
+    def _inject_dependencies(self, client: RawModelProviderClient) -> None:
+        """为客户端注入 observability 和 adapter (如果支持)"""
+        if hasattr(client, "_observability") or hasattr(client, "observability"):
+            try:
+                # 优先尝试 setter 注入，如果没有则直接赋值
+                if hasattr(client, "set_observability"):
+                    client.set_observability(self._observability)
+                else:
+                    client._observability = self._observability
+            except Exception:
+                pass
+        
+        if hasattr(client, "_adapter") or hasattr(client, "adapter"):
+            try:
+                if hasattr(client, "set_adapter"):
+                    client.set_adapter(self._adapter)
+                else:
+                    client._adapter = self._adapter
+            except Exception:
+                pass
 
     def add_client(self, model_name: str, client: RawModelProviderClient) -> None:
+        self._inject_dependencies(client)
         self._clients[model_name] = client
 
     @qfaos_pytool(id="model.completion", domain="model")
@@ -57,32 +87,20 @@ class ModelRouter(ModelProviderClient):
         provider_id = client.provider_id
         while True:
             try:
-                payload = build_litellm_completion_payload(
-                    current_request,
-                )
-                
                 if self._observability:
                     self._observability.record(
                         trace_id,
                         {
                             "event": "model.completion.started",
-                            "model_request": payload,
-                            "provider_id": provider_id,
+                            "attempts": attempts,
                         },
                         "DEBUG",
                     )
+                payload = self._adapter.build_litellm_completion_payload(
+                    current_request,
+                )
                 raw = client.completion(payload)
-                if self._observability:
-                    self._observability.record(
-                        trace_id,
-                        {
-                            "event": "model.completion.raw_output",
-                            "model_name": current_request.model_name,
-                            "raw": raw,
-                        },
-                        "DEBUG",
-                    )
-                response, repair_error = build_model_response(
+                response, repair_error = self._adapter.build_model_response(
                     raw,
                     request=current_request,
                     output_schema=output_schema,
@@ -90,23 +108,25 @@ class ModelRouter(ModelProviderClient):
                     provider_id=provider_id,
                     capture_repair_error=True,
                 )
+                if self._observability:
+                    self._observability.record(
+                        trace_id,
+                        {
+                            "event": "model.completion.done",
+                            "success": response.success,
+                            "repair_error": repair_error,
+                        },
+                        "DEBUG",
+                    )
             except Exception as exc:  # noqa: BLE001
-                fallback = ModelResponse(
-                    model_name=current_request.model_name,
-                    content="",
-                    success=False,
-                    finish_reason="error",
-                    provider_id=provider_id,
-                    raw={
-                        "reason": "model_router_completion_failed",
-                        "message": build_error_report(
-                            exc,
-                            summary="模型调用失败",
-                        ).to_user_message(),
-                    },
-                )
-                response = fallback
-                repair_error = None
+                from src.domain.errors import format_user_facing_error
+
+                raise RuntimeError(
+                    format_user_facing_error(
+                        exc,
+                        summary="模型调用失败",
+                    )
+                ) from exc
 
             if response.success:
                 return response
@@ -131,21 +151,15 @@ class ModelRouter(ModelProviderClient):
                     repair_reason=response.repair_reason,
                     raw=exhausted_raw,
                 )
-            if repair_error is None:
-                return ModelResponse(
-                    model_name=response.model_name,
-                    content=response.content,
-                    success=response.success,
-                    finish_reason=response.finish_reason,
-                    provider_id=response.provider_id,
-                    usage=response.usage,
-                    parsed=response.parsed,
-                    tool_calls=response.tool_calls,
-                    message=response.message,
-                    repair_reason=response.repair_reason,
-                    raw=response.raw,
-                )
+
             attempts += 1
+            if repair_error is None:
+                raise RuntimeError(
+                    format_user_facing_error(
+                        exc,
+                        summary="模型响应解析失败但是没有repair_error",
+                    )
+                ) from exc
             repair_message = repair_error.to_repair_message()
             current_request = ModelRequest(
                 messages=current_request.messages + (repair_message,),

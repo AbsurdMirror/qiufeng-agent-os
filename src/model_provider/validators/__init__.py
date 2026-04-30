@@ -9,6 +9,7 @@ from .output_parser import (
     ToolCallValidationError,
     convert_litellm_tool_calls,
     parse_message_content,
+    ModelOutputParser,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "ToolCallValidationError",
     "convert_litellm_tool_calls",
     "parse_message_content",
+    "ModelOutputParser",
 ]
