@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from src.domain.capabilities import CapabilityDescription
 from src.domain.models import ModelGenerationConfig, ModelRequest
-from src.model_provider.providers.litellm_adapter import build_model_response
+from src.model_provider.providers.litellm_adapter import LiteLLMAdapter
 
 
 class _StructuredAnswer(BaseModel):
@@ -78,6 +78,7 @@ def test_model_request_supports_default_and_explicit_generation_config():
 
 
 def test_build_model_response_keeps_content_and_multiple_tool_calls():
+    adapter = LiteLLMAdapter()
     tools = (_build_tool("tool.first"), _build_tool("tool.second"))
     request = _build_request(tools=tools)
     mock_response = _build_mock_response(
@@ -96,7 +97,7 @@ def test_build_model_response_keeps_content_and_multiple_tool_calls():
         ],
     )
 
-    result = build_model_response(
+    result = adapter.build_model_response(
         response_raw=mock_response,
         request=request,
         output_schema=None,
@@ -114,6 +115,7 @@ def test_build_model_response_keeps_content_and_multiple_tool_calls():
 
 
 def test_build_model_response_reports_invalid_tool_arguments():
+    adapter = LiteLLMAdapter()
     request = _build_request(tools=(_build_tool("tool.first"),))
     mock_response = _build_mock_response(
         content=None,
@@ -126,7 +128,7 @@ def test_build_model_response_reports_invalid_tool_arguments():
         ],
     )
 
-    result = build_model_response(
+    result = adapter.build_model_response(
         response_raw=mock_response,
         request=request,
         output_schema=None,
@@ -142,6 +144,7 @@ def test_build_model_response_reports_invalid_tool_arguments():
 
 
 def test_build_model_response_keeps_tool_calls_when_content_schema_invalid():
+    adapter = LiteLLMAdapter()
     request = _build_request(tools=(_build_tool("tool.first"),))
     mock_response = _build_mock_response(
         content='{"not_answer":"x"}',
@@ -154,7 +157,7 @@ def test_build_model_response_keeps_tool_calls_when_content_schema_invalid():
         ],
     )
 
-    result = build_model_response(
+    result = adapter.build_model_response(
         response_raw=mock_response,
         request=request,
         output_schema=_StructuredAnswer,
@@ -168,10 +171,11 @@ def test_build_model_response_keeps_tool_calls_when_content_schema_invalid():
 
 
 def test_build_model_response_parses_structured_content_without_tool_calls():
+    adapter = LiteLLMAdapter()
     request = _build_request()
     mock_response = _build_mock_response(content='{"answer":"done"}')
 
-    result = build_model_response(
+    result = adapter.build_model_response(
         response_raw=mock_response,
         request=request,
         output_schema=_StructuredAnswer,

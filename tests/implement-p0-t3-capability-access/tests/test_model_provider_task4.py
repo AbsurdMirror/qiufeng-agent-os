@@ -4,11 +4,10 @@ from src.model_provider import (
     MiniMaxModelProviderClient,
     ModelMessage,
     ModelRequest,
-    build_litellm_completion_payload,
-    build_model_response,
     initialize,
     LiteLLMRuntimeState,
 )
+from src.model_provider.providers.litellm_adapter import LiteLLMAdapter
 
 
 def _mock_litellm_response(
@@ -41,8 +40,9 @@ def _mock_litellm_response(
     return response
 
 
-
+def test_mp_03_litellm_request_payload_mapping_aligned():
     """测试项 MP-03: LiteLLM 请求映射保持统一字段对齐"""
+    adapter = LiteLLMAdapter()
     request = ModelRequest(
         messages=(
             ModelMessage(role="system", content="你是助手"),
@@ -58,7 +58,7 @@ def _mock_litellm_response(
         },
     )
 
-    payload = build_litellm_completion_payload(
+    payload = adapter.build_litellm_completion_payload(
         request,
         api_key="secret",
         base_url="https://api.minimax.chat/v1",
@@ -80,11 +80,12 @@ def _mock_litellm_response(
 
 def test_mp_04_litellm_response_mapping_normalizes_usage_and_content():
     """测试项 MP-04: LiteLLM 响应映射回收统一 ModelResponse"""
+    adapter = LiteLLMAdapter()
     request = ModelRequest(
         messages=(ModelMessage(role="user", content="hi"),),
         model_name="abab6.5s-chat",
     )
-    response = build_model_response(
+    response = adapter.build_model_response(
         _mock_litellm_response(
             model="abab6.5s-chat",
             content="你好，我是 MiniMax。",
@@ -111,12 +112,10 @@ def test_mp_04_litellm_response_mapping_normalizes_usage_and_content():
 
 def test_mp_05_minimax_completion_degrades_without_litellm(monkeypatch):
     """测试项 MP-05: 缺失 LiteLLM 依赖时返回明确降级状态"""
-    monkeypatch.setattr("src.model_provider.providers.litellm_adapter._has_dependency", lambda name: False)
     monkeypatch.setattr(
-        "src.model_provider.providers.litellm_adapter._read_dependency_version",
+        "src.model_provider.providers.litellm_adapter.find_spec",
         lambda name: None,
     )
-
     client = MiniMaxModelProviderClient(api_key="secret", model_name="abab6.5s-chat")
     response = client.completion({"model": "abab6.5s-chat", "messages": ()})
 
@@ -128,9 +127,8 @@ def test_mp_05_minimax_completion_degrades_without_litellm(monkeypatch):
 
 def test_mp_06_minimax_client_returns_degraded_response_when_runtime_unavailable(monkeypatch):
     """测试项 MP-06: MiniMax 客户端在无依赖环境下返回标准降级结果"""
-    monkeypatch.setattr("src.model_provider.providers.litellm_adapter._has_dependency", lambda name: False)
     monkeypatch.setattr(
-        "src.model_provider.providers.litellm_adapter._read_dependency_version",
+        "src.model_provider.providers.litellm_adapter.find_spec",
         lambda name: None,
     )
     client = MiniMaxModelProviderClient(api_key="secret", model_name="abab6.5s-chat")
@@ -174,6 +172,7 @@ def test_mp_07_minimax_client_uses_litellm_mapping_when_runtime_ready(monkeypatc
         model_name="abab6.5s-chat",
     )
 
+    adapter = LiteLLMAdapter()
     raw = client.completion(
         {
             "model": "abab6.5s-chat",
@@ -184,7 +183,7 @@ def test_mp_07_minimax_client_uses_litellm_mapping_when_runtime_ready(monkeypatc
             ),
         }
     )
-    response = build_model_response(
+    response = adapter.build_model_response(
         raw,
         request=ModelRequest(messages=(ModelMessage(role="user", content="u"),), model_name="abab6.5s-chat"),
         output_schema=None,

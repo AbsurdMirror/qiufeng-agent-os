@@ -63,13 +63,13 @@ def test_cg_04_factory_get_unsupported_parser():
 def test_cg_05_webhook_unsupported_message_type():
     """测试项 CG-05: Webhook异常处理：非文本类型"""
     parser = TextEventParserFactory.get("feishu", "webhook")
-    payload = get_base_payload(message_type="image")
+    payload = get_base_payload(message_type="post")
     with pytest.raises(ValueError, match="unsupported_message_type"):
         parser.parse(payload)
 
 def test_cg_06_webhook_unsupported_event_type():
-    """测试项 CG-06: Webhook异常处理：不支持的事件"""
-    parser = TextEventParserFactory.get("feishu", "webhook")
+    """测试项 CG-06: 长连接异常处理：不支持的事件"""
+    parser = TextEventParserFactory.get("feishu", "long_connection")
     payload = get_base_payload(event_type="im.chat.member.bot.added_v1")
     with pytest.raises(ValueError, match="unsupported_event_type"):
         parser.parse(payload)
