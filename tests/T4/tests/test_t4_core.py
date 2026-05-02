@@ -7,7 +7,8 @@ from pydantic import Field
 from src.channel_gateway.core.session.context import SessionContextController
 from src.domain.translators.schema_translator import SchemaTranslator
 from src.storage_memory.backends.in_memory import InMemoryHotMemoryStore
-from src.domain.memory import HotMemoryItem
+from src.domain.context import ContextBlock, ContextLoadRequest, ContextBudget
+from src.domain.models import ModelMessage
 
 # AT-01: 身份映射幂等性
 def test_session_context_mapping():
@@ -99,30 +100,40 @@ def test_tool_output_parser_schema():
     assert props["result"].get("description") == "工具执行结果文本"
     assert props["result"].get("type") == "string"
 
-# AT-04: 热记忆 LIFO 推留截断逻辑
+# AT-04: 热记忆块级推留截断逻辑
 @pytest.mark.asyncio
-async def test_hot_memory_lifo_truncation():
+async def test_hot_memory_block_truncation():
     store = InMemoryHotMemoryStore()
     logic_id = "agent_xyz"
     session_id = "session_123"
     
-    # 压入 8 轮记录
+    # 压入 8 个块
     for i in range(1, 9):
-        item = HotMemoryItem(
-            trace_id=f"trace_{i}",
-            role="user",
-            content=f"Message {i}"
+        block = ContextBlock(
+            block_id=f"blk_{i}",
+            kind="user_turn",
+            messages=(ModelMessage(role="user", content=f"Message {i}"),),
+            token_count=10
         )
-        # 限制 max_rounds=5
-        await store.append_hot_memory(logic_id, session_id, item, max_rounds=5)
+        # 限制 max_blocks=5
+        await store.append_context_block(logic_id, session_id, block, max_blocks=5)
         
-    # 读取历史
-    items = await store.read_hot_memory(logic_id, session_id, limit=5)
+    # 读取快照
+    snapshot = await store.read_context_snapshot(
+        ContextLoadRequest(
+            logic_id=logic_id,
+            session_id=session_id,
+            budget=ContextBudget(max_input_tokens=1000, reserved_output_tokens=100, trim_ratio=0.75),
+            include_profile_patch=False,
+            include_memory_snippets=False,
+            history_block_limit=5
+        )
+    )
     
     # 预期只剩下 4, 5, 6, 7, 8
-    assert len(items) == 5
-    assert items[0].content == "Message 4"
-    assert items[-1].content == "Message 8"
+    assert len(snapshot.history_blocks) == 5
+    assert snapshot.history_blocks[0].block_id == "blk_4"
+    assert snapshot.history_blocks[-1].block_id == "blk_8"
 
 # AT-05: 上下文全量序列化存储
 @pytest.mark.asyncio

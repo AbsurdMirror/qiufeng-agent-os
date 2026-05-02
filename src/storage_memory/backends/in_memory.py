@@ -1,9 +1,18 @@
 from collections.abc import Mapping
-from typing import Any
-from src.domain.memory import HotMemoryItem
+
+from src.domain.context import (
+    ContextBlock,
+    ContextLoadRequest,
+    ContextLoadResult,
+    JSONValue,
+)
+
 from ..contracts.protocols import HotMemoryCarrier, StorageAccessProtocol
+from ..internal.codecs import (
+    dump_context_block,
+    load_context_block,
+)
 from ..internal.keys import _build_hot_key, _build_state_key
-from ..internal.codecs import _dump_hot_memory_item, _load_hot_memory_item
 
 
 class InMemoryHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
@@ -12,20 +21,20 @@ class InMemoryHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
     主要用于 P0 T2 阶段的链路打通和本地测试，同时实现了 Carrier 和 Access 两层协议。
     """
     def __init__(self) -> None:
-        self._hot_memory: dict[str, list[dict[str, Any]]] = {}
-        self._runtime_states: dict[str, dict[str, Any]] = {}
+        self._hot_memory: dict[str, list[dict[str, object]]] = {}
+        self._runtime_states: dict[str, dict[str, JSONValue]] = {}
 
-    async def rpush(self, key: str, value: Mapping[str, Any]) -> int:
+    async def rpush(self, key: str, value: Mapping[str, object]) -> int:
         queue = self._hot_memory.setdefault(key, [])
         queue.append(dict(value))
         return len(queue)
 
-    async def lpush(self, key: str, value: Mapping[str, Any]) -> int:
+    async def lpush(self, key: str, value: Mapping[str, object]) -> int:
         queue = self._hot_memory.setdefault(key, [])
         queue.insert(0, dict(value))
         return len(queue)
 
-    async def lrange(self, key: str, start: int, stop: int) -> tuple[dict[str, Any], ...]:
+    async def lrange(self, key: str, start: int, stop: int) -> tuple[dict[str, object], ...]:
         queue = self._hot_memory.get(key, [])
         normalized_stop = len(queue) - 1 if stop == -1 else stop
         if normalized_stop < start:
@@ -42,29 +51,45 @@ class InMemoryHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
             return
         self._hot_memory[key] = queue[start : normalized_stop + 1]
 
-    async def append_hot_memory(
+    async def append_context_block(
         self,
         logic_id: str,
         session_id: str,
-        item: HotMemoryItem,
-        max_rounds: int = 10,
-    ) -> tuple[HotMemoryItem, ...]:
+        block: ContextBlock,
+        max_blocks: int,
+    ) -> tuple[ContextBlock, ...]:
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
-        await self.rpush(hot_key, _dump_hot_memory_item(item))
-        await self.ltrim(hot_key, -max_rounds, -1)
-        return await self.read_hot_memory(logic_id=logic_id, session_id=session_id, limit=max_rounds)
+        await self.rpush(hot_key, dump_context_block(block))
+        await self.ltrim(hot_key, -max_blocks, -1)
+        
+        # 为了兼容接口返回，我们重新读取快照中的 blocks
+        snapshot = await self.read_context_snapshot(
+            ContextLoadRequest(
+                logic_id=logic_id,
+                session_id=session_id,
+                budget=None,  # type: ignore # InMemory 暂时忽略 budget
+                include_profile_patch=False,
+                include_memory_snippets=False,
+                history_block_limit=max_blocks
+            )
+        )
+        return snapshot.history_blocks
 
-    async def read_hot_memory(
+    async def read_context_snapshot(
         self,
-        logic_id: str,
-        session_id: str,
-        limit: int = 10,
-    ) -> tuple[HotMemoryItem, ...]:
-        hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
-        raw_items = await self.lrange(hot_key, -limit, -1)
-        return tuple(_load_hot_memory_item(raw_item) for raw_item in raw_items)
+        request: ContextLoadRequest,
+    ) -> ContextLoadResult:
+        hot_key = _build_hot_key(logic_id=request.logic_id, session_id=request.session_id)
+        raw_items = await self.lrange(hot_key, -request.history_block_limit, -1)
+        history_blocks = tuple(load_context_block(raw_item) for raw_item in raw_items)
+        
+        # InMemory 目前不支持 Warm/Cold，返回空 SystemParts
+        return ContextLoadResult(
+            system_parts=(),
+            history_blocks=history_blocks
+        )
 
-    async def delete_hot_memory(self, logic_id: str, session_id: str) -> None:
+    async def delete_context_history(self, logic_id: str, session_id: str) -> None:
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
         if hot_key in self._hot_memory:
             del self._hot_memory[hot_key]
@@ -73,14 +98,14 @@ class InMemoryHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         self,
         logic_id: str,
         session_id: str,
-        state: Mapping[str, Any],
-    ) -> dict[str, Any]:
+        state: Mapping[str, JSONValue],
+    ) -> dict[str, JSONValue]:
         state_key = _build_state_key(logic_id=logic_id, session_id=session_id)
         payload = dict(state)
         self._runtime_states[state_key] = payload
         return dict(payload)
 
-    async def load_runtime_state(self, logic_id: str, session_id: str) -> dict[str, Any]:
+    async def load_runtime_state(self, logic_id: str, session_id: str) -> dict[str, JSONValue]:
         state_key = _build_state_key(logic_id=logic_id, session_id=session_id)
         state = self._runtime_states.get(state_key, {})
         return dict(state)

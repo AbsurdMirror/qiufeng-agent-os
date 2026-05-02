@@ -1,9 +1,19 @@
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
-from typing import Any
 
-from src.domain.memory import HotMemoryItem
-from .contracts.protocols import HotMemoryCarrier, StorageAccessProtocol
+from src.domain.context import (
+    ContextBlock,
+    ContextLoadRequest,
+    ContextLoadResult,
+    JSONValue,
+)
+from .contracts.protocols import (
+    ColdMemoryProtocol,
+    HotMemoryCarrier,
+    ProfileProtocol,
+    StorageAccessProtocol,
+    WarmMemoryProtocol,
+)
 
 
 @dataclass(frozen=True)
@@ -17,11 +27,17 @@ class StorageMemoryExports:
     status: str
     carrier: HotMemoryCarrier
     protocol: StorageAccessProtocol
-    append_hot_memory: Callable[
-        [str, str, HotMemoryItem, int],
-        Awaitable[tuple[HotMemoryItem, ...]],
+    
+    append_context_block: Callable[
+        [str, str, ContextBlock, int],
+        Awaitable[tuple[ContextBlock, ...]],
     ]
-    read_hot_memory: Callable[[str, str, int], Awaitable[tuple[HotMemoryItem, ...]]]
-    delete_hot_memory: Callable[[str, str], Awaitable[None]]
-    persist_runtime_state: Callable[[str, str, Mapping[str, Any]], Awaitable[dict[str, Any]]]
-    load_runtime_state: Callable[[str, str], Awaitable[dict[str, Any]]]
+    read_context_snapshot: Callable[[ContextLoadRequest], Awaitable[ContextLoadResult]]
+    delete_context_history: Callable[[str, str], Awaitable[None]]
+    persist_runtime_state: Callable[[str, str, Mapping[str, JSONValue]], Awaitable[dict[str, JSONValue]]]
+    load_runtime_state: Callable[[str, str], Awaitable[dict[str, JSONValue]]]
+
+    # T4 扩展：分级记忆协议预留
+    warm_memory: WarmMemoryProtocol | None = None
+    cold_memory: ColdMemoryProtocol | None = None
+    profile: ProfileProtocol | None = None

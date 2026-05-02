@@ -2,63 +2,80 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
-from src.domain.memory import HotMemoryItem
+from src.domain.context import (
+    ContextBlock,
+    ContextLoadRequest,
+    ContextLoadResult,
+    JSONValue,
+)
 from ..contracts.protocols import HotMemoryCarrier, StorageAccessProtocol
 from ..internal.keys import _build_hot_key, _build_state_key
-from ..internal.codecs import _dump_hot_memory_item, _load_hot_memory_item
+from ..internal.codecs import (
+    dump_context_block,
+    load_context_block,
+)
 
 
 class RedisHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
     """
     基于 Redis 的热记忆与状态存储实现
-    大白话解释：以前这个系统重启就必定失忆。
-    现在这个类是一个专业的“外脑”，它通过 Redis 强行把咱们跟机器人的近场对话和参数状态钉死在内存数据库里。
-    哪怕你重启了 Agent-OS 服务进程，用户连回来照样能接着上一句聊，完美实现了 T4 阶段的状态无损挂载。
     """
     def __init__(self, redis_client: Any) -> None:
         self._redis = redis_client
 
-    async def rpush(self, key: str, value: Mapping[str, Any]) -> int:
+    async def rpush(self, key: str, value: Mapping[str, object]) -> int:
         payload = json.dumps(dict(value))
         return await self._redis.rpush(key, payload)
 
-    async def lpush(self, key: str, value: Mapping[str, Any]) -> int:
+    async def lpush(self, key: str, value: Mapping[str, object]) -> int:
         payload = json.dumps(dict(value))
         return await self._redis.lpush(key, payload)
 
-    async def lrange(self, key: str, start: int, stop: int) -> tuple[dict[str, Any], ...]:
+    async def lrange(self, key: str, start: int, stop: int) -> tuple[dict[str, object], ...]:
         raw_items = await self._redis.lrange(key, start, stop)
         return tuple(json.loads(item) for item in raw_items)
 
     async def ltrim(self, key: str, start: int, stop: int) -> None:
         await self._redis.ltrim(key, start, stop)
 
-    async def append_hot_memory(
+    async def append_context_block(
         self,
         logic_id: str,
         session_id: str,
-        item: HotMemoryItem,
-        max_rounds: int = 10,
-    ) -> tuple[HotMemoryItem, ...]:
-        """SM-P0-02: 热记忆策略 - LIFO 最近 N 轮对话缓存"""
+        block: ContextBlock,
+        max_blocks: int,
+    ) -> tuple[ContextBlock, ...]:
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
-        await self.rpush(hot_key, _dump_hot_memory_item(item))
-        await self.ltrim(hot_key, -max_rounds, -1)
-        return await self.read_hot_memory(logic_id=logic_id, session_id=session_id, limit=max_rounds)
+        await self.rpush(hot_key, dump_context_block(block))
+        await self.ltrim(hot_key, -max_blocks, -1)
+        
+        snapshot = await self.read_context_snapshot(
+            ContextLoadRequest(
+                logic_id=logic_id,
+                session_id=session_id,
+                budget=None,  # type: ignore
+                include_profile_patch=False,
+                include_memory_snippets=False,
+                history_block_limit=max_blocks
+            )
+        )
+        return snapshot.history_blocks
 
-    async def read_hot_memory(
+    async def read_context_snapshot(
         self,
-        logic_id: str,
-        session_id: str,
-        limit: int = 10,
-    ) -> tuple[HotMemoryItem, ...]:
-        """SM-P0-04: 上下文注入 (通过被动提供读取接口供编排引擎拉取)"""
-        hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
-        raw_items = await self.lrange(hot_key, -limit, -1)
-        return tuple(_load_hot_memory_item(raw_item) for raw_item in raw_items)
+        request: ContextLoadRequest,
+    ) -> ContextLoadResult:
+        hot_key = _build_hot_key(logic_id=request.logic_id, session_id=request.session_id)
+        raw_items = await self.lrange(hot_key, -request.history_block_limit, -1)
+        history_blocks = tuple(load_context_block(raw_item) for raw_item in raw_items)
+        
+        return ContextLoadResult(
+            system_parts=(),
+            history_blocks=history_blocks
+        )
 
-    async def delete_hot_memory(self, logic_id: str, session_id: str) -> None:
-        """删除指定会话的所有热记忆历史记录"""
+    async def delete_context_history(self, logic_id: str, session_id: str) -> None:
+        """删除指定会话的所有历史记忆记录"""
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
         await self._redis.delete(hot_key)
 
@@ -66,15 +83,14 @@ class RedisHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         self,
         logic_id: str,
         session_id: str,
-        state: Mapping[str, Any],
-    ) -> dict[str, Any]:
-        """SM-P0-03: 持久化存储 - 无损持久化运行时状态"""
+        state: Mapping[str, JSONValue],
+    ) -> dict[str, JSONValue]:
         state_key = _build_state_key(logic_id=logic_id, session_id=session_id)
         payload = dict(state)
         await self._redis.set(state_key, json.dumps(payload))
         return payload
 
-    async def load_runtime_state(self, logic_id: str, session_id: str) -> dict[str, Any]:
+    async def load_runtime_state(self, logic_id: str, session_id: str) -> dict[str, JSONValue]:
         state_key = _build_state_key(logic_id=logic_id, session_id=session_id)
         raw_state = await self._redis.get(state_key)
         if raw_state:

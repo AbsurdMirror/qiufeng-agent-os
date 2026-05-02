@@ -21,6 +21,7 @@ from src.model_provider.validators.output_parser import (
     ToolCallValidationError,
     ModelOutputParser,
 )
+from src.model_provider.input_normalizer import build_context_budget
 from src.observability_hub.exports import ObservabilityHubExports
 
 LiteLLMRawResponse = Union["litellm.ModelResponse", "litellm.CustomStreamWrapper", ModelResponse]
@@ -400,43 +401,42 @@ class LiteLLMAdapter:
         trace_id: str | None = None,
     ) -> list[dict[str, object]]:
         """
-        精简版消息裁剪器：
-        1. 计算 Token 预算。
-        2. 正序提取所有 system 消息，计算其 Token。若超预算则报错。
-        3. 逆序提取对话历史（User 或 Assistant+Tool 成组），直到填满预算。
-        4. 若连最近的一组对话都塞不下，则报错。
+        实现逻辑块级裁剪与 System 归一化：
+        1. 提取并合并所有 system 消息，强制放在首位。
+        2. 计算 Token 预算。
+        3. 逆序提取对话历史（支持 tool 组原子性），直到填满预算。
         """
         if not messages:
             return []
 
         # 1. 预算计算
-        def _resolve_context_window() -> int:
-            if isinstance(max_context_tokens, int) and max_context_tokens > 0:
-                return max_context_tokens
-            try:
-                entry = litellm.model_cost.get(model)
-                if isinstance(entry, Mapping):
-                    value = entry.get("max_tokens")
-                    if isinstance(value, int) and value > 0:
-                        return value
-                return 64 * 1024
-            except Exception:
-                return 64 * 1024
+        budget_obj = build_context_budget(
+            model,
+            max_context_tokens=max_context_tokens,
+            reserved_output_tokens=reserved_output_tokens or 4096,
+            trim_ratio=trim_ratio
+        )
+        budget = budget_obj.max_input_tokens
 
-        budget = int(_resolve_context_window() * trim_ratio)
-        if isinstance(reserved_output_tokens, int) and reserved_output_tokens > 0:
-            budget = max(0, budget - reserved_output_tokens)
-
-        # 2. 阶段一：System 消息固守 (Forward Pass)
-        # 记录所有 system 消息的索引，并计算其 Token
-        keep_indices = set()
-        system_tokens = 0
-        for idx, msg in enumerate(messages):
+        # 2. System 归一化 (Normalization)
+        system_contents = []
+        other_messages = []
+        for msg in messages:
             if str(msg.get("role") or "") == "system":
-                m = dict(msg)
-                tokens = litellm.token_counter(model=model, messages=[m])
-                system_tokens += tokens
-                keep_indices.add(idx)
+                content = msg.get("content")
+                if content:
+                    system_contents.append(str(content))
+            else:
+                other_messages.append(msg)
+
+        normalized_system = None
+        system_tokens = 0
+        if system_contents:
+            normalized_system = {
+                "role": "system",
+                "content": "\n\n".join(system_contents)
+            }
+            system_tokens = litellm.token_counter(model=model, messages=[normalized_system])
 
         if system_tokens > budget:
             raise ModelTokenOverflowError(
@@ -445,86 +445,64 @@ class LiteLLMAdapter:
                 actual=system_tokens,
             )
 
-        # 3. 阶段二：上下文回溯 (Backward Pass)
+        # 3. 逆序提取历史块 (Backward Pass)
         current_tokens = system_tokens
-        i = len(messages) - 1
+        kept_others = []
+        i = len(other_messages) - 1
         
         while i >= 0:
-            if i in keep_indices:
-                i -= 1
-                continue
-            
-            msg = messages[i]
-            group_indices: list[int] = []
-            group_msgs: list[dict[str, object]] = []
+            msg = other_messages[i]
+            group_msgs = []
             step = 1
             
+            # 处理 Tool 消息原子性
             if str(msg.get("role") or "") == "tool":
-                # 一直往上找，直到第一个 assistant 消息
-                group_indices = [i]
                 group_msgs = [dict(msg)]
-                step = 1
-                if i < 1:
-                    raise ModelTokenOverflowError(
-                        "Structural error: first message is tool message",
-                        budget=budget
-                    )
-                for j in range(i-1, -1, -1):
-                    role = str(messages[j].get("role") or "")
+                # 向上找 assistant
+                found_assistant = False
+                for j in range(i - 1, -1, -1):
+                    role = str(other_messages[j].get("role") or "")
+                    group_msgs.insert(0, dict(other_messages[j]))
+                    step += 1
                     if role == "assistant":
-                        group_indices.append(j)
-                        group_msgs.append(dict(messages[j]))
-                        step += 1
+                        found_assistant = True
                         break
-                    elif role == "tool":
-                        group_indices.append(j)
-                        group_msgs.append(dict(messages[j]))
-                        step += 1
-                    else:
-                        raise ModelTokenOverflowError(
-                            f"Structural error: before tool messages is {role}, not assistant message.",
-                            budget=budget
-                        )
-                else:
-                    # 如果循环结束没找到 assistant
-                    raise ModelTokenOverflowError(
-                        "Structural error: tool message without assistant message",
-                        budget=budget
-                    )
+                    if role != "tool":
+                        # 结构错误，强制跳出
+                        break
+                
+                if not found_assistant:
+                    # 孤立的 tool 消息，抛弃这一组
+                    i -= step
+                    continue
             else:
-                group_indices = [i]
                 group_msgs = [dict(msg)]
                 step = 1
             
             group_tokens = litellm.token_counter(model=model, messages=group_msgs)
             if current_tokens + group_tokens <= budget:
-                # 记录要保留的索引
-                for idx in group_indices:
-                    keep_indices.add(idx)
+                # 保留这组消息（逆序收集，最后反转）
+                for g_msg in reversed(group_msgs):
+                    kept_others.insert(0, g_msg)
                 current_tokens += group_tokens
                 i -= step
             else:
                 break
 
-        # 4. 报错检查：如果存在非 system 消息但一个都没保留（除了 system 消息外）
-        has_non_system = any(str(m.get("role") or "") != "system" for m in messages)
-        has_kept_non_system = any(str(messages[idx].get("role") or "") != "system" for idx in keep_indices)
-        
-        if has_non_system and not has_kept_non_system:
-            raise ModelTokenOverflowError(
-                "Budget too small to include even the latest user/tool message group.",
-                budget=budget,
-                actual=current_tokens
-            )
+        # 4. 组装结果
+        res_messages = []
+        if normalized_system:
+            res_messages.append(normalized_system)
+        res_messages.extend(kept_others)
 
-        # 5. 按原始顺序返回所有选中的消息
-        res_messages =  [dict(messages[idx]) for idx in sorted(list(keep_indices))]
         if self._observability:
             self._observability.record(
                 trace_id,
                 {
                     "event": "model.completion.trim_messages",
-                    "messages": res_messages,
+                    "budget": budget,
+                    "final_tokens": current_tokens,
+                    "message_count": len(res_messages),
                 },
                 "DEBUG",
             )

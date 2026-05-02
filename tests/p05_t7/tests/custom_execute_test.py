@@ -2,6 +2,7 @@ import pytest
 from pydantic import BaseModel
 
 from src.domain.events import UniversalEvent, UniversalEventContent
+from src.domain.context import RuntimeMemorySnapshot, ContextBlock
 from src.orchestration_engine.context.runtime_context import RuntimeContext
 from src.domain.capabilities import CapabilityDescription, CapabilityRequest, CapabilityResult
 from src.domain.models import ModelMessage, ModelResponse, ToolCallFunction, ToolInvocation, ParsedToolCall
@@ -33,7 +34,16 @@ def _build_runtime_ctx() -> RuntimeContext:
         trace_id="trace-1",
         logic_id="logic-1",
         session_id="session-1",
-        memory={"dialogue_history": [ModelMessage(role="user", content="历史消息")]},
+        memory=RuntimeMemorySnapshot(
+            history_blocks=(
+                ContextBlock(
+                    block_id="b1",
+                    kind="user_turn",
+                    messages=(ModelMessage(role="user", content="历史消息"),),
+                    token_count=10
+                ),
+            )
+        ),
         state={"ticket_asked": False},
     )
 

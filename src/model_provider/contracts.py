@@ -1,6 +1,7 @@
 from collections.abc import Mapping
 from typing import Protocol
 
+from src.domain.context import ContextBudget
 from src.domain.models import (
     ModelMessage,
     ModelRequest,
@@ -18,6 +19,10 @@ class ModelProviderClient(Protocol):
     provider_id: str
 
     def completion(self, request: ModelRequest) -> ModelResponse:
+        raise NotImplementedError
+
+    def get_context_budget(self, model_name: str) -> ContextBudget:
+        """获取指定模型的上下文预算配置"""
         raise NotImplementedError
 
 
@@ -70,4 +75,11 @@ class InMemoryModelProviderClient:
                     }
                 ],
             }
+        )
+
+    def get_context_budget(self, model_name: str) -> ContextBudget:
+        return ContextBudget(
+            max_input_tokens=4096,
+            reserved_output_tokens=1024,
+            trim_ratio=0.75
         )

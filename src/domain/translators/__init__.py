@@ -1,15 +1,15 @@
 from .model_interactions import (
-    ParsedToolCall,
+    build_assistant_answer_block,
+    build_tool_interaction_block,
     build_tool_result_message,
-    hot_memory_item_to_model_message,
+    build_user_context_block,
     model_message_to_debug_dict,
-    model_message_to_hot_memory_item,
 )
 
 __all__ = [
-    "ParsedToolCall",
+    "build_assistant_answer_block",
+    "build_tool_interaction_block",
     "build_tool_result_message",
-    "hot_memory_item_to_model_message",
+    "build_user_context_block",
     "model_message_to_debug_dict",
-    "model_message_to_hot_memory_item",
 ]

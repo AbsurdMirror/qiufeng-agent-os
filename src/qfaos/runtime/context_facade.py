@@ -1,5 +1,6 @@
-from typing import Any, Literal
+from typing import Literal, Any
 
+from src.domain.context import ContextBlock, JSONValue
 from src.domain.events import UniversalEvent
 from src.domain.responses import ReplyText, FeishuReplyCard
 from src.channel_gateway.exports import ChannelGatewayExports
@@ -12,7 +13,6 @@ from src.domain.translators.schema_translator import SchemaTranslator
 from src.domain.translators.model_interactions import (
     build_tool_result_message,
     model_message_to_debug_dict,
-    model_message_to_hot_memory_item,
 )
 from src.orchestration_engine.contracts import CapabilityHub
 from src.qfaos.config import QFAConfig
@@ -52,53 +52,44 @@ class DefaultQFASessionContext(QFASessionContext):
         self._observability = observability
 
     @property
-    def state(self) -> dict[str, Any]:
+    def state(self) -> dict[str, JSONValue]:
         return self._runtime_context.state
 
-    async def get_memory(self) -> list[dict[str, object]]:
-        history = self._runtime_context.memory.get("dialogue_history", [])
-        result: list[dict[str, object]] = []
-        for item in history:
-            if not isinstance(item, ModelMessage):
-                raise QFAInvalidConfigError("dialogue_history 中只允许存在 ModelMessage")
-            result.append(model_message_to_debug_dict(item))
-        return result
+    async def get_history_blocks(self) -> tuple[ContextBlock, ...]:
+        return self._runtime_context.memory.history_blocks
 
-    async def add_memory(self, message: ModelMessage) -> None:
-        item = model_message_to_hot_memory_item(message, self._runtime_context.trace_id)
-        await self._storage_memory.append_hot_memory(
+    async def append_context_block(self, block: ContextBlock) -> None:
+        # 1. 持久化
+        await self._storage_memory.append_context_block(
             self._logic_id,
             self._runtime_context.session_id,
-            item,
+            block,
             10,
         )
-        dialogue = self._runtime_context.memory.setdefault("dialogue_history", [])
-        if not isinstance(dialogue, list):
-            raise QFAInvalidConfigError("dialogue_history 必须为 ModelMessage 列表")
-        dialogue.append(message)
+        
+        # 2. 同步更新运行时内存快照 (追加到末尾)
+        current_memory = self._runtime_context.memory
+        new_history = list(current_memory.history_blocks)
+        new_history.append(block)
+        
+        from dataclasses import replace
+        self._runtime_context.memory = replace(
+            current_memory,
+            history_blocks=tuple(new_history)
+        )
 
-    async def add_user_text_memory(self, content: str) -> None:
-        await self.add_memory(ModelMessage(role="user", content=content))
-
-    async def add_assistant_message_memory(self, message: ModelMessage) -> None:
-        if message.role != "assistant":
-            raise QFAInvalidConfigError("assistant memory 必须传入 assistant 角色消息")
-        await self.add_memory(message)
-
-    async def add_tool_result_memory(self, message: ModelMessage) -> None:
-        if message.role != "tool":
-            raise QFAInvalidConfigError("tool result memory 必须传入 tool 角色消息")
-        await self.add_memory(message)
-
-    async def clear_memory(self) -> None:
-        # 1. 清除持久化存储中的热记忆
-        await self._storage_memory.delete_hot_memory(
+    async def clear_history(self) -> None:
+        # 1. 清除持久化存储中的历史
+        await self._storage_memory.delete_context_history(
             self._logic_id,
             self._runtime_context.session_id,
         )
-        # 2. 清除当前运行时的对话历史快照
-        if "dialogue_history" in self._runtime_context.memory:
-            self._runtime_context.memory["dialogue_history"] = []
+        # 2. 清除当前运行时的快照
+        from dataclasses import replace
+        self._runtime_context.memory = replace(
+            self._runtime_context.memory,
+            history_blocks=()
+        )
 
     async def model_ask(
         self,
@@ -107,7 +98,40 @@ class DefaultQFASessionContext(QFASessionContext):
         tools_mode: Literal["none", "all", "custom"] = "all",
         tools: tuple[CapabilityDescription, ...] | None = None,
     ) -> QFAModelOutput:
+        from src.model_provider.input_normalizer import (
+            build_context_budget,
+            merge_system_prompt_parts,
+            trim_context_blocks,
+            flatten_context_messages,
+        )
+
         model_name = model.model_name
+        
+        # 1. 构造预算
+        budget = build_context_budget(model_name)
+        
+        # 2. 准备 System 消息
+        system_message = merge_system_prompt_parts(self._runtime_context.memory.system_parts)
+        
+        # 3. 准备当前用户消息
+        current_user_message = ModelMessage(role="user", content=prompt) if prompt else None
+        
+        # 4. 裁剪历史块
+        trimmed_blocks = trim_context_blocks(
+            model_name=model_name,
+            blocks=self._runtime_context.memory.history_blocks,
+            budget=budget,
+            system_message=system_message,
+            current_user_message=current_user_message,
+        )
+        
+        # 5. 展开为扁平消息
+        messages = flatten_context_messages(
+            system_message=system_message,
+            blocks=trimmed_blocks,
+            current_user_message=current_user_message,
+        )
+        
         if tools_mode == "none":
             selected_tools: tuple[CapabilityDescription, ...] = ()
         elif tools_mode == "custom":
@@ -120,7 +144,7 @@ class DefaultQFASessionContext(QFASessionContext):
                 for capability in self._capability_hub.list_capabilities()
                 if capability.domain == "tool"
             )
-        messages = self._build_messages(prompt)
+        
         result = await self._capability_hub.invoke(
             CapabilityRequest(
                 capability_id="model.completion",
@@ -283,19 +307,6 @@ class DefaultQFASessionContext(QFASessionContext):
             tool_call=tool_call,
             tool_message=build_tool_result_message(tool_call, final_output),
         )
-
-    def _build_messages(self, prompt: str) -> tuple[ModelMessage, ...]:
-        history = self._runtime_context.memory.get("dialogue_history", [])
-        if not isinstance(history, list):
-            raise QFAInvalidConfigError("dialogue_history 必须为 ModelMessage 列表")
-        messages: list[ModelMessage] = []
-        for item in history:
-            if not isinstance(item, ModelMessage):
-                raise QFAInvalidConfigError("dialogue_history 中只允许存在 ModelMessage")
-            messages.append(item)
-        if prompt:
-            messages.append(ModelMessage(role="user", content=prompt))
-        return tuple(messages)
 
 
 class DefaultQFAExecutionContext(QFAExecutionContext):

@@ -2,8 +2,8 @@ import asyncio
 
 import pytest
 from src.storage_memory.backends.in_memory import InMemoryHotMemoryStore
-from src.domain.memory import HotMemoryItem
-from src.domain.models import ToolCallFunction, ToolInvocation
+from src.domain.context import ContextBlock, ContextLoadRequest, ContextBudget
+from src.domain.models import ModelMessage, ToolCallFunction, ToolInvocation
 
 @pytest.fixture
 def memory_store():
@@ -44,76 +44,94 @@ def test_sm_02_ltrim_truncation(memory_store):
     assert items[1]["id"] == 3
     assert items[2]["id"] == 2
 
-def test_sm_03_append_hot_memory_with_max_rounds(memory_store):
-    """测试项 SM-03: 高层协议：append_hot_memory"""
+def test_sm_03_append_context_block_with_max_blocks(memory_store):
+    """测试项 SM-03: 高层协议：append_context_block"""
     logic_id = "agent_1"
     session_id = "session_abc"
     
-    # 连续追加 3 条记录，限制 max_rounds=2
+    # 连续追加 3 条记录，限制 max_blocks=2
     asyncio.run(
-        memory_store.append_hot_memory(
+        memory_store.append_context_block(
             logic_id,
             session_id,
-            HotMemoryItem(trace_id="t1", role="user", content="hello 1"),
-            max_rounds=2,
+            ContextBlock(block_id="b1", kind="user_turn", messages=(ModelMessage(role="user", content="hello 1"),), token_count=10),
+            max_blocks=2,
         )
     )
     asyncio.run(
-        memory_store.append_hot_memory(
+        memory_store.append_context_block(
             logic_id,
             session_id,
-            HotMemoryItem(trace_id="t2", role="user", content="hello 2"),
-            max_rounds=2,
+            ContextBlock(block_id="b2", kind="user_turn", messages=(ModelMessage(role="user", content="hello 2"),), token_count=10),
+            max_blocks=2,
         )
     )
     result = asyncio.run(
-        memory_store.append_hot_memory(
+        memory_store.append_context_block(
             logic_id,
             session_id,
-            HotMemoryItem(trace_id="t3", role="user", content="hello 3"),
-            max_rounds=2,
+            ContextBlock(block_id="b3", kind="user_turn", messages=(ModelMessage(role="user", content="hello 3"),), token_count=10),
+            max_blocks=2,
         )
     )
     
     assert len(result) == 2
     # 返回的最新记录列表
-    assert result[0].trace_id == "t2"
-    assert result[1].trace_id == "t3"
+    assert result[0].block_id == "b2"
+    assert result[1].block_id == "b3"
 
 
-def test_sm_03b_append_hot_memory_preserves_tool_messages(memory_store):
+def test_sm_03b_append_context_block_preserves_tool_messages(memory_store):
     logic_id = "agent_tool"
     session_id = "session_tool"
     tool_call = ToolInvocation(
         id="call-1",
         function=ToolCallFunction(name="tool.calc", arguments='{"a":1,"b":2}'),
+        type="function"
     )
 
     result = asyncio.run(
-        memory_store.append_hot_memory(
+        memory_store.append_context_block(
             logic_id,
             session_id,
-            HotMemoryItem(
-                trace_id="trace-tool",
-                role="tool",
-                content='{"result":"ok"}',
-                tool_call_id="call-1",
-                name="tool.calc",
-                structured_output={"result": "ok"},
-                tool_calls=(tool_call,),
+            ContextBlock(
+                block_id="blk-tool",
+                kind="tool_interaction",
+                messages=(
+                    ModelMessage(
+                        role="assistant",
+                        content="calling tool",
+                        tool_calls=(tool_call,)
+                    ),
+                    ModelMessage(
+                        role="tool",
+                        content='{"result":"ok"}',
+                        tool_call_id="call-1",
+                        name="tool.calc",
+                        structured_content={"result": "ok"}
+                    )
+                ),
+                token_count=20
             ),
-            max_rounds=5,
+            max_blocks=5,
         )
     )
 
     assert len(result) == 1
-    restored = result[0]
-    assert restored.role == "tool"
-    assert restored.tool_call_id == "call-1"
-    assert restored.name == "tool.calc"
-    assert restored.structured_output == {"result": "ok"}
-    assert len(restored.tool_calls) == 1
-    assert restored.tool_calls[0].function.name == "tool.calc"
+    block = result[0]
+    assert block.kind == "tool_interaction"
+    assert len(block.messages) == 2
+    
+    assistant_msg = block.messages[0]
+    tool_msg = block.messages[1]
+    
+    assert assistant_msg.role == "assistant"
+    assert len(assistant_msg.tool_calls) == 1
+    
+    assert tool_msg.role == "tool"
+    assert tool_msg.tool_call_id == "call-1"
+    assert tool_msg.name == "tool.calc"
+    assert tool_msg.structured_content == {"result": "ok"}
 
 def test_sm_04_runtime_state_persistence(memory_store):
     """测试项 SM-04: 运行时状态持久化与加载"""

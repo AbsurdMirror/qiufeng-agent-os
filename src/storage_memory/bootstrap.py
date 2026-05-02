@@ -1,13 +1,18 @@
 from collections.abc import Mapping
 from typing import Any
 
-from src.domain.memory import HotMemoryItem
+from src.domain.context import (
+    ContextBlock,
+    ContextLoadRequest,
+    ContextLoadResult,
+    JSONValue,
+)
 from .contracts.protocols import StorageAccessProtocol
 from .exports import StorageMemoryExports
 from src.observability_hub.exports import ObservabilityHubExports
 
-import asyncio
 from .factory.create_store import create_store
+
 
 def initialize(
     memory_config: Any | None = None,
@@ -28,22 +33,23 @@ def initialize(
         status="initialized",
         carrier=store,
         protocol=store,
-        append_hot_memory=lambda logic_id, session_id, item, max_rounds=10: _append_hot_memory(
+        warm_memory=None,  # 预留
+        cold_memory=None,  # 预留
+        profile=None,      # 预留
+        append_context_block=lambda logic_id, session_id, block, max_blocks=10: _append_context_block(
             protocol=store,
             logic_id=logic_id,
             session_id=session_id,
-            item=item,
-            max_rounds=max_rounds,
+            block=block,
+            max_blocks=max_blocks,
             observability=observability,
         ),
-        read_hot_memory=lambda logic_id, session_id, limit=10: _read_hot_memory(
+        read_context_snapshot=lambda request: _read_context_snapshot(
             protocol=store,
-            logic_id=logic_id,
-            session_id=session_id,
-            limit=limit,
+            request=request,
             observability=observability,
         ),
-        delete_hot_memory=lambda logic_id, session_id: _delete_hot_memory(
+        delete_context_history=lambda logic_id, session_id: _delete_context_history(
             protocol=store,
             logic_id=logic_id,
             session_id=session_id,
@@ -65,87 +71,92 @@ def initialize(
     )
 
 
-async def _append_hot_memory(
+async def _append_context_block(
     protocol: StorageAccessProtocol,
     logic_id: str,
     session_id: str,
-    item: HotMemoryItem,
-    max_rounds: int = 10,
+    block: ContextBlock,
+    max_blocks: int = 10,
     observability: ObservabilityHubExports | None = None,
-) -> tuple[HotMemoryItem, ...]:
-    """代理方法：追加热记忆"""
+) -> tuple[ContextBlock, ...]:
+    """代理方法：追加上下文块"""
     if observability:
+        # 记录块信息预览
         observability.record(
-            item.trace_id,
+            "system",  # 块写入通常由编排层触发，若有 trace_id 更好，暂用 system
             {
-                "event": "storage.hot_memory.append",
+                "event": "storage.context_block.append",
                 "logic_id": logic_id,
                 "session_id": session_id,
-                "role": item.role,
-                "content_preview": item.content[:100] if item.content else "",
-                "tool_call_count": len(item.tool_calls),
-                "tool_call_ids": [call.id for call in item.tool_calls if call.id],
-                "tool_name": item.name,
-                "tool_call_id": item.tool_call_id,
+                "block_id": block.block_id,
+                "kind": block.kind,
+                "message_count": len(block.messages),
+                "token_count": block.token_count,
             },
             "DEBUG",
         )
-    return await protocol.append_hot_memory(
+    return await protocol.append_context_block(
         logic_id=logic_id,
         session_id=session_id,
-        item=item,
-        max_rounds=max_rounds,
+        block=block,
+        max_blocks=max_blocks,
     )
 
 
-async def _read_hot_memory(
+async def _read_context_snapshot(
     protocol: StorageAccessProtocol,
-    logic_id: str,
-    session_id: str,
-    limit: int = 10,
+    request: ContextLoadRequest,
     observability: ObservabilityHubExports | None = None,
-) -> tuple[HotMemoryItem, ...]:
-    """代理方法：读取热记忆"""
-    # 注意：读取时可能没有上下文 TraceID，此处不做强制记录，或者仅记录动作
-    return await protocol.read_hot_memory(logic_id=logic_id, session_id=session_id, limit=limit)
+) -> ContextLoadResult:
+    """代理方法：读取上下文快照"""
+    if observability:
+        observability.record(
+            "system",
+            {
+                "event": "storage.context_snapshot.read",
+                "logic_id": request.logic_id,
+                "session_id": request.session_id,
+                "budget": {
+                    "max_input": request.budget.max_input_tokens,
+                    "reserved_output": request.budget.reserved_output_tokens,
+                },
+            },
+            "DEBUG",
+        )
+    return await protocol.read_context_snapshot(request)
 
 
-async def _delete_hot_memory(
+async def _delete_context_history(
     protocol: StorageAccessProtocol,
     logic_id: str,
     session_id: str,
     observability: ObservabilityHubExports | None = None,
 ) -> None:
-    """代理方法：删除热记忆"""
+    """代理方法：删除历史记忆"""
     if observability:
         observability.record(
             "system",
             {
-                "event": "storage.hot_memory.delete",
+                "event": "storage.context_history.delete",
                 "logic_id": logic_id,
                 "session_id": session_id,
             },
             "INFO",
         )
-    await protocol.delete_hot_memory(logic_id=logic_id, session_id=session_id)
+    await protocol.delete_context_history(logic_id=logic_id, session_id=session_id)
 
 
 async def _persist_runtime_state(
     protocol: StorageAccessProtocol,
     logic_id: str,
     session_id: str,
-    state: Mapping[str, Any],
+    state: Mapping[str, JSONValue],
     observability: ObservabilityHubExports | None = None,
-) -> dict[str, Any]:
+) -> dict[str, JSONValue]:
     """代理方法：持久化状态字典"""
     if observability:
-        # 尝试从状态或全局寻找 trace_id (由于 persist 通常在最后，这里可以记录)
-        trace_id = "unknown"
-        if isinstance(state, Mapping) and "trace_id" in state:
-            trace_id = str(state["trace_id"])
-            
         observability.record(
-            trace_id,
+            "system",
             {
                 "event": "storage.runtime_state.persist",
                 "logic_id": logic_id,
@@ -165,6 +176,6 @@ async def _load_runtime_state(
     logic_id: str,
     session_id: str,
     observability: ObservabilityHubExports | None = None,
-) -> dict[str, Any]:
+) -> dict[str, JSONValue]:
     """代理方法：读取持久化的状态字典"""
     return await protocol.load_runtime_state(logic_id=logic_id, session_id=session_id)

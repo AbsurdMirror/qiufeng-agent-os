@@ -2,6 +2,7 @@ from typing import Annotated
 
 from pydantic import Field
 
+from src.domain.context import ContextBudget
 from src.domain.errors import build_error_report
 from src.domain.models import (
     ModelMessage,
@@ -17,6 +18,9 @@ from src.model_provider.validators.output_parser import (
     ModelOutputParser,
 )
 
+from src.model_provider.input_normalizer import (
+    build_context_budget,
+)
 from src.observability_hub.exports import ObservabilityHubExports
 
 class ModelRouter(ModelProviderClient):
@@ -63,6 +67,10 @@ class ModelRouter(ModelProviderClient):
     def add_client(self, model_name: str, client: RawModelProviderClient) -> None:
         self._inject_dependencies(client)
         self._clients[model_name] = client
+
+    def get_context_budget(self, model_name: str) -> ContextBudget:
+        """获取指定模型的上下文预算配置，若未显式配置则返回默认值"""
+        return build_context_budget(model_name)
 
     @qfaos_pytool(id="model.completion", domain="model")
     def completion(

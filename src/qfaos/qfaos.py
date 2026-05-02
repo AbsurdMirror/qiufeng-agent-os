@@ -413,6 +413,7 @@ class QFAOS:
             capability_hub=hub,
             storage_memory=storage_memory,
             observability=observability,
+            model_provider=router,
         )
         if oe.context_manager is None:
             raise QFAInvalidConfigError("orchestration_engine 未正确注入 context_manager")
@@ -463,7 +464,13 @@ class QFAOS:
                 event = await asyncio.to_thread(event_queue.get)
                 trace_id = observability.trace_id_generator()
                 session_id = getattr(event, "logical_uid", None) or getattr(event, "user_id", "")
-                ctx = await oe.context_manager.initialize_context(trace_id, "qfaos", session_id)
+                # 传入模型名称以进行预算握手
+                ctx = await oe.context_manager.initialize_context(
+                    trace_id, 
+                    "qfaos", 
+                    session_id,
+                    model_name=model_cfg.model_name
+                )
                 updates = await orchestrator.execute(event, ctx, hub)
                 oe.context_manager.update_context(ctx, updates)
                 await oe.context_manager.persist_context(ctx)

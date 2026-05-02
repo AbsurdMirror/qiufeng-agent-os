@@ -110,10 +110,10 @@ class MiniMaxModelProviderClient(RawModelProviderClient):
         
         trace_id = payload_dict.get("metadata", {}).get("trace_id")
 
-        # 注入模型成本元数据，以便裁剪器能正确获取 context_window
+        # 注入模型成本元数据
         fake_model_cost = {
             "max_tokens": 64 * 1024,
-            "input_cost_per_token": 0.000001,  # 随便填个数，防止计费逻辑崩溃
+            "input_cost_per_token": 0.000001,
             "output_cost_per_token": 0.000002,
             "lite_llm_model_name": "MiniMax-M2.7",
             "model_name": "minimax/MiniMax-M2.7"
@@ -122,31 +122,6 @@ class MiniMaxModelProviderClient(RawModelProviderClient):
         litellm.model_cost["minimax/MiniMax-M2.7-highspeed"] = fake_model_cost
         litellm.model_cost["minimax/MiniMax-M2.5-highspeed"] = fake_model_cost
 
-        # 处理 MiniMax 限制：messages 中只能有一个 system message
-        raw_messages = payload_dict.get("messages", [])
-        if raw_messages:
-            system_contents = []
-            other_messages = []
-            for msg in raw_messages:
-                if msg.get("role") == "system":
-                    content = msg.get("content")
-                    if content:
-                        system_contents.append(str(content))
-                else:
-                    other_messages.append(msg)
-            
-            merged_messages = []
-            if system_contents:
-                if len(system_contents) > 1:
-                    self._record(trace_id, "minimax.messages_merged", {"count": len(system_contents)})
-                merged_messages.append({
-                    "role": "system",
-                    "content": "\n\n".join(system_contents)
-                })
-            merged_messages.extend(other_messages)
-            
-            payload_dict["messages"] = merged_messages
-
         try:
             # 计算需要预留给模型输出的 Token 数
             reserved_output_tokens = None
@@ -154,7 +129,7 @@ class MiniMaxModelProviderClient(RawModelProviderClient):
             if isinstance(max_tokens, int) and max_tokens > 0:
                 reserved_output_tokens = max_tokens
 
-            # 调用自定义裁剪器（基于 litellm.token_counter）
+            # 调用适配器进行裁剪与归一化 (包含 System Merging)
             if payload_dict.get("messages"):
                 payload_dict["messages"] = self._adapter.trim_messages(
                     payload_dict["messages"],
@@ -165,7 +140,6 @@ class MiniMaxModelProviderClient(RawModelProviderClient):
                 )
 
             # litellm._turn_on_debug()
-            # print("payload_dict", payload_dict)
             response = litellm.completion(**payload_dict)
         except ModelTokenOverflowError as exc:
             from src.domain.errors import format_user_facing_error

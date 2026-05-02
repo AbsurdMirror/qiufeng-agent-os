@@ -3,12 +3,19 @@ import os
 import asyncio
 from pathlib import Path
 from collections.abc import Mapping
-from typing import Any
 
-from src.domain.memory import HotMemoryItem
+from src.domain.context import (
+    ContextBlock,
+    ContextLoadRequest,
+    ContextLoadResult,
+    JSONValue,
+)
 from ..contracts.protocols import HotMemoryCarrier, StorageAccessProtocol
 from ..internal.keys import _build_hot_key, _build_state_key
-from ..internal.codecs import _dump_hot_memory_item, _load_hot_memory_item
+from ..internal.codecs import (
+    dump_context_block,
+    load_context_block,
+)
 
 
 class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
@@ -36,7 +43,7 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         path.parent.mkdir(parents=True, exist_ok=True)
         return path
 
-    async def rpush(self, key: str, value: Mapping[str, Any]) -> int:
+    async def rpush(self, key: str, value: Mapping[str, object]) -> int:
         path = self._get_path_from_key(key)
         
         def _sync_rpush():
@@ -48,7 +55,7 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
 
         return await asyncio.to_thread(_sync_rpush)
 
-    async def lpush(self, key: str, value: Mapping[str, Any]) -> int:
+    async def lpush(self, key: str, value: Mapping[str, object]) -> int:
         path = self._get_path_from_key(key)
 
         def _sync_lpush():
@@ -65,7 +72,7 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
 
         return await asyncio.to_thread(_sync_lpush)
 
-    async def lrange(self, key: str, start: int, stop: int) -> tuple[dict[str, Any], ...]:
+    async def lrange(self, key: str, start: int, stop: int) -> tuple[dict[str, object], ...]:
         path = self._get_path_from_key(key)
 
         def _sync_lrange():
@@ -106,30 +113,44 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
 
         await asyncio.to_thread(_sync_ltrim)
 
-    async def append_hot_memory(
+    async def append_context_block(
         self,
         logic_id: str,
         session_id: str,
-        item: HotMemoryItem,
-        max_rounds: int = 10,
-    ) -> tuple[HotMemoryItem, ...]:
+        block: ContextBlock,
+        max_blocks: int,
+    ) -> tuple[ContextBlock, ...]:
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
-        await self.rpush(hot_key, _dump_hot_memory_item(item))
-        await self.ltrim(hot_key, -max_rounds, -1)
-        return await self.read_hot_memory(logic_id=logic_id, session_id=session_id, limit=max_rounds)
+        await self.rpush(hot_key, dump_context_block(block))
+        await self.ltrim(hot_key, -max_blocks, -1)
+        
+        snapshot = await self.read_context_snapshot(
+            ContextLoadRequest(
+                logic_id=logic_id,
+                session_id=session_id,
+                budget=None,  # type: ignore
+                include_profile_patch=False,
+                include_memory_snippets=False,
+                history_block_limit=max_blocks
+            )
+        )
+        return snapshot.history_blocks
 
-    async def read_hot_memory(
+    async def read_context_snapshot(
         self,
-        logic_id: str,
-        session_id: str,
-        limit: int = 10,
-    ) -> tuple[HotMemoryItem, ...]:
-        hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
-        raw_items = await self.lrange(hot_key, -limit, -1)
-        return tuple(_load_hot_memory_item(raw_item) for raw_item in raw_items)
+        request: ContextLoadRequest,
+    ) -> ContextLoadResult:
+        hot_key = _build_hot_key(logic_id=request.logic_id, session_id=request.session_id)
+        raw_items = await self.lrange(hot_key, -request.history_block_limit, -1)
+        history_blocks = tuple(load_context_block(raw_item) for raw_item in raw_items)
+        
+        return ContextLoadResult(
+            system_parts=(),
+            history_blocks=history_blocks
+        )
 
-    async def delete_hot_memory(self, logic_id: str, session_id: str) -> None:
-        """删除指定会话的所有热记忆历史记录"""
+    async def delete_context_history(self, logic_id: str, session_id: str) -> None:
+        """删除指定会话的所有历史记忆记录"""
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
         path = self._get_path_from_key(hot_key)
         
@@ -143,8 +164,8 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         self,
         logic_id: str,
         session_id: str,
-        state: Mapping[str, Any],
-    ) -> dict[str, Any]:
+        state: Mapping[str, JSONValue],
+    ) -> dict[str, JSONValue]:
         state_key = _build_state_key(logic_id=logic_id, session_id=session_id)
         path = self._get_path_from_key(state_key)
         # 运行时状态通常是 json 而不是 jsonl
@@ -159,7 +180,7 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
 
         return await asyncio.to_thread(_sync_persist)
 
-    async def load_runtime_state(self, logic_id: str, session_id: str) -> dict[str, Any]:
+    async def load_runtime_state(self, logic_id: str, session_id: str) -> dict[str, JSONValue]:
         state_key = _build_state_key(logic_id=logic_id, session_id=session_id)
         path = self._get_path_from_key(state_key)
         path = path.with_suffix(".json")

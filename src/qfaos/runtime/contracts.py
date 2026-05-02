@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
+from src.domain.context import JSONValue, ContextBlock
 from src.domain.events import UniversalEvent
 from src.domain.capabilities import CapabilityDescription
 from src.domain.models import ModelMessage, ModelResponse, ParsedToolCall
@@ -16,7 +17,7 @@ class QFAEvent:
     type: QFAEnum.Event
     session_id: str
     payload: str
-    raw_event: dict[str, Any] = field(default_factory=dict)
+    raw_event: dict[str, JSONValue] = field(default_factory=dict)
 
     @classmethod
     def from_universal(cls, event: UniversalEvent) -> "QFAEvent":
@@ -98,26 +99,19 @@ class QFASessionContext(Protocol):
     """会话级上下文协议。"""
 
     @property
-    def state(self) -> dict[str, Any]:
+    def state(self) -> dict[str, JSONValue]:
         raise NotImplementedError
 
-    async def get_memory(self) -> list[dict[str, Any]]:
+    async def get_history_blocks(self) -> tuple[ContextBlock, ...]:
+        """获取当前会话的历史上下文块。"""
         raise NotImplementedError
 
-    async def add_memory(self, message: ModelMessage) -> None:
+    async def append_context_block(self, block: ContextBlock) -> None:
+        """追加一个上下文块到会话历史。"""
         raise NotImplementedError
 
-    async def add_user_text_memory(self, content: str) -> None:
-        raise NotImplementedError
-
-    async def add_assistant_message_memory(self, message: ModelMessage) -> None:
-        raise NotImplementedError
-
-    async def add_tool_result_memory(self, message: ModelMessage) -> None:
-        raise NotImplementedError
-
-    async def clear_memory(self) -> None:
-        """清除当前会话的所有历史记忆。"""
+    async def clear_history(self) -> None:
+        """清除当前会话的所有历史记忆块。"""
         raise NotImplementedError
 
     async def model_ask(

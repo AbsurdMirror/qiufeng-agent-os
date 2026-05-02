@@ -1,72 +1,121 @@
 from collections.abc import Mapping
+from typing import Any
 
+from src.domain.context import ContextBlock, ContextBlockKind, SystemPromptPart, SystemPromptPartSource
 from src.domain.errors import format_user_facing_error
-from src.domain.memory import HotMemoryItem
-from src.domain.models import ToolCallFunction, ToolInvocation
+from src.domain.models import ModelMessage, ToolCallFunction, ToolInvocation
 
 
-def _dump_hot_memory_item(item: HotMemoryItem) -> dict[str, object]:
-    """将强类型的数据载体序列化为可存储的普通字典"""
+def dump_context_block(block: ContextBlock) -> dict[str, object]:
+    """将 ContextBlock 序列化为字典"""
     return {
-        "trace_id": item.trace_id,
-        "role": item.role,
-        "content": item.content,
-        "tool_calls": [call.to_dict() for call in item.tool_calls],
-        "tool_call_id": item.tool_call_id,
-        "name": item.name,
-        "structured_output": dict(item.structured_output) if item.structured_output is not None else None,
-        "metadata": dict(item.metadata),
+        "block_id": block.block_id,
+        "kind": block.kind,
+        "messages": [dump_model_message(msg) for msg in block.messages],
+        "token_count": block.token_count,
     }
 
 
-def _load_hot_memory_item(payload: Mapping[str, object]) -> HotMemoryItem:
-    """从普通字典反序列化出强类型的数据载体，提供容错保护"""
+def load_context_block(payload: Mapping[str, object]) -> ContextBlock:
+    """从字典反序列化 ContextBlock"""
     try:
-        content_value = payload.get("content")
-        content = content_value if isinstance(content_value, str) or content_value is None else str(content_value)
-        tool_calls_payload = payload.get("tool_calls", ())
-        tool_calls = _load_tool_invocations(tool_calls_payload)
-        metadata_value = payload.get("metadata", {})
-        if not isinstance(metadata_value, Mapping):
-            raise ValueError("hot_memory.metadata_must_be_mapping")
-        structured_output = payload.get("structured_output")
-        if structured_output is not None and not isinstance(structured_output, Mapping):
-            raise ValueError("hot_memory.structured_output_must_be_mapping")
-        return HotMemoryItem(
-            trace_id=str(payload.get("trace_id", "")),
-            role=str(payload.get("role", "")),
-            content=content,
-            tool_calls=tool_calls,
-            tool_call_id=payload.get("tool_call_id") if isinstance(payload.get("tool_call_id"), str) else None,
-            name=payload.get("name") if isinstance(payload.get("name"), str) else None,
-            structured_output=dict(structured_output) if isinstance(structured_output, Mapping) else None,
-            metadata=dict(metadata_value),
+        block_id = str(payload.get("block_id", ""))
+        kind = payload.get("kind", "user_turn")
+        messages_payload = payload.get("messages", [])
+        token_count = int(payload.get("token_count", 0))
+
+        if not isinstance(messages_payload, (list, tuple)):
+            raise ValueError("context_block.messages_must_be_sequence")
+
+        messages = tuple(load_model_message(msg) for msg in messages_payload)
+
+        return ContextBlock(
+            block_id=block_id,
+            kind=kind,  # type: ignore
+            messages=messages,
+            token_count=token_count,
         )
     except Exception as exc:  # noqa: BLE001
         raise ValueError(
-            format_user_facing_error(exc, summary="读取热记忆消息失败")
+            format_user_facing_error(exc, summary="读取上下文块失败")
         ) from exc
+
+
+def dump_system_prompt_part(part: SystemPromptPart) -> dict[str, object]:
+    """将 SystemPromptPart 序列化为字典"""
+    return {
+        "source": part.source,
+        "content": part.content,
+    }
+
+
+def load_system_prompt_part(payload: Mapping[str, object]) -> SystemPromptPart:
+    """从字典反序列化 SystemPromptPart"""
+    source = payload.get("source", "base_prompt")
+    content = str(payload.get("content", ""))
+    return SystemPromptPart(
+        source=source,  # type: ignore
+        content=content,
+    )
+
+
+def dump_model_message(msg: ModelMessage) -> dict[str, object]:
+    """将 ModelMessage 序列化为字典"""
+    return {
+        "role": msg.role,
+        "content": msg.content,
+        "tool_calls": [call.to_dict() for call in msg.tool_calls],
+        "tool_call_id": msg.tool_call_id,
+        "name": msg.name,
+        "structured_content": dict(msg.structured_content) if msg.structured_content is not None else None,
+        "metadata": dict(msg.metadata),
+    }
+
+
+def load_model_message(payload: Mapping[str, object]) -> ModelMessage:
+    """从字典反序列化 ModelMessage"""
+    role = str(payload.get("role", "user"))
+    content = payload.get("content")
+    if content is not None:
+        content = str(content)
+
+    tool_calls_payload = payload.get("tool_calls", [])
+    tool_calls = _load_tool_invocations(tool_calls_payload)
+
+    structured_content = payload.get("structured_content")
+    if structured_content is not None and not isinstance(structured_content, Mapping):
+        structured_content = None
+
+    return ModelMessage(
+        role=role,  # type: ignore
+        content=content,
+        tool_calls=tool_calls,
+        tool_call_id=payload.get("tool_call_id") if isinstance(payload.get("tool_call_id"), str) else None,
+        name=payload.get("name") if isinstance(payload.get("name"), str) else None,
+        structured_content=dict(structured_content) if structured_content is not None else None,
+        metadata=dict(payload.get("metadata", {})),  # type: ignore
+    )
 
 
 def _load_tool_invocations(value: object) -> tuple[ToolInvocation, ...]:
     if not isinstance(value, (list, tuple)):
-        raise ValueError("hot_memory.tool_calls_must_be_sequence")
+        return ()
     tool_calls: list[ToolInvocation] = []
     for item in value:
         if not isinstance(item, Mapping):
-            raise ValueError("hot_memory.tool_call_item_must_be_mapping")
+            continue
         function_payload = item.get("function")
         if not isinstance(function_payload, Mapping):
-            raise ValueError("hot_memory.tool_call_function_must_be_mapping")
+            continue
         function_name = function_payload.get("name")
         function_arguments = function_payload.get("arguments")
-        if not isinstance(function_name, str):
-            raise ValueError("hot_memory.tool_call_function_name_must_be_string")
-        if not isinstance(function_arguments, str):
-            raise ValueError("hot_memory.tool_call_function_arguments_must_be_string")
+        if not isinstance(function_name, str) or not isinstance(function_arguments, str):
+            continue
+
         item_id = item.get("id")
         if item_id is not None and not isinstance(item_id, str):
-            raise ValueError("hot_memory.tool_call_id_must_be_string")
+            item_id = str(item_id)
+
         tool_calls.append(
             ToolInvocation(
                 id=item_id,

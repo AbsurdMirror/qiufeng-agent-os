@@ -1,40 +1,52 @@
-from __future__ import annotations
-
 import json
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
-from src.domain.capabilities import CapabilityRequest
-from src.domain.models import ParsedToolCall
-from src.domain.memory import HotMemoryItem
-from src.domain.models import ModelMessage
+from src.domain.context import ContextBlock
+from src.domain.models import ParsedToolCall, ModelMessage
 
-def model_message_to_hot_memory_item(message: ModelMessage, trace_id: str) -> HotMemoryItem:
-    from src.domain.memory import HotMemoryItem
 
-    return HotMemoryItem(
-        trace_id=trace_id,
-        role=message.role,
-        content=message.content,
-        tool_calls=message.tool_calls,
-        tool_call_id=message.tool_call_id,
-        name=message.name,
-        structured_output=message.structured_content,
-        metadata=dict(message.metadata),
+def build_user_context_block(
+    *,
+    block_id: str,
+    user_message: ModelMessage,
+    token_count: int,
+) -> ContextBlock:
+    """构建用户回合上下文块。"""
+    return ContextBlock(
+        block_id=block_id,
+        kind="user_turn",
+        messages=(user_message,),
+        token_count=token_count,
     )
 
 
-def hot_memory_item_to_model_message(item: HotMemoryItem) -> ModelMessage:
-    from src.domain.models import ModelMessage
+def build_assistant_answer_block(
+    *,
+    block_id: str,
+    assistant_message: ModelMessage,
+    token_count: int,
+) -> ContextBlock:
+    """构建助手回答上下文块。"""
+    return ContextBlock(
+        block_id=block_id,
+        kind="assistant_answer",
+        messages=(assistant_message,),
+        token_count=token_count,
+    )
 
-    return ModelMessage(
-        role=item.role,
-        content=item.content,
-        tool_calls=item.tool_calls,
-        tool_call_id=item.tool_call_id,
-        name=item.name,
-        structured_content=item.structured_output,
-        metadata=dict(item.metadata),
+
+def build_tool_interaction_block(
+    *,
+    block_id: str,
+    assistant_message: ModelMessage,
+    tool_messages: tuple[ModelMessage, ...],
+    token_count: int,
+) -> ContextBlock:
+    """构建工具交互上下文块（包含助手的工具调用和对应的工具结果）。"""
+    return ContextBlock(
+        block_id=block_id,
+        kind="tool_interaction",
+        messages=(assistant_message, *tool_messages),
+        token_count=token_count,
     )
 
 
@@ -54,8 +66,6 @@ def build_tool_result_message(
     tool_call: ParsedToolCall,
     output: dict[str, object],
 ) -> ModelMessage:
-    from src.domain.models import ModelMessage
-
     return ModelMessage(
         role="tool",
         content=json.dumps(output, ensure_ascii=False),

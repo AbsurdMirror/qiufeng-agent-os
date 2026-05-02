@@ -6,23 +6,25 @@ from src.orchestration_engine.runtime.langgraph_runtime import LangGraphRuntime
 from src.storage_memory.exports import StorageMemoryExports
 from src.orchestration_engine.context.state_context_manager import StateContextManager
 from src.observability_hub.exports import ObservabilityHubExports
+from src.model_provider.contracts import ModelProviderClient
 
 
 def initialize(
     capability_hub: CapabilityHub | None = None,
     storage_memory: StorageMemoryExports | None = None,
     observability: ObservabilityHubExports | None = None,
+    model_provider: ModelProviderClient | None = None,
 ) -> OrchestrationEngineExports:
     """
     编排引擎层 (Orchestration Engine) 的初始化引导函数。
-    
-    此函数会被 `src.app.bootstrap` 在应用启动时调用。它负责：
-    初始化单例的内存注册中心，并暴露代理方法供其他模块注册和查询 Agent 规格。
     """
     registry = InMemoryAgentRegistry()
     langgraph_runtime = LangGraphRuntime()
     resolved_capability_hub = capability_hub or NullCapabilityHub()
-    context_manager = StateContextManager(storage_memory) if storage_memory else None
+    
+    context_manager = None
+    if storage_memory and model_provider:
+        context_manager = StateContextManager(storage_memory, model_provider)
 
     return OrchestrationEngineExports(
         layer="orchestration_engine",

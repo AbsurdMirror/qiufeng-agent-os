@@ -1,6 +1,12 @@
 from collections.abc import Mapping
-from typing import Any, Protocol
-from src.domain.memory import HotMemoryItem
+from typing import Protocol
+
+from src.domain.context import (
+    ContextBlock,
+    ContextLoadRequest,
+    ContextLoadResult,
+    JSONValue,
+)
 
 
 class HotMemoryCarrier(Protocol):
@@ -8,15 +14,15 @@ class HotMemoryCarrier(Protocol):
     底层热记忆存储介质协议 (Duck Typing Interface)。
     抽象了类似于 Redis 的核心列表操作语义，允许后续无缝替换为真实的 Redis 客户端。
     """
-    async def rpush(self, key: str, value: Mapping[str, Any]) -> int:
+    async def rpush(self, key: str, value: Mapping[str, object]) -> int:
         """向列表右侧（尾部）推入一条数据，返回推入后列表的长度"""
         raise NotImplementedError
 
-    async def lpush(self, key: str, value: Mapping[str, Any]) -> int:
+    async def lpush(self, key: str, value: Mapping[str, object]) -> int:
         """向列表左侧（头部）推入一条数据，返回推入后列表的长度"""
         raise NotImplementedError
 
-    async def lrange(self, key: str, start: int, stop: int) -> tuple[dict[str, Any], ...]:
+    async def lrange(self, key: str, start: int, stop: int) -> tuple[dict[str, object], ...]:
         """获取列表中指定范围的数据（支持负数索引，如 -1 表示末尾）"""
         raise NotImplementedError
 
@@ -30,38 +36,54 @@ class StorageAccessProtocol(Protocol):
     面向编排引擎层暴露的高层存储与记忆访问协议。
     屏蔽了底层的 Key 构造逻辑和序列化细节。
     """
-    async def append_hot_memory(
+    async def append_context_block(
         self,
         logic_id: str,
         session_id: str,
-        item: HotMemoryItem,
-        max_rounds: int = 10,
-    ) -> tuple[HotMemoryItem, ...]:
-        """追加一条热记忆，并自动进行滑动窗口截断，返回截断后的最新记忆列表"""
+        block: ContextBlock,
+        max_blocks: int,
+    ) -> tuple[ContextBlock, ...]:
+        """追加一条热记忆块，并自动进行滑动窗口截断，返回截断后的最新块列表"""
         raise NotImplementedError
 
-    async def read_hot_memory(
+    async def read_context_snapshot(
         self,
-        logic_id: str,
-        session_id: str,
-        limit: int = 10,
-    ) -> tuple[HotMemoryItem, ...]:
-        """读取指定会话的热记忆历史记录"""
+        request: ContextLoadRequest,
+    ) -> ContextLoadResult:
+        """读取指定会话的上下文快照（含 System Parts 和 History Blocks）"""
         raise NotImplementedError
 
-    async def delete_hot_memory(self, logic_id: str, session_id: str) -> None:
-        """删除指定会话的所有热记忆历史记录"""
+    async def delete_context_history(self, logic_id: str, session_id: str) -> None:
+        """删除指定会话的所有历史记忆记录"""
         raise NotImplementedError
 
     async def persist_runtime_state(
         self,
         logic_id: str,
         session_id: str,
-        state: Mapping[str, Any],
-    ) -> dict[str, Any]:
-        """持久化编排引擎的运行时状态（如 LangGraph 的 state 字典）"""
+        state: Mapping[str, JSONValue],
+    ) -> dict[str, JSONValue]:
+        """持久化编排引擎的运行时状态"""
         raise NotImplementedError
 
-    async def load_runtime_state(self, logic_id: str, session_id: str) -> dict[str, Any]:
+    async def load_runtime_state(self, logic_id: str, session_id: str) -> dict[str, JSONValue]:
         """加载上次中断/挂起的运行时状态"""
+        raise NotImplementedError
+
+
+class WarmMemoryProtocol(Protocol):
+    """温记忆协议 (向量检索) - 预留"""
+    async def search_snippets(self, logic_id: str, query: str, limit: int) -> tuple[str, ...]:
+        raise NotImplementedError
+
+
+class ColdMemoryProtocol(Protocol):
+    """冷记忆协议 (长期归档/事实) - 预留"""
+    async def get_facts(self, logic_id: str, user_id: str) -> dict[str, JSONValue]:
+        raise NotImplementedError
+
+
+class ProfileProtocol(Protocol):
+    """画像协议 (用户特征) - 预留"""
+    async def get_profile(self, user_id: str) -> dict[str, JSONValue]:
         raise NotImplementedError
