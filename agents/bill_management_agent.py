@@ -613,30 +613,17 @@ async def execute(event:QFAEvent, ctx:QFAExecutionContext) -> None:
     """
     session_ctx = ctx.get_session_ctx(event.session_id)
     if event.session_id not in has_inject_system_prompt_sessions:
-        # 初始系统提示词暂时以 block 形式记录，后续可接入 SystemPart 协议
-        await session_ctx.append_context_block(
-            build_user_context_block(
-                block_id=f"sys-{event.session_id}",
-                user_message=ModelMessage(role="system", content=system_prompt),
-                token_count=0
-            )
-        )
+        # 使用 set_system_prompt 以确保系统提示词不被裁剪
+        await session_ctx.set_system_prompt(system_prompt)
         system_prompt_date_by_session[event.session_id] = datetime.now().strftime("%Y-%m-%d")
         has_inject_system_prompt_sessions.add(event.session_id)
     else:
-        # 日期有变化，需要注入新的系统提示
+        # 日期有变化，需要更新系统提示词 (source="base_prompt" 会覆盖旧的)
         today = datetime.now().strftime("%Y-%m-%d")
         if system_prompt_date_by_session[event.session_id] != today:
-            await session_ctx.append_context_block(
-                build_user_context_block(
-                    block_id=f"sys-update-{today}-{event.session_id}",
-                    user_message=ModelMessage(
-                        role="system",
-                        content=f"日期变成了: {today}, 星期{datetime.now().strftime('%A')}",
-                    ),
-                    token_count=0
-                )
-            )
+            # 也可以使用不同的 source 或直接覆盖 base_prompt
+            # 这里选择覆盖 base_prompt 以保持简洁
+            await session_ctx.set_system_prompt(system_prompt)
             system_prompt_date_by_session[event.session_id] = today
 
     token = _current_session_ctx.set(session_ctx)

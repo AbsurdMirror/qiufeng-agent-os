@@ -6,6 +6,7 @@ from src.domain.context import (
     ContextLoadRequest,
     ContextLoadResult,
     JSONValue,
+    SystemPromptPart,
 )
 
 
@@ -46,6 +47,15 @@ class StorageAccessProtocol(Protocol):
         """追加一条热记忆块，并自动进行滑动窗口截断，返回截断后的最新块列表"""
         raise NotImplementedError
 
+    async def upsert_system_part(
+        self,
+        logic_id: str,
+        session_id: str,
+        part: SystemPromptPart,
+    ) -> None:
+        """更新或插入系统提示词片段（如 base_prompt）"""
+        raise NotImplementedError
+
     async def read_context_snapshot(
         self,
         request: ContextLoadRequest,
@@ -78,7 +88,17 @@ class WarmMemoryProtocol(Protocol):
 
 
 class ColdMemoryProtocol(Protocol):
-    """冷记忆协议 (长期归档/事实) - 预留"""
+    """冷记忆协议 (长期归档/事实)"""
+
+    async def archive_block(
+        self,
+        logic_id: str,
+        session_id: str,
+        block: ContextBlock,
+    ) -> None:
+        """归档一个上下文块到长期存储（冷记忆）"""
+        raise NotImplementedError
+
     async def get_facts(self, logic_id: str, user_id: str) -> dict[str, JSONValue]:
         raise NotImplementedError
 

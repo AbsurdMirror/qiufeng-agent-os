@@ -7,12 +7,15 @@ from src.domain.context import (
     ContextLoadRequest,
     ContextLoadResult,
     JSONValue,
+    SystemPromptPart,
 )
 from ..contracts.protocols import HotMemoryCarrier, StorageAccessProtocol
-from ..internal.keys import _build_hot_key, _build_state_key
+from ..internal.keys import _build_hot_key, _build_state_key, _build_sys_key
 from ..internal.codecs import (
     dump_context_block,
     load_context_block,
+    dump_system_prompt_part,
+    load_system_prompt_part,
 )
 
 
@@ -61,6 +64,16 @@ class RedisHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         )
         return snapshot.history_blocks
 
+    async def upsert_system_part(
+        self,
+        logic_id: str,
+        session_id: str,
+        part: SystemPromptPart,
+    ) -> None:
+        sys_key = _build_sys_key(logic_id=logic_id, session_id=session_id)
+        payload = json.dumps(dump_system_prompt_part(part))
+        await self._redis.hset(sys_key, part.source, payload)
+
     async def read_context_snapshot(
         self,
         request: ContextLoadRequest,
@@ -69,8 +82,16 @@ class RedisHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         raw_items = await self.lrange(hot_key, -request.history_block_limit, -1)
         history_blocks = tuple(load_context_block(raw_item) for raw_item in raw_items)
         
+        # 加载 System Parts
+        sys_key = _build_sys_key(logic_id=request.logic_id, session_id=request.session_id)
+        raw_parts = await self._redis.hgetall(sys_key)
+        system_parts = tuple(
+            load_system_prompt_part(json.loads(raw))
+            for raw in raw_parts.values()
+        )
+
         return ContextLoadResult(
-            system_parts=(),
+            system_parts=system_parts,
             history_blocks=history_blocks
         )
 
@@ -78,6 +99,9 @@ class RedisHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         """删除指定会话的所有历史记忆记录"""
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
         await self._redis.delete(hot_key)
+        
+        sys_key = _build_sys_key(logic_id=logic_id, session_id=session_id)
+        await self._redis.delete(sys_key)
 
     async def persist_runtime_state(
         self,

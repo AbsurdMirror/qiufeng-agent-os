@@ -110,6 +110,10 @@ class QFASessionContext(Protocol):
         """追加一个上下文块到会话历史。"""
         raise NotImplementedError
 
+    async def set_system_prompt(self, content: str, source: str = "base_prompt") -> None:
+        """设置系统提示词（如基础提示词、画像补充等），此部分不会被自动裁剪。"""
+        raise NotImplementedError
+
     async def clear_history(self) -> None:
         """清除当前会话的所有历史记忆块。"""
         raise NotImplementedError

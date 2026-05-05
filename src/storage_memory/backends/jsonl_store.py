@@ -9,12 +9,15 @@ from src.domain.context import (
     ContextLoadRequest,
     ContextLoadResult,
     JSONValue,
+    SystemPromptPart,
 )
 from ..contracts.protocols import HotMemoryCarrier, StorageAccessProtocol
-from ..internal.keys import _build_hot_key, _build_state_key
+from ..internal.keys import _build_hot_key, _build_state_key, _build_sys_key
 from ..internal.codecs import (
     dump_context_block,
     load_context_block,
+    dump_system_prompt_part,
+    load_system_prompt_part,
 )
 
 
@@ -136,6 +139,26 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         )
         return snapshot.history_blocks
 
+    async def upsert_system_part(
+        self,
+        logic_id: str,
+        session_id: str,
+        part: SystemPromptPart,
+    ) -> None:
+        sys_key = _build_sys_key(logic_id=logic_id, session_id=session_id)
+        path = self._get_path_from_key(sys_key).with_suffix(".json")
+        
+        def _sync_upsert():
+            data = {}
+            if path.exists():
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            data[part.source] = dump_system_prompt_part(part)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        
+        await asyncio.to_thread(_sync_upsert)
+
     async def read_context_snapshot(
         self,
         request: ContextLoadRequest,
@@ -144,8 +167,21 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         raw_items = await self.lrange(hot_key, -request.history_block_limit, -1)
         history_blocks = tuple(load_context_block(raw_item) for raw_item in raw_items)
         
+        # 加载 System Parts
+        sys_key = _build_sys_key(logic_id=request.logic_id, session_id=request.session_id)
+        path = self._get_path_from_key(sys_key).with_suffix(".json")
+        
+        def _sync_load_parts():
+            if not path.exists():
+                return ()
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return tuple(load_system_prompt_part(raw) for raw in data.values())
+        
+        system_parts = await asyncio.to_thread(_sync_load_parts)
+
         return ContextLoadResult(
-            system_parts=(),
+            system_parts=system_parts,
             history_blocks=history_blocks
         )
 
@@ -154,9 +190,14 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
         path = self._get_path_from_key(hot_key)
         
+        sys_key = _build_sys_key(logic_id=logic_id, session_id=session_id)
+        sys_path = self._get_path_from_key(sys_key).with_suffix(".json")
+
         def _sync_delete():
             if path.exists():
                 os.remove(path)
+            if sys_path.exists():
+                os.remove(sys_path)
         
         await asyncio.to_thread(_sync_delete)
 

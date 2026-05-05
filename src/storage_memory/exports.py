@@ -6,6 +6,7 @@ from src.domain.context import (
     ContextLoadRequest,
     ContextLoadResult,
     JSONValue,
+    SystemPromptPart,
 )
 from .contracts.protocols import (
     ColdMemoryProtocol,
@@ -32,7 +33,9 @@ class StorageMemoryExports:
         [str, str, ContextBlock, int],
         Awaitable[tuple[ContextBlock, ...]],
     ]
+    archive_context_block: Callable[[str, str, ContextBlock], Awaitable[None]]
     read_context_snapshot: Callable[[ContextLoadRequest], Awaitable[ContextLoadResult]]
+    upsert_system_part: Callable[[str, str, SystemPromptPart], Awaitable[None]]
     delete_context_history: Callable[[str, str], Awaitable[None]]
     persist_runtime_state: Callable[[str, str, Mapping[str, JSONValue]], Awaitable[dict[str, JSONValue]]]
     load_runtime_state: Callable[[str, str], Awaitable[dict[str, JSONValue]]]

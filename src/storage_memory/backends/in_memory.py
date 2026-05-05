@@ -5,14 +5,17 @@ from src.domain.context import (
     ContextLoadRequest,
     ContextLoadResult,
     JSONValue,
+    SystemPromptPart,
 )
 
 from ..contracts.protocols import HotMemoryCarrier, StorageAccessProtocol
 from ..internal.codecs import (
     dump_context_block,
     load_context_block,
+    dump_system_prompt_part,
+    load_system_prompt_part,
 )
-from ..internal.keys import _build_hot_key, _build_state_key
+from ..internal.keys import _build_hot_key, _build_state_key, _build_sys_key
 
 
 class InMemoryHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
@@ -23,6 +26,7 @@ class InMemoryHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
     def __init__(self) -> None:
         self._hot_memory: dict[str, list[dict[str, object]]] = {}
         self._runtime_states: dict[str, dict[str, JSONValue]] = {}
+        self._system_parts: dict[str, dict[str, dict[str, object]]] = {}
 
     async def rpush(self, key: str, value: Mapping[str, object]) -> int:
         queue = self._hot_memory.setdefault(key, [])
@@ -75,6 +79,16 @@ class InMemoryHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         )
         return snapshot.history_blocks
 
+    async def upsert_system_part(
+        self,
+        logic_id: str,
+        session_id: str,
+        part: SystemPromptPart,
+    ) -> None:
+        sys_key = _build_sys_key(logic_id=logic_id, session_id=session_id)
+        parts_map = self._system_parts.setdefault(sys_key, {})
+        parts_map[part.source] = dump_system_prompt_part(part)
+
     async def read_context_snapshot(
         self,
         request: ContextLoadRequest,
@@ -83,9 +97,13 @@ class InMemoryHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         raw_items = await self.lrange(hot_key, -request.history_block_limit, -1)
         history_blocks = tuple(load_context_block(raw_item) for raw_item in raw_items)
         
-        # InMemory 目前不支持 Warm/Cold，返回空 SystemParts
+        # 加载 System Parts
+        sys_key = _build_sys_key(logic_id=request.logic_id, session_id=request.session_id)
+        parts_map = self._system_parts.get(sys_key, {})
+        system_parts = tuple(load_system_prompt_part(raw) for raw in parts_map.values())
+
         return ContextLoadResult(
-            system_parts=(),
+            system_parts=system_parts,
             history_blocks=history_blocks
         )
 
@@ -93,6 +111,10 @@ class InMemoryHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
         if hot_key in self._hot_memory:
             del self._hot_memory[hot_key]
+        
+        sys_key = _build_sys_key(logic_id=logic_id, session_id=session_id)
+        if sys_key in self._system_parts:
+            del self._system_parts[sys_key]
 
     async def persist_runtime_state(
         self,

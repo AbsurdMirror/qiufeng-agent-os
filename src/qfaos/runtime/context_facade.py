@@ -1,6 +1,6 @@
 from typing import Literal, Any
 
-from src.domain.context import ContextBlock, JSONValue
+from src.domain.context import ContextBlock, JSONValue, SystemPromptPart
 from src.domain.events import UniversalEvent
 from src.domain.responses import ReplyText, FeishuReplyCard
 from src.channel_gateway.exports import ChannelGatewayExports
@@ -78,6 +78,26 @@ class DefaultQFASessionContext(QFASessionContext):
             history_blocks=tuple(new_history)
         )
 
+    async def set_system_prompt(self, content: str, source: str = "base_prompt") -> None:
+        # 1. 持久化
+        part = SystemPromptPart(source=source, content=content)
+        await self._storage_memory.upsert_system_part(
+            self._logic_id,
+            self._runtime_context.session_id,
+            part,
+        )
+        
+        # 2. 同步更新运行时内存快照 (按 source 唯一)
+        current_memory = self._runtime_context.memory
+        parts_dict = {p.source: p for p in current_memory.system_parts}
+        parts_dict[source] = part
+        
+        from dataclasses import replace
+        self._runtime_context.memory = replace(
+            current_memory,
+            system_parts=tuple(parts_dict.values())
+        )
+
     async def clear_history(self) -> None:
         # 1. 清除持久化存储中的历史
         await self._storage_memory.delete_context_history(
@@ -88,7 +108,8 @@ class DefaultQFASessionContext(QFASessionContext):
         from dataclasses import replace
         self._runtime_context.memory = replace(
             self._runtime_context.memory,
-            history_blocks=()
+            history_blocks=(),
+            system_parts=()
         )
 
     async def model_ask(
