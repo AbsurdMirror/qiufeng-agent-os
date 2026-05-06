@@ -8,13 +8,7 @@ from src.domain.context import (
     JSONValue,
     SystemPromptPart,
 )
-from .contracts.protocols import (
-    ColdMemoryProtocol,
-    HotMemoryCarrier,
-    ProfileProtocol,
-    StorageAccessProtocol,
-    WarmMemoryProtocol,
-)
+from .internal.manager import StorageMemoryManager
 
 
 @dataclass(frozen=True)
@@ -22,15 +16,17 @@ class StorageMemoryExports:
     """
     存储与记忆层的强类型模块导出容器。
     
-    暴露了面向业务层的读写接口代理函数。
+    内部持有一个统一的 StorageMemoryManager 实例，并暴露其核心调度方法。
     """
     layer: str
     status: str
-    carrier: HotMemoryCarrier
-    protocol: StorageAccessProtocol
     
+    # 核心管理类实例
+    manager: StorageMemoryManager
+    
+    # 快捷调用接口 (直接引用自 manager)
     append_context_block: Callable[
-        [str, str, ContextBlock, int],
+        [str, str, ContextBlock],
         Awaitable[tuple[ContextBlock, ...]],
     ]
     archive_context_block: Callable[[str, str, ContextBlock], Awaitable[None]]
@@ -39,8 +35,3 @@ class StorageMemoryExports:
     delete_context_history: Callable[[str, str], Awaitable[None]]
     persist_runtime_state: Callable[[str, str, Mapping[str, JSONValue]], Awaitable[dict[str, JSONValue]]]
     load_runtime_state: Callable[[str, str], Awaitable[dict[str, JSONValue]]]
-
-    # T4 扩展：分级记忆协议预留
-    warm_memory: WarmMemoryProtocol | None = None
-    cold_memory: ColdMemoryProtocol | None = None
-    profile: ProfileProtocol | None = None

@@ -11,7 +11,7 @@ from src.domain.context import (
     JSONValue,
     SystemPromptPart,
 )
-from ..contracts.protocols import HotMemoryCarrier, StorageAccessProtocol
+from ..contracts.protocols import HotMemoryProtocol
 from ..internal.keys import _build_hot_key, _build_state_key, _build_sys_key
 from ..internal.codecs import (
     dump_context_block,
@@ -21,123 +21,84 @@ from ..internal.codecs import (
 )
 
 
-class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
-    """
-    基于 JSONL (JSON Lines) 文件的热记忆与状态存储实现。
+class JSONLHotMemoryStore(HotMemoryProtocol):
+    """基于 JSONL (JSON Lines) 文件的热记忆与状态存储实现。
+
     适用于本地开发环境，提供持久化能力而无需部署 Redis。
     """
 
-    def __init__(self, base_dir: str | Path = ".storage") -> None:
+    def __init__(
+        self,
+        base_dir: str | Path = ".storage",
+        max_blocks: int | None = 10,
+        max_tokens: int | None = None,
+    ) -> None:
+        """初始化 JSONLHotMemoryStore。"""
+        if max_blocks is None and max_tokens is None:
+            raise ValueError("At least one of max_blocks or max_tokens must be set")
+            
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
+        self.max_blocks = max_blocks
+        self.max_tokens = max_tokens
 
     def _get_path_from_key(self, key: str) -> Path:
-        """将 Redis 风格的 key 映射为文件路径"""
-        # key 格式通常为 "prefix:logic_id:session_id"
+        """将 Redis 风格的 key 映射为本地文件路径。"""
         parts = key.split(":")
         if len(parts) >= 3:
             prefix, logic_id, session_id = parts[0], parts[1], parts[2]
-            # 创建子目录: base_dir/prefix/logic_id/session_id.jsonl
             path = self.base_dir / prefix / logic_id / f"{session_id}.jsonl"
         else:
-            # 降级处理
             path = self.base_dir / f"{key.replace(':', '_')}.jsonl"
-        
+
         path.parent.mkdir(parents=True, exist_ok=True)
         return path
-
-    async def rpush(self, key: str, value: Mapping[str, object]) -> int:
-        path = self._get_path_from_key(key)
-        
-        def _sync_rpush():
-            with open(path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(dict(value), ensure_ascii=False) + "\n")
-            # 计算行数
-            with open(path, "r", encoding="utf-8") as f:
-                return sum(1 for _ in f)
-
-        return await asyncio.to_thread(_sync_rpush)
-
-    async def lpush(self, key: str, value: Mapping[str, object]) -> int:
-        path = self._get_path_from_key(key)
-
-        def _sync_lpush():
-            lines = []
-            if path.exists():
-                with open(path, "r", encoding="utf-8") as f:
-                    lines = f.readlines()
-            
-            lines.insert(0, json.dumps(dict(value), ensure_ascii=False) + "\n")
-            
-            with open(path, "w", encoding="utf-8") as f:
-                f.writelines(lines)
-            return len(lines)
-
-        return await asyncio.to_thread(_sync_lpush)
-
-    async def lrange(self, key: str, start: int, stop: int) -> tuple[dict[str, object], ...]:
-        path = self._get_path_from_key(key)
-
-        def _sync_lrange():
-            if not path.exists():
-                return ()
-            
-            with open(path, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-            
-            # 处理 stop 为 -1 的情况
-            total = len(lines)
-            actual_start = start if start >= 0 else max(0, total + start)
-            actual_stop = stop if stop >= 0 else (total + stop)
-            
-            subset = lines[actual_start : actual_stop + 1]
-            return tuple(json.loads(line) for line in subset if line.strip())
-
-        return await asyncio.to_thread(_sync_lrange)
-
-    async def ltrim(self, key: str, start: int, stop: int) -> None:
-        path = self._get_path_from_key(key)
-
-        def _sync_ltrim():
-            if not path.exists():
-                return
-            
-            with open(path, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-            
-            total = len(lines)
-            actual_start = start if start >= 0 else max(0, total + start)
-            actual_stop = stop if stop >= 0 else (total + stop)
-            
-            trimmed = lines[actual_start : actual_stop + 1]
-            
-            with open(path, "w", encoding="utf-8") as f:
-                f.writelines(trimmed)
-
-        await asyncio.to_thread(_sync_ltrim)
 
     async def append_context_block(
         self,
         logic_id: str,
         session_id: str,
         block: ContextBlock,
-        max_blocks: int,
     ) -> tuple[ContextBlock, ...]:
+        """追加一条热记忆块，并自动进行双重阈值（块数与 Token）裁剪。"""
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
-        await self.rpush(hot_key, dump_context_block(block))
-        await self.ltrim(hot_key, -max_blocks, -1)
+        path = self._get_path_from_key(hot_key)
         
-        snapshot = await self.read_context_snapshot(
-            ContextLoadRequest(
-                logic_id=logic_id,
-                session_id=session_id,
-                budget=None,  # type: ignore
-                include_profile_patch=False,
-                include_memory_snippets=False,
-                history_block_limit=max_blocks
-            )
-        )
-        return snapshot.history_blocks
+        def _sync_append_and_trim():
+            # 1. 追加
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(dump_context_block(block), ensure_ascii=False) + "\n")
+            
+            # 2. 读取并裁剪
+            with open(path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            
+            # 2.1 按块数裁剪
+            if self.max_blocks is not None and len(lines) > self.max_blocks:
+                lines = lines[-self.max_blocks:]
+            
+            # 2.2 按 Token 裁剪
+            if self.max_tokens is not None:
+                current_tokens = 0
+                keep_index = len(lines)
+                for i in range(len(lines) - 1, -1, -1):
+                    item = json.loads(lines[i])
+                    token_count = int(item.get("token_count", 0))
+                    if current_tokens + token_count > self.max_tokens:
+                        break
+                    current_tokens += token_count
+                    keep_index = i
+                
+                if keep_index > 0:
+                    lines = lines[keep_index:]
+            
+            # 3. 写回
+            with open(path, "w", encoding="utf-8") as f:
+                f.writelines(lines)
+            
+            return tuple(load_context_block(json.loads(line)) for line in lines)
+
+        return await asyncio.to_thread(_sync_append_and_trim)
 
     async def upsert_system_part(
         self,
@@ -145,9 +106,10 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         session_id: str,
         part: SystemPromptPart,
     ) -> None:
+        """更新系统提示词片段。"""
         sys_key = _build_sys_key(logic_id=logic_id, session_id=session_id)
         path = self._get_path_from_key(sys_key).with_suffix(".json")
-        
+
         def _sync_upsert():
             data = {}
             if path.exists():
@@ -156,40 +118,47 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
             data[part.source] = dump_system_prompt_part(part)
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-        
+
         await asyncio.to_thread(_sync_upsert)
 
     async def read_context_snapshot(
         self,
         request: ContextLoadRequest,
     ) -> ContextLoadResult:
+        """读取上下文快照。"""
         hot_key = _build_hot_key(logic_id=request.logic_id, session_id=request.session_id)
-        raw_items = await self.lrange(hot_key, -request.history_block_limit, -1)
-        history_blocks = tuple(load_context_block(raw_item) for raw_item in raw_items)
-        
-        # 加载 System Parts
-        sys_key = _build_sys_key(logic_id=request.logic_id, session_id=request.session_id)
-        path = self._get_path_from_key(sys_key).with_suffix(".json")
-        
-        def _sync_load_parts():
-            if not path.exists():
-                return ()
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                return tuple(load_system_prompt_part(raw) for raw in data.values())
-        
-        system_parts = await asyncio.to_thread(_sync_load_parts)
-
-        return ContextLoadResult(
-            system_parts=system_parts,
-            history_blocks=history_blocks
-        )
-
-    async def delete_context_history(self, logic_id: str, session_id: str) -> None:
-        """删除指定会话的所有历史记忆记录"""
-        hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
         path = self._get_path_from_key(hot_key)
         
+        def _sync_load():
+            # 加载历史块
+            history_blocks = []
+            if path.exists():
+                with open(path, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+                limit = request.history_block_limit
+                subset = lines[-limit:] if limit > 0 else lines
+                history_blocks = [load_context_block(json.loads(line)) for line in subset if line.strip()]
+            
+            # 加载系统片段
+            sys_key = _build_sys_key(logic_id=request.logic_id, session_id=request.session_id)
+            sys_path = self._get_path_from_key(sys_key).with_suffix(".json")
+            system_parts = []
+            if sys_path.exists():
+                with open(sys_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    system_parts = [load_system_prompt_part(raw) for raw in data.values()]
+            
+            return ContextLoadResult(
+                system_parts=tuple(system_parts),
+                history_blocks=tuple(history_blocks)
+            )
+
+        return await asyncio.to_thread(_sync_load)
+
+    async def delete_context_history(self, logic_id: str, session_id: str) -> None:
+        """删除会话历史文件。"""
+        hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
+        path = self._get_path_from_key(hot_key)
         sys_key = _build_sys_key(logic_id=logic_id, session_id=session_id)
         sys_path = self._get_path_from_key(sys_key).with_suffix(".json")
 
@@ -198,7 +167,7 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
                 os.remove(path)
             if sys_path.exists():
                 os.remove(sys_path)
-        
+
         await asyncio.to_thread(_sync_delete)
 
     async def persist_runtime_state(
@@ -207,13 +176,11 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         session_id: str,
         state: Mapping[str, JSONValue],
     ) -> dict[str, JSONValue]:
+        """持久化运行时状态。"""
         state_key = _build_state_key(logic_id=logic_id, session_id=session_id)
-        path = self._get_path_from_key(state_key)
-        # 运行时状态通常是 json 而不是 jsonl
-        path = path.with_suffix(".json")
-        
+        path = self._get_path_from_key(state_key).with_suffix(".json")
         payload = dict(state)
-        
+
         def _sync_persist():
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, indent=2)
@@ -222,9 +189,9 @@ class JSONLHotMemoryStore(HotMemoryCarrier, StorageAccessProtocol):
         return await asyncio.to_thread(_sync_persist)
 
     async def load_runtime_state(self, logic_id: str, session_id: str) -> dict[str, JSONValue]:
+        """加载运行时状态。"""
         state_key = _build_state_key(logic_id=logic_id, session_id=session_id)
-        path = self._get_path_from_key(state_key)
-        path = path.with_suffix(".json")
+        path = self._get_path_from_key(state_key).with_suffix(".json")
 
         def _sync_load():
             if not path.exists():

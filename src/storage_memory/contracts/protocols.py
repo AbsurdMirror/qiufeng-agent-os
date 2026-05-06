@@ -10,39 +10,19 @@ from src.domain.context import (
 )
 
 
-class HotMemoryCarrier(Protocol):
+class HotMemoryProtocol(Protocol):
     """
-    底层热记忆存储介质协议 (Duck Typing Interface)。
-    抽象了类似于 Redis 的核心列表操作语义，允许后续无缝替换为真实的 Redis 客户端。
+    热记忆存储协议。
+    负责管理最近的对话上下文，通常具有滑动窗口裁剪特性（基于块数和 Token 长度）。
     """
-    async def rpush(self, key: str, value: Mapping[str, object]) -> int:
-        """向列表右侧（尾部）推入一条数据，返回推入后列表的长度"""
-        raise NotImplementedError
+    max_blocks: int | None
+    max_tokens: int | None
 
-    async def lpush(self, key: str, value: Mapping[str, object]) -> int:
-        """向列表左侧（头部）推入一条数据，返回推入后列表的长度"""
-        raise NotImplementedError
-
-    async def lrange(self, key: str, start: int, stop: int) -> tuple[dict[str, object], ...]:
-        """获取列表中指定范围的数据（支持负数索引，如 -1 表示末尾）"""
-        raise NotImplementedError
-
-    async def ltrim(self, key: str, start: int, stop: int) -> None:
-        """修剪列表，仅保留指定范围内的元素（用于实现定长滑动窗口记忆）"""
-        raise NotImplementedError
-
-
-class StorageAccessProtocol(Protocol):
-    """
-    面向编排引擎层暴露的高层存储与记忆访问协议。
-    屏蔽了底层的 Key 构造逻辑和序列化细节。
-    """
     async def append_context_block(
         self,
         logic_id: str,
         session_id: str,
         block: ContextBlock,
-        max_blocks: int,
     ) -> tuple[ContextBlock, ...]:
         """追加一条热记忆块，并自动进行滑动窗口截断，返回截断后的最新块列表"""
         raise NotImplementedError
