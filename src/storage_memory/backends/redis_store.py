@@ -45,7 +45,7 @@ class RedisHotMemoryStore(HotMemoryProtocol):
         logic_id: str,
         session_id: str,
         block: ContextBlock,
-    ) -> tuple[ContextBlock, ...]:
+    ) -> None:
         """追加一条热记忆块到 Redis，并同步进行双重阈值（块数与 Token）裁剪。"""
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
         
@@ -84,9 +84,6 @@ class RedisHotMemoryStore(HotMemoryProtocol):
         # 3. 执行物理裁剪
         if keep_start > 0:
             await self._redis.ltrim(hot_key, keep_start, -1)
-
-        # 4. 返回最新历史
-        return tuple(load_context_block(item) for item in items)
 
     async def upsert_system_part(
         self,

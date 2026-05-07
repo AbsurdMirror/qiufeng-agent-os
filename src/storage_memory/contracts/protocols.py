@@ -23,8 +23,8 @@ class HotMemoryProtocol(Protocol):
         logic_id: str,
         session_id: str,
         block: ContextBlock,
-    ) -> tuple[ContextBlock, ...]:
-        """追加一条热记忆块，并自动进行滑动窗口截断，返回截断后的最新块列表"""
+    ) -> None:
+        """追加一条热记忆块，并自动进行滑动窗口截断"""
         raise NotImplementedError
 
     async def upsert_system_part(
@@ -66,6 +66,10 @@ class WarmMemoryProtocol(Protocol):
     async def search_snippets(self, logic_id: str, query: str, limit: int) -> tuple[str, ...]:
         raise NotImplementedError
 
+    async def delete_history(self, logic_id: str, session_id: str) -> None:
+        """清理指定会话的温记忆"""
+        raise NotImplementedError
+
 
 class ColdMemoryProtocol(Protocol):
     """冷记忆协议 (长期归档/事实)"""
@@ -80,6 +84,10 @@ class ColdMemoryProtocol(Protocol):
         raise NotImplementedError
 
     async def get_facts(self, logic_id: str, user_id: str) -> dict[str, JSONValue]:
+        raise NotImplementedError
+
+    async def delete_history(self, logic_id: str, session_id: str) -> None:
+        """清理指定会话的冷记忆"""
         raise NotImplementedError
 
 

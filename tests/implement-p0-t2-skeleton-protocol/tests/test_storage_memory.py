@@ -44,18 +44,18 @@ def test_sm_02_ltrim_truncation(memory_store):
     assert items[1]["id"] == 3
     assert items[2]["id"] == 2
 
-def test_sm_03_append_context_block_with_max_blocks(memory_store):
+def test_sm_03_append_context_block_with_max_blocks():
     """测试项 SM-03: 高层协议：append_context_block"""
+    memory_store = InMemoryHotMemoryStore(max_blocks=2)
     logic_id = "agent_1"
     session_id = "session_abc"
     
-    # 连续追加 3 条记录，限制 max_blocks=2
+    # 连续追加 3 条记录
     asyncio.run(
         memory_store.append_context_block(
             logic_id,
             session_id,
             ContextBlock(block_id="b1", kind="user_turn", messages=(ModelMessage(role="user", content="hello 1"),), token_count=10),
-            max_blocks=2,
         )
     )
     asyncio.run(
@@ -63,22 +63,31 @@ def test_sm_03_append_context_block_with_max_blocks(memory_store):
             logic_id,
             session_id,
             ContextBlock(block_id="b2", kind="user_turn", messages=(ModelMessage(role="user", content="hello 2"),), token_count=10),
-            max_blocks=2,
         )
     )
-    result = asyncio.run(
+    asyncio.run(
         memory_store.append_context_block(
             logic_id,
             session_id,
-            ContextBlock(block_id="b3", kind="user_turn", messages=(ModelMessage(role="user", content="hello 3"),), token_count=10),
-            max_blocks=2,
+            ContextBlock(block_id="b3", kind="user_turn", messages=(ModelMessage(role="user", content="hello 3"),), token_count=10)
         )
     )
     
-    assert len(result) == 2
+    # 获取快照验证裁剪结果
+    request = ContextLoadRequest(
+        logic_id=logic_id,
+        session_id=session_id,
+        budget=ContextBudget(100, 50, 0.5),
+        include_profile_patch=False,
+        include_memory_snippets=False,
+        history_block_limit=5
+    )
+    result = asyncio.run(memory_store.read_context_snapshot(request))
+    
+    assert len(result.history_blocks) == 2
     # 返回的最新记录列表
-    assert result[0].block_id == "b2"
-    assert result[1].block_id == "b3"
+    assert result.history_blocks[0].block_id == "b2"
+    assert result.history_blocks[1].block_id == "b3"
 
 
 def test_sm_03b_append_context_block_preserves_tool_messages(memory_store):
@@ -90,7 +99,7 @@ def test_sm_03b_append_context_block_preserves_tool_messages(memory_store):
         type="function"
     )
 
-    result = asyncio.run(
+    asyncio.run(
         memory_store.append_context_block(
             logic_id,
             session_id,
@@ -112,13 +121,23 @@ def test_sm_03b_append_context_block_preserves_tool_messages(memory_store):
                     )
                 ),
                 token_count=20
-            ),
-            max_blocks=5,
+            )
         )
     )
 
-    assert len(result) == 1
-    block = result[0]
+    # 验证
+    request = ContextLoadRequest(
+        logic_id=logic_id,
+        session_id=session_id,
+        budget=ContextBudget(100, 50, 0.5),
+        include_profile_patch=False,
+        include_memory_snippets=False,
+        history_block_limit=5
+    )
+    result = asyncio.run(memory_store.read_context_snapshot(request))
+    
+    assert len(result.history_blocks) == 1
+    block = result.history_blocks[0]
     assert block.kind == "tool_interaction"
     assert len(block.messages) == 2
     

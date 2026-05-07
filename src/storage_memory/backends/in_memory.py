@@ -42,8 +42,8 @@ class InMemoryHotMemoryStore(HotMemoryProtocol):
         logic_id: str,
         session_id: str,
         block: ContextBlock,
-    ) -> tuple[ContextBlock, ...]:
-        """追加一条热记忆块，并自动进行双重阈值（块数与 Token）裁剪。"""
+    ) -> None:
+        """追加一条热记忆块，并自动进行滑动窗口截断。"""
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
         queue = self._hot_memory.setdefault(hot_key, [])
 
@@ -66,12 +66,9 @@ class InMemoryHotMemoryStore(HotMemoryProtocol):
                     break
                 current_tokens += token_count
                 keep_index = i
-            
+
             if keep_index > 0:
                 queue[:] = queue[keep_index:]
-
-        # 3. 返回最新历史
-        return tuple(load_context_block(item) for item in queue)
 
     async def upsert_system_part(
         self,

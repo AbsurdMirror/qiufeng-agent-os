@@ -59,46 +59,49 @@ class JSONLHotMemoryStore(HotMemoryProtocol):
         logic_id: str,
         session_id: str,
         block: ContextBlock,
-    ) -> tuple[ContextBlock, ...]:
-        """追加一条热记忆块，并自动进行双重阈值（块数与 Token）裁剪。"""
+    ) -> None:
+        """追加一条热记忆块到 JSONL 文件，并执行双重阈值裁剪。"""
         hot_key = _build_hot_key(logic_id=logic_id, session_id=session_id)
         path = self._get_path_from_key(hot_key)
-        
-        def _sync_append_and_trim():
-            # 1. 追加
-            with open(path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(dump_context_block(block), ensure_ascii=False) + "\n")
-            
-            # 2. 读取并裁剪
-            with open(path, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-            
-            # 2.1 按块数裁剪
-            if self.max_blocks is not None and len(lines) > self.max_blocks:
-                lines = lines[-self.max_blocks:]
-            
-            # 2.2 按 Token 裁剪
+        payload = dump_context_block(block)
+
+        def _sync_append():
+            # 1. 读取现有内容
+            items = []
+            if path.exists():
+                with open(path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if line.strip():
+                            items.append(json.loads(line))
+
+            # 2. 追加
+            items.append(payload)
+
+            # 3. 双重裁剪
+            # 3.1 按块数裁剪
+            if self.max_blocks is not None and len(items) > self.max_blocks:
+                items = items[-self.max_blocks :]
+
+            # 3.2 按 Token 裁剪
             if self.max_tokens is not None:
                 current_tokens = 0
-                keep_index = len(lines)
-                for i in range(len(lines) - 1, -1, -1):
-                    item = json.loads(lines[i])
-                    token_count = int(item.get("token_count", 0))
+                keep_index = len(items)
+                for i in range(len(items) - 1, -1, -1):
+                    token_count = items[i].get("token_count", 0)
                     if current_tokens + token_count > self.max_tokens:
                         break
                     current_tokens += token_count
                     keep_index = i
-                
-                if keep_index > 0:
-                    lines = lines[keep_index:]
-            
-            # 3. 写回
-            with open(path, "w", encoding="utf-8") as f:
-                f.writelines(lines)
-            
-            return tuple(load_context_block(json.loads(line)) for line in lines)
 
-        return await asyncio.to_thread(_sync_append_and_trim)
+                if keep_index > 0:
+                    items = items[keep_index:]
+
+            # 4. 写回
+            with open(path, "w", encoding="utf-8") as f:
+                for item in items:
+                    f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+        await asyncio.to_thread(_sync_append)
 
     async def upsert_system_part(
         self,

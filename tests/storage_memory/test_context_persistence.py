@@ -19,15 +19,11 @@ async def test_in_memory_block_persistence():
         token_count=10
     )
     
-    appended_blocks = await store.append_context_block(
+    await store.append_context_block(
         logic_id=logic_id,
         session_id=session_id,
-        block=block,
-        max_blocks=5
+        block=block
     )
-    
-    assert len(appended_blocks) == 1
-    assert appended_blocks[0].block_id == "blk-1"
     
     # 2. 读取快照
     request = ContextLoadRequest(
