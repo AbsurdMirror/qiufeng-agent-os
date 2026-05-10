@@ -68,7 +68,13 @@ class SchemaTranslator:
                 Field(default=default_val, description=description),
             )
 
-        return create_model(f"{func.__name__.capitalize()}Params", **fields)
+        model = create_model(
+            f"{func.__name__.capitalize()}Params",
+            __module__=func.__module__,
+            **fields
+        )
+        model.model_rebuild()
+        return model
 
     @staticmethod
     def func_to_output_model(func: Callable) -> Type[BaseModel]:
@@ -83,10 +89,13 @@ class SchemaTranslator:
             kind_label="return",
         )
 
-        return create_model(
+        model = create_model(
             f"{func.__name__.capitalize()}Result",
+            __module__=func.__module__,
             result=(annotation, Field(default=..., description=description))
         )
+        model.model_rebuild()
+        return model
 
     @staticmethod
     def model_to_schema(model: Type[BaseModel], is_input: bool = True, func: Callable | None = None) -> dict[str, Any]:

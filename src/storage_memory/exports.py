@@ -27,7 +27,7 @@ class StorageMemoryExports:
     # 快捷调用接口 (直接引用自 manager)
     append_context_block: Callable[
         [str, str, ContextBlock],
-        Awaitable[tuple[ContextBlock, ...]],
+        Awaitable[None],
     ]
     archive_context_block: Callable[[str, str, ContextBlock], Awaitable[None]]
     read_context_snapshot: Callable[[ContextLoadRequest], Awaitable[ContextLoadResult]]

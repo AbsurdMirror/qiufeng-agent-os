@@ -64,7 +64,6 @@ class DefaultQFASessionContext(QFASessionContext):
             self._logic_id,
             self._runtime_context.session_id,
             block,
-            10,
         )
         
         # 2. 同步更新运行时内存快照 (追加到末尾)

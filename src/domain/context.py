@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Literal, TypeAlias
+from typing import Literal, TypeAlias, Union, List, Dict
 
 from src.domain.models import ModelMessage
 
 JSONScalar: TypeAlias = str | int | float | bool | None
-JSONValue: TypeAlias = JSONScalar | tuple["JSONValue", ...] | dict[str, "JSONValue"]
+type JSONValue = JSONScalar | list[JSONValue] | dict[str, JSONValue]
 
 ContextBlockKind: TypeAlias = Literal[
     "user_turn",

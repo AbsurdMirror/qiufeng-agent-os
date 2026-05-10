@@ -15,7 +15,6 @@ from src.domain.decorators import qfaos_pytool
 from src.observability_hub.exports import ObservabilityHubExports
 from ..contracts.protocols import (
     ColdMemoryProtocol,
-    HotMemoryCarrier,
     HotMemoryProtocol,
     ProfileProtocol,
     WarmMemoryProtocol,

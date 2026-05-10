@@ -17,6 +17,21 @@ def initialize(
 ) -> OrchestrationEngineExports:
     """
     编排引擎层 (Orchestration Engine) 的初始化引导函数。
+    
+    该函数负责组装编排引擎的核心组件，包括：
+    1. Agent 注册中心 (AgentRegistry)：存储和查询 Agent 规格。
+    2. 运行时环境 (LangGraphRuntime)：支持基于图的编排执行。
+    3. 能力中心 (CapabilityHub)：统一管理模型和工具的调用。
+    4. 上下文管理器 (StateContextManager)：管理运行时的状态和记忆。
+
+    Args:
+        capability_hub: 可选的能力中心实现，若为空则使用 NullCapabilityHub。
+        storage_memory: 可选的存储导出接口，用于状态持久化。
+        observability: 可选的观测中心接口。
+        model_provider: 可选的模型提供商客户端。
+
+    Returns:
+        OrchestrationEngineExports: 包含编排引擎所有对外暴露能力的导出对象。
     """
     registry = InMemoryAgentRegistry()
     langgraph_runtime = LangGraphRuntime()
@@ -32,6 +47,7 @@ def initialize(
         agent_registry=registry,
         langgraph_runtime=langgraph_runtime,
         capability_hub=resolved_capability_hub,
+        # 通过 lambda 延迟绑定内部私有辅助函数
         register_agent=lambda spec: _register_agent(registry=registry, spec=spec),
         query_agent=lambda agent_id, tenant_id, version=None: _query_agent(
             registry=registry,

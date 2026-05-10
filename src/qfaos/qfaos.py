@@ -341,6 +341,24 @@ class QFAOS:
         return self._execute_handler
 
     def run(self) -> None:
+        """
+        启动 QFAOS 引擎。
+        
+        该方法执行以下核心流程：
+        1. 配置校验：确保渠道、模型、记忆、观测等核心组件已正确注册。
+        2. 依赖初始化：
+            - 初始化观测中心 (ObservabilityHub)。
+            - 初始化存储记忆 (StorageMemory)。
+            - 初始化模型路由 (ModelRouter)。
+            - 初始化能力中心 (SkillHub) 并挂载模型和工具能力。
+        3. 核心引擎启动：
+            - 初始化编排引擎 (OrchestrationEngine)。
+            - 初始化渠道网关 (ChannelGateway)。
+            - 初始化自定义执行编排器 (CustomExecuteOrchestrator)。
+        4. 事件循环：
+            - 启动子进程监听飞书长连接事件。
+            - 异步消费事件队列，执行编排逻辑并管理上下文生命周期。
+        """
         execute_handler = self._execute_handler
         if execute_handler is None:
             raise QFAInvalidConfigError("必须先通过 @custom_execute 注册执行函数")
